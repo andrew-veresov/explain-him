@@ -1,11 +1,12 @@
 schema_version: explain-him-skill.v1
 id: explain-him
-version: 0.1.0
+version: 0.1.1
 entrypoint: SKILL.md
 scope:
   repository: andrew-veresov/explain-him
   root: .
   activation: repository-only
+repository_language: en
 capabilities:
   - explain-from-authored-page
   - deepen-from-repository

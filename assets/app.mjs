@@ -2,8 +2,8 @@ import { createExplanationWorkspace } from '../runtime/workspace.mjs';
 import { registerWebMcpTools } from '../runtime/webmcp.mjs';
 
 const sectionLabels = {
-  flow: 'Механика', roles: 'Роли', workspace: 'Адаптивная страница',
-  grounding: 'Контроль знаний', boundaries: 'Продуктовая линейка'
+  flow: 'Mechanism', roles: 'Roles', workspace: 'Adaptive page',
+  grounding: 'Knowledge control', boundaries: 'Product line'
 };
 
 function byId(id) { return document.getElementById(id); }
@@ -27,7 +27,7 @@ function appendMessage(role, text) {
   const item = document.createElement('article');
   item.className = `message message-${role}`;
   const label = document.createElement('strong');
-  label.textContent = role === 'user' ? 'Вы' : 'Demo simulation';
+  label.textContent = role === 'user' ? 'You' : 'Demo simulation';
   const body = document.createElement('p');
   body.textContent = text;
   item.append(label, body);
@@ -38,21 +38,21 @@ function appendMessage(role, text) {
 function simulatedAnswer(question) {
   const q = question.toLowerCase();
   if (q.includes('webmcp')) {
-    return 'WebMCP здесь доставляет repository-scoped skill и управляет только browser-local UI. Ответ формирует персональный агент после чтения страницы или repository.';
+    return 'WebMCP delivers the repository-scoped skill and controls only the browser-local UI. The personal agent forms the answer after reading the page or repository.';
   }
-  if (q.includes('репозитор') || q.includes('github')) {
-    return 'Repository — публичный адрес, source of truth, history и feedback loop. Агент читает его собственной GitHub integration, а не через WebMCP tools страницы.';
+  if (q.includes('repository') || q.includes('github')) {
+    return 'The repository is the public address, source of truth, history, and feedback loop. The agent reads it through its own GitHub integration, not through the page WebMCP tools.';
   }
-  if (q.includes('pro') || q.includes('плат')) {
-    return 'Explain Him работает без обязательного hosted service. Explain Him Pro может добавить privacy, sync, collaboration, analytics и эксплуатационные гарантии.';
+  if (q.includes('pro') || q.includes('paid')) {
+    return 'Explain Him works without a mandatory hosted service. Explain Him Pro may add privacy, sync, collaboration, analytics, and operational guarantees.';
   }
-  if (q.includes('issue') || q.includes('вопрос') || q.includes('не знает')) {
-    return 'При недостатке evidence агент помечает пробел open, готовит минимизированный Issue draft и публикует его только после вашего подтверждения.';
+  if (q.includes('issue') || q.includes('question') || q.includes('unknown') || q.includes("doesn't know")) {
+    return 'When evidence is insufficient, the agent marks the gap open, prepares a minimized Issue draft, and publishes it only after your confirmation.';
   }
-  if (q.includes('меня') || q.includes('локаль') || q.includes('страниц')) {
-    return 'Authored HTML остается неизменным. Персональный агент добавляет typed local block, который хранится в IndexedDB и поддерживает undo/redo.';
+  if (q.includes('local') || q.includes('page') || q.includes('personal')) {
+    return 'The authored HTML remains unchanged. The personal agent adds a typed local block stored in IndexedDB with undo/redo support.';
   }
-  return 'Это детерминированная demo-only simulation. Настоящий персональный агент должен прочитать authored page, а при необходимости public repository, сформировать grounded answer и только затем адаптировать визуальную страницу.';
+  return 'This is a deterministic demo-only simulation. A real personal agent should read the authored page, inspect the public repository only when needed, form a grounded answer, and only then adapt the visual page.';
 }
 
 function downloadJson(text) {
@@ -104,7 +104,7 @@ async function main() {
         actor: { kind: 'agent', channel: 'browser-control' },
         provenance: { sourceBlockIds: [byId('agent-target').value], repositoryRefs: [] }
       });
-      feedback.textContent = 'Добавлено в browser-local workspace.';
+      feedback.textContent = 'Added to the browser-local workspace.';
     } catch (error) {
       feedback.textContent = String(error?.message || error);
     }
@@ -126,7 +126,7 @@ async function main() {
   byId('workspace-redo')?.addEventListener('click', () => workspace.redo());
   byId('workspace-export')?.addEventListener('click', () => downloadJson(workspace.exportJson()));
   byId('workspace-reset')?.addEventListener('click', async () => {
-    if (globalThis.confirm('Удалить все browser-local пояснения и вернуться к оригиналу?')) {
+    if (globalThis.confirm('Remove all browser-local explanations and restore the original page?')) {
       await workspace.reset({ confirmed: true });
     }
   });
@@ -156,22 +156,22 @@ async function main() {
   });
   const status = byId('webmcp-status');
   if (!registration.supported) {
-    status.textContent = 'WebMCP host не обнаружен · browser controls доступны';
+    status.textContent = 'WebMCP host not detected · browser controls available';
   } else {
-    status.textContent = 'Регистрация WebMCP…';
+    status.textContent = 'Registering WebMCP…';
     await registration.ready;
     status.textContent = registration.skill.mode === 'registerSkill'
-      ? 'Skill и UI tools зарегистрированы'
+      ? 'Skill and UI tools registered'
       : registration.skill.compatibilityToolRegistered
         ? 'UI tools + compatibility skill tool'
-        : 'Часть WebMCP tools недоступна';
+        : 'Some WebMCP tools are unavailable';
   }
 
-  appendMessage('agent', 'Это demo-only deterministic simulation. Задайте вопрос о механике Explain Him или используйте свой персональный агент с этим repository.');
+  appendMessage('agent', 'This is a demo-only deterministic simulation. Ask a question about Explain Him mechanics or use your own personal agent with this repository.');
 }
 
 main().catch((error) => {
   console.error(error);
   const status = byId('webmcp-status');
-  if (status) status.textContent = `Ошибка инициализации: ${error.message}`;
+  if (status) status.textContent = `Initialization error: ${error.message}`;
 });

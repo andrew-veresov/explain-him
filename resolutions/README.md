@@ -6,8 +6,9 @@ tags: [explain-him, resolutions]
 
 # Accepted resolutions
 
-Принятые уточнения имеют приоритет над противоречащим explanatory copy.
+Accepted clarifications take precedence over conflicting explanatory copy.
 
-- [[2026-08-24-product-names|Названия Explain Him и Explain Him Pro]]
+- [[2026-08-24-product-names|Explain Him and Explain Him Pro product names]]
 - [[2026-08-26-browser-local-workspace|Browser-local workspace]]
 - [[2026-08-27-webmcp-skill-ui-runtime|WebMCP skill/UI boundary]]
+- [[2026-08-28-project-language|English project language]]

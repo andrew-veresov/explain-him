@@ -1,35 +1,35 @@
 ---
-title: Поток Оригинатора
+title: Originator flow
 status: current
 tags: [explain-him, originator]
 ---
 
-# Поток Оригинатора
+# Originator flow
 
-Оригинатор не пишет один «идеальный текст для всех». Он формирует **версионируемую среду объяснения**, из которой персональные агенты собирают ответы под конкретные вопросы.
+The Originator does not write one "perfect text for everyone." The Originator creates a **versioned explanation environment** from which personal agents assemble answers for specific questions.
 
-## Базовый поток
+## Basic flow
 
-1. Создать или выбрать GitHub repository идеи.
-2. Подготовить HTML page, которая объясняет основную модель без участия специального runtime.
-3. Добавить bootstrap и repository-scoped skill.
-4. Отделить подтверждённое состояние, target, hypotheses и open questions.
-5. Опубликовать ссылку на repository или GitHub Pages.
-6. Получать новые вопросы через Issues.
-7. Отвечать и переносить существенные уточнения в `resolutions/`, knowledge или authored page.
-8. Проверять, что новая версия улучшает будущие объяснения.
+1. Create or choose the GitHub repository for the idea.
+2. Prepare an HTML page that explains the core model without a specialized runtime.
+3. Add the bootstrap and repository-scoped skill.
+4. Separate confirmed state, targets, hypotheses, and open questions.
+5. Publish the repository or GitHub Pages link.
+6. Receive new questions through Issues.
+7. Answer them and move durable clarifications into `resolutions/`, knowledge, or the authored page.
+8. Verify that the new version improves future explanations.
 
-## Почему repository является адресом идеи
+## Why the repository is the address of the idea
 
-GitHub уже даёт устойчивый URL, history, commits, permissions, Issues и интеграции с AI agents. Explain Him использует эту инфраструктуру, а не дублирует её.
+GitHub already provides a stable URL, history, commits, permissions, Issues, and integrations with AI agents. Explain Him uses this infrastructure instead of duplicating it.
 
-## Что необходимо зафиксировать
+## What must be explicit
 
-- смысловые инварианты и границы интерпретации;
+- semantic invariants and interpretation boundaries;
 - source precedence;
-- статусы claims;
-- способ обработки неизвестных вопросов;
-- данные, которые нельзя переносить в публичные Issues;
-- accepted resolutions, отменяющие более ранний текст.
+- claim statuses;
+- how unknown questions are handled;
+- data that must not be transferred into public Issues;
+- accepted resolutions that supersede earlier text.
 
-Оригинатор не обязан проектировать фиксированную последовательность вопросов. Конкретную траекторию строит персональный агент пользователя.
+The Originator does not need to design a fixed question sequence. The user's personal agent constructs the concrete explanation path.

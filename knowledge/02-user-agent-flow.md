@@ -1,29 +1,29 @@
 ---
-title: Поток Пользователя и персонального агента
+title: User and personal-agent flow
 status: current
 tags: [explain-him, user, agent]
 ---
 
-# Поток Пользователя и персонального агента
+# User and personal-agent flow
 
-1. Пользователь открывает authored page или передаёт агенту URL repository.
-2. Агент получает repository-scoped instructions из WebMCP descriptor либо `AGENTS.md`/`SKILL.md`.
-3. Агент читает текущую страницу.
-4. Если страницы достаточно, формирует ответ без лишнего retrieval.
-5. Если нужны версия, evidence или более глубокий контекст, читает минимально необходимые repository files через собственную GitHub integration.
-6. Различает `current`, `target`, `hypothesis`, `open` и `demo-only`.
-7. Отвечает в обычном чате персонального агента.
-8. При пользе визуального сопровождения фокусирует authored block или добавляет typed browser-local block через WebMCP.
-9. Если evidence недостаточно, предлагает минимизированный Issue draft и ждёт подтверждения пользователя.
+1. The user opens the authored page or gives the repository URL to their agent.
+2. The agent receives repository-scoped instructions from the WebMCP descriptor or `AGENTS.md`/`SKILL.md`.
+3. The agent reads the current page.
+4. If the page is sufficient, the agent forms the answer without unnecessary retrieval.
+5. If version, evidence, or deeper context is needed, the agent reads the minimum required repository files through its own GitHub integration.
+6. The agent distinguishes `current`, `target`, `hypothesis`, `open`, and `demo-only`.
+7. The agent answers in its normal personal-agent chat.
+8. When visual support helps, the agent focuses an authored block or adds a typed browser-local block through WebMCP.
+9. If evidence is insufficient, the agent offers a minimized Issue draft and waits for user confirmation.
 
-## Почему это не отдельный Explain Him agent
+## Why this is not a separate Explain Him agent
 
-Пользователь сохраняет собственную модель, память, настройки и привычный интерфейс. Explain Him добавляет к существующему агенту repository-scoped capability, а не переносит пользователя в новый обязательный чат.
+The user keeps their own model, memory, settings, and familiar interface. Explain Him adds a repository-scoped capability to the existing agent instead of moving the user into a mandatory new chat.
 
-## Визуальный результат
+## Visual result
 
 ```text
 Originator-authored page + local operation log = personalized visible page
 ```
 
-Локальное пояснение помогает этому пользователю, но не становится каноническим утверждением Оригинатора.
+A local explanation may help this user, but it does not become a canonical statement by the Originator.
