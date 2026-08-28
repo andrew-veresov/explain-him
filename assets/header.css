@@ -1,0 +1,148 @@
+.topbar {
+  min-height: 64px;
+  padding: 10px 18px;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand {
+  min-width: 0;
+}
+
+.brand strong {
+  font-size: 20px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.app-menu {
+  position: relative;
+  margin-left: auto;
+}
+
+.menu-toggle {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.menu-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.menu-toggle::marker {
+  content: "";
+}
+
+.menu-toggle:hover {
+  background: var(--surface-soft);
+  border-color: var(--line);
+}
+
+.menu-toggle:focus-visible {
+  outline: 3px solid rgba(49,103,216,.25);
+  outline-offset: 2px;
+}
+
+.menu-line {
+  display: block;
+  width: 22px;
+  height: 2px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: var(--ink);
+}
+
+.menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(320px, calc(100vw - 24px));
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  z-index: 40;
+}
+
+.menu-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 2px 2px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.menu-link,
+.menu-panel button {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  text-decoration: none;
+}
+
+.menu-link:hover,
+.menu-panel button:hover {
+  background: var(--surface-soft);
+  border-color: #aeb9c7;
+}
+
+.menu-panel .danger-action {
+  color: var(--danger);
+}
+
+.source-drawer {
+  inset: 64px 0 0 auto;
+  z-index: 50;
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    min-height: 60px;
+    padding: 8px 12px;
+    align-items: center;
+  }
+
+  .brand {
+    gap: 9px;
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+  }
+
+  .brand strong {
+    font-size: 18px;
+  }
+
+  .menu-toggle {
+    width: 42px;
+    height: 42px;
+    padding: 9px;
+  }
+
+  .source-drawer {
+    inset: 60px 0 0 auto;
+  }
+}
