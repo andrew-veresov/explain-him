@@ -1,21 +1,21 @@
 ---
-title: Explain Him и Explain Him Pro
+title: Explain Him and Explain Him Pro
 status: current
 tags: [explain-him, product-boundaries]
 ---
 
-# Explain Him и Explain Him Pro
+# Explain Him and Explain Him Pro
 
 ## Explain Him
 
-Базовый продукт использует публичный или доступный пользователю repository, authored page, repository-scoped skill, локальное исполнение персонального агента, browser-local personalization и GitHub Issues. Обязательный hosted service отсутствует.
+The core product uses a public or user-accessible repository, an authored page, a repository-scoped skill, local execution by the personal agent, browser-local personalization, and GitHub Issues. No mandatory hosted service is required.
 
 ## Explain Him Pro
 
-Managed-расширение может добавить private storage и private questions, отдельную identity/authorization model, cross-device sync, collaboration, analytics, hosted evaluation, custom UI/A2UI и эксплуатационные гарантии.
+A managed extension may add private storage and private questions, a separate identity/authorization model, cross-device sync, collaboration, analytics, hosted evaluation, custom UI/A2UI, and operational guarantees.
 
-## Принцип границы
+## Boundary principle
 
-Платная функция оправдана, когда предоставляет privacy, управление, качество UX, collaboration, evaluation или operational guarantees — а не когда искусственно блокирует базовую способность понять идею.
+A paid capability is justified when it provides privacy, governance, UX quality, collaboration, evaluation, or operational guarantees — not when it artificially blocks the basic ability to understand an idea.
 
-Explain Him должен оставаться полезным и исполнимым без Explain Him Pro.
+Explain Him should remain useful and executable without Explain Him Pro.

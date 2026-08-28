@@ -1,13 +1,13 @@
 ---
-title: Названия продуктов Explain Him и Explain Him Pro
+title: Explain Him and Explain Him Pro product names
 status: accepted
 date: 2026-08-24
 ---
 
-# Названия продуктов Explain Him и Explain Him Pro
+# Explain Him and Explain Him Pro product names
 
-- Основной продукт называется **Explain Him**.
-- Managed-расширение называется **Explain Him Pro**.
-- Описательные технические labels не используются как пользовательские названия продуктов.
+- The core product is named **Explain Him**.
+- The managed extension is named **Explain Him Pro**.
+- Descriptive technical labels are not used as user-facing product names.
 
-Во всех пользовательских текстах, UI, manifests и примерах агент должен использовать Explain Him и Explain Him Pro.
+In all user-facing text, UI, manifests, and examples, the agent must use Explain Him and Explain Him Pro.

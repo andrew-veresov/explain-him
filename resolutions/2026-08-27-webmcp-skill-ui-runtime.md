@@ -1,25 +1,25 @@
 ---
-title: WebMCP поставляет skill и мутирует только локальный UI
+title: WebMCP delivers the skill and mutates only local UI
 status: accepted
 date: 2026-08-27
 tags: [explain-him, resolution, webmcp, skills]
 ---
 
-# WebMCP поставляет skill и мутирует только локальный UI
+# WebMCP delivers the skill and mutates only local UI
 
-## Решение
+## Decision
 
-В browser flow Explain Him использует WebMCP для двух задач:
+In the browser flow, Explain Him uses WebMCP for two tasks:
 
-1. передать персональному агенту Explain Him skill как instructions, structured context и связанные UI tools;
-2. отобразить уже сформированный агентом ответ в authored page через typed visual/workspace operations.
+1. deliver the Explain Him skill to the personal agent as instructions, structured context, and related UI tools;
+2. display an answer already formed by the agent on the authored page through typed visual/workspace operations.
 
-WebMCP не является knowledge/retrieval layer и не требует browser-readable knowledge bundle.
+WebMCP is not a knowledge/retrieval layer and does not require a browser-readable knowledge bundle.
 
-Персональный агент читает текущую страницу и при необходимости repository через собственную GitHub integration, применяет source precedence, формирует grounded answer и provenance, отвечает пользователю, а затем опционально вызывает UI tool.
+The personal agent reads the current page and, when needed, the repository through its own GitHub integration, applies source precedence, forms a grounded answer and provenance, answers the user, and then optionally calls a UI tool.
 
-WebMCP может передать descriptor, сообщить stable targets, фокусировать authored block, добавить/remove local block, читать local state/history и поддерживать undo/redo.
+WebMCP may deliver the descriptor, report stable targets, focus an authored block, add/remove a local block, read local state/history, and support undo/redo.
 
-WebMCP не предоставляет tools для knowledge search, repository read/search, claim resolution, answer generation или GitHub Issues. Authored HTML остаётся immutable.
+WebMCP does not provide tools for knowledge search, repository read/search, claim resolution, answer generation, or GitHub Issues. Authored HTML remains immutable.
 
-При наличии `registerSkill()` descriptor регистрируется напрямую. Иначе read-only `get_explain_him_skill` возвращает тот же descriptor; repository `SKILL.md` остаётся non-WebMCP fallback.
+When `registerSkill()` is available, the descriptor is registered directly. Otherwise the read-only `get_explain_him_skill` tool returns the same descriptor; repository `SKILL.md` remains the non-WebMCP fallback.

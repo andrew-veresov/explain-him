@@ -1,12 +1,12 @@
 ---
-title: Browser-local адаптивное объяснение
+title: Browser-local adaptive explanation
 status: demo-only
 tags: [explain-him, browser, webmcp, indexeddb]
 ---
 
-# Browser-local адаптивное объяснение
+# Browser-local adaptive explanation
 
-## Модель
+## Model
 
 ```text
 immutable authored HTML
@@ -16,26 +16,26 @@ typed local operation log
 personalized visible DOM
 ```
 
-Персональный агент не получает произвольный доступ к HTML. Он может добавить typed block, удалить только local block, выполнить undo/redo или временно сфокусировать authored target.
+The personal agent does not receive arbitrary access to HTML. It can add a typed block, remove only a local block, perform undo/redo, or temporarily focus an authored target.
 
 ## Persistence
 
-Operation log сохраняется в IndexedDB в пределах origin и browser profile. При недоступной IndexedDB используется memory fallback, поэтому изменения живут только в текущей сессии. JSON export позволяет сохранить локальное состояние вручную.
+The operation log is stored in IndexedDB within the current origin and browser profile. When IndexedDB is unavailable, a memory fallback is used, so changes last only for the current session. JSON export allows the local state to be saved manually.
 
 ## Safety
 
-- renderer использует `textContent`;
-- arbitrary HTML/JavaScript/CSS mutation запрещена;
-- authored blocks нельзя удалить или переписать;
-- reset требует подтверждения;
-- provenance локального block поставляет персональный агент после собственного retrieval.
+- the renderer uses `textContent`;
+- arbitrary HTML/JavaScript/CSS mutation is forbidden;
+- authored blocks cannot be removed or rewritten;
+- reset requires confirmation;
+- provenance for a local block is supplied by the personal agent after its own retrieval.
 
-## Ограничения
+## Limitations
 
-- очистка site data удаляет workspace;
-- другой origin или browser profile имеет отдельное состояние;
-- обновление base revision может сделать local block orphaned;
-- compatibility конкретного browser agent остаётся `open` до E2E;
-- cross-device sync относится к Explain Him Pro.
+- clearing site data removes the workspace;
+- another origin or browser profile has separate state;
+- updating the base revision can orphan a local block;
+- compatibility with a specific browser agent remains `open` until E2E validation;
+- cross-device sync belongs to Explain Him Pro.
 
-См. [[../resolutions/2026-08-26-browser-local-workspace|принятое решение]] и [[../resolutions/2026-08-27-webmcp-skill-ui-runtime|границу WebMCP]].
+See [[../resolutions/2026-08-26-browser-local-workspace|accepted resolution]] and [[../resolutions/2026-08-27-webmcp-skill-ui-runtime|WebMCP boundary]].

@@ -1,51 +1,51 @@
 ---
-title: Explain Him — общая модель
+title: Explain Him — overview
 status: current
 tags: [explain-him, overview]
 ---
 
-# Explain Him — общая модель
+# Explain Him — overview
 
-## Короткая формула
+## Short formula
 
-**Репозиторий Оригинатора хранит authored explanation и versioned materials; repository-scoped skill превращает их в способность персонального агента пользователя; GitHub Issues возвращают Оригинатору вопросы, на которые evidence ещё недостаточно.**
+**The Originator's repository stores the authored explanation and versioned materials; a repository-scoped skill turns them into a capability of the user's personal agent; GitHub Issues return questions to the Originator when the available evidence is still insufficient.**
 
 ```mermaid
 flowchart LR
-    O[Оригинатор] --> R[Публичный repository]
+    O[Originator] --> R[Public repository]
     R --> P[Authored HTML page]
     R --> S[Repository-scoped skill]
-    U[Пользователь] --> A[Персональный агент]
+    U[User] --> A[Personal agent]
     P --> A
     S --> A
     A --> E[Grounded explanation]
-    E --> Q{Evidence достаточно?}
-    Q -->|Да| U
-    Q -->|Нет| I[GitHub Issue после подтверждения]
+    E --> Q{Enough evidence?}
+    Q -->|Yes| U
+    Q -->|No| I[GitHub Issue after confirmation]
     I --> O
     O --> R
 ```
 
-## Обязательные компоненты
+## Required components
 
-1. **Репозиторий идеи** — хранение, versioning, публичный адрес и модель доступа.
-2. **Authored page** — подготовленное Оригинатором визуальное объяснение.
-3. **Bootstrap** — `README.md`, `AGENTS.md` и manifest.
-4. **Knowledge и resolutions** — контекст, статусы, provenance и принятые уточнения.
-5. **Repository-scoped skill** — процедура поиска, grounding, визуализации и эскалации.
-6. **Персональный агент пользователя** — основной разговорный интерфейс.
-7. **GitHub Issues** — feedback loop для новых вопросов.
+1. **Idea repository** — storage, versioning, public address, and access model.
+2. **Authored page** — a visual explanation prepared by the Originator.
+3. **Bootstrap** — `README.md`, `AGENTS.md`, and the manifest.
+4. **Knowledge and resolutions** — context, statuses, provenance, and accepted clarifications.
+5. **Repository-scoped skill** — the procedure for discovery, grounding, visualization, and escalation.
+6. **User's personal agent** — the primary conversational interface.
+7. **GitHub Issues** — the feedback loop for new questions.
 
-Отдельный hosted runtime Explain Him Pro для этой модели не обязателен.
+A separate hosted Explain Him Pro runtime is not required for this model.
 
-## Главный принцип владения
+## Ownership principle
 
-> Оригинатор управляет каноническим смыслом. Пользователь управляет вопросом и глубиной. Персональный агент управляет траекторией конкретного объяснения в пределах подтверждённых источников.
+> The Originator controls canonical meaning. The user controls the question and depth. The personal agent controls the path of a specific explanation within grounded sources.
 
-## Статус
+## Status
 
-- Public repository, page, knowledge и skill — `current` artifacts.
-- Browser-local workspace и WebMCP tools — `demo-only` implementation.
-- Native cross-browser `registerSkill()` compatibility — `target`/`open` в зависимости от host.
+- Public repository, page, knowledge, and skill are `current` artifacts.
+- Browser-local workspace and WebMCP tools are a `demo-only` implementation.
+- Native cross-browser `registerSkill()` compatibility is `target`/`open` depending on the host.
 
-См. [[03-grounding-and-status]], [[04-question-loop]] и [[06-browser-local-workspace]].
+See [[03-grounding-and-status]], [[04-question-loop]], and [[06-browser-local-workspace]].

@@ -199,9 +199,9 @@ export function renderWorkspace(document, view) {
     article.dataset.ehLocalBlockId = block.id;
     const header = make(document, 'header', 'local-explanation-header');
     const heading = make(document, 'div');
-    heading.append(make(document, 'span', 'local-label', 'Персональное пояснение'));
+    heading.append(make(document, 'span', 'local-label', 'Personal explanation'));
     heading.append(make(document, 'h3', null, block.title));
-    const remove = make(document, 'button', 'local-remove', 'Удалить');
+    const remove = make(document, 'button', 'local-remove', 'Remove');
     remove.type = 'button';
     remove.dataset.ehRemoveLocal = block.id;
     header.append(heading, remove);
@@ -225,7 +225,7 @@ export function renderWorkspace(document, view) {
   }
 
   const summary = document.getElementById('workspace-summary');
-  if (summary) summary.textContent = `Оригинал · ${view.blocks.length} локальных пояснений`;
+  if (summary) summary.textContent = `Original · ${view.blocks.length} local explanations`;
   const count = document.getElementById('workspace-count');
   if (count) count.textContent = String(view.blocks.length);
   const undo = document.getElementById('workspace-undo');
@@ -236,7 +236,7 @@ export function renderWorkspace(document, view) {
   if (stale) {
     stale.hidden = !view.baseRevisionChanged;
     stale.textContent = view.baseRevisionChanged
-      ? `Страница обновилась: local blocks сохранены, но ${view.orphanedBlockCount} могут требовать проверки.`
+      ? `The page was updated: local blocks were preserved, but ${view.orphanedBlockCount} may require review.`
       : '';
   }
 }

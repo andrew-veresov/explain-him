@@ -1,8 +1,8 @@
 schema_version: explain-him-explanation.v1
 id: explain-him-public-demo
-version: 0.1.0
-title: Как работает Explain Him
-language: ru
+version: 0.1.1
+title: How Explain Him works
+language: en
 status: public-demo
 
 products:
@@ -116,6 +116,7 @@ question_loop:
   template: question-template.md
   confirmation_before_write: true
   minimize_personal_context: true
+  repository_language: en
 
 claims:
   - id: repository-is-public-source-of-truth
@@ -142,3 +143,6 @@ claims:
   - id: github-issues-are-sufficient-feedback
     status: hypothesis
     evidence: knowledge/04-question-loop.md
+  - id: repository-project-language-is-english
+    status: current
+    evidence: resolutions/2026-08-28-project-language.md

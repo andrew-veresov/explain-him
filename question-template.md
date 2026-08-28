@@ -1,29 +1,29 @@
-# Вопрос Оригинатору Explain Him
+# Question for the Explain Him Originator
 
-## Вопрос
+## Question
 
-Один конкретный вопрос, на который текущие публичные материалы не дают достаточно подтверждённого ответа.
+One concrete question for which the current public materials do not provide a sufficiently grounded answer.
 
-## Почему ответ важен
+## Why the answer matters
 
-Какое понимание или действие зависит от ответа.
+What understanding or action depends on the answer.
 
-## Что уже проверено
+## What has already been checked
 
 - authored page / section;
-- repository paths и optional commit/ref;
-- существующие Issues.
+- repository paths and optional commit/ref;
+- existing Issues.
 
-## Пробел или противоречие
+## Gap or contradiction
 
-Почему агент не может дать grounded answer.
+Why the agent cannot provide a grounded answer.
 
-## Предлагаемый статус
+## Proposed status
 
 `open`
 
 ## Privacy check
 
-- [ ] Нет secrets, credentials и закрытых материалов.
-- [ ] Удалён лишний персональный контекст пользователя.
-- [ ] Пользователь просмотрел draft и явно подтвердил публикацию.
+- [ ] No secrets, credentials, or private material are included.
+- [ ] Unnecessary personal user context has been removed.
+- [ ] The user reviewed the draft and explicitly approved publication.

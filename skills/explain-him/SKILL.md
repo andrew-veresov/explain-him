@@ -18,6 +18,10 @@ Enable the user's existing personal agent to explain Explain Him. The repository
 - Do not treat browser-local additions as Originator-authored knowledge.
 - Exclude `tests/`, `tools/` and `.github/` from normal product retrieval.
 
+## Project language
+
+Repository-authored artifacts are English, including documentation, UI copy, manifests, templates, resolutions, examples, code-facing text, tests, and Issue drafts. The personal agent may answer the user in the user's preferred language; when it prepares a repository artifact or Issue, write that artifact in English.
+
 ## Responsibility split
 
 ### Personal agent: understand and answer
@@ -104,7 +108,7 @@ When the page and repository evidence are insufficient:
 
 1. state the supported part and mark the unresolved part `open`;
 2. search existing Issues through the personal agent's GitHub integration;
-3. prepare a minimized Issue draft using `question-template.md` if the gap remains;
+3. prepare a minimized English Issue draft using `question-template.md` if the gap remains;
 4. remove irrelevant personal context;
 5. obtain explicit user confirmation before any GitHub write.
 

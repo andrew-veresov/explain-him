@@ -10,6 +10,10 @@ These instructions apply **only** while explaining the public repository `andrew
 - Use **Explain Him** and **Explain Him Pro** as product names.
 - Treat `tests/`, `tools/` and `.github/` as implementation support, not product knowledge.
 
+## Project language
+
+Repository-authored content must be English, including documentation, UI copy, manifests, templates, resolutions, examples, code-facing text, and repository Issues prepared by an agent. The personal agent may answer the end user in the user's preferred language; this rule governs repository artifacts, not the conversation language.
+
 ## Browser/WebMCP bootstrap
 
 When the page is opened in a WebMCP-capable browser, prefer the Explain Him skill delivered by the page. The descriptor contains workflow instructions, source-navigation context and related UI tools; it contains no browser-readable knowledge bundle.
@@ -79,8 +83,9 @@ Repository and Issue operations belong to the personal agent's own GitHub/reposi
 4. Classify the missing point as `open` unless a source gives another status.
 5. Offer a minimal Issue draft using `question-template.md`.
 6. Remove private or irrelevant user context.
-7. Obtain explicit user confirmation before creating or posting an Issue.
-8. Never claim that an Issue was created unless the GitHub write succeeded.
+7. Draft repository Issues in English.
+8. Obtain explicit user confirmation before creating or posting an Issue.
+9. Never claim that an Issue was created unless the GitHub write succeeded.
 
 ## Repository writes
 

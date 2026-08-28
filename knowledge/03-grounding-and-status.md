@@ -1,40 +1,40 @@
 ---
-title: Grounding, provenance и статусы
+title: Grounding, provenance, and statuses
 status: current
 tags: [explain-him, grounding, provenance]
 ---
 
-# Grounding, provenance и статусы
+# Grounding, provenance, and statuses
 
 ## Source precedence
 
 1. accepted resolutions;
-2. authored page и explicit manifest claims;
+2. authored page and explicit manifest claims;
 3. knowledge notes;
 4. README/navigation;
-5. отдельно обозначенный вывод агента.
+5. explicitly labeled agent inference.
 
-Нижестоящий источник не должен молча отменять вышестоящий.
+A lower-priority source must not silently override a higher-priority source.
 
-## Словарь статусов
+## Status vocabulary
 
-| Статус | Значение |
+| Status | Meaning |
 |---|---|
-| `current` | Принятое и актуальное свойство модели или существующий artifact. |
-| `target` | Желаемое целевое поведение, которое ещё не гарантировано. |
-| `hypothesis` | Проверяемое предположение. |
-| `open` | Решение или доказательство отсутствует. |
-| `demo-only` | Реализовано для демонстрации, но не заявляется как production contract. |
-| `deprecated` | Более не применимо; должен быть указан replacement. |
+| `current` | An accepted and current property of the model or an existing artifact. |
+| `target` | Desired target behavior that is not yet guaranteed. |
+| `hypothesis` | A testable assumption. |
+| `open` | A decision or supporting evidence is missing. |
+| `demo-only` | Implemented for demonstration but not claimed as a production contract. |
+| `deprecated` | No longer applicable; a replacement should be identified. |
 
 ## Provenance
 
-Материальный ответ должен позволять понять, откуда взят claim: page/path, section, status и по возможности commit/ref. Browser-local block может хранить эти ссылки, но сам workspace state не является доказательством факта.
+A material answer should make it possible to identify where a claim came from: page/path, section, status, and, when possible, commit/ref. A browser-local block may store these references, but workspace state itself is not evidence for a fact.
 
-## Безопасная адаптация
+## Safe adaptation
 
-- authored blocks immutable;
-- local blocks рендерятся через `textContent`;
-- local analogy не меняет source of truth;
-- inference явно отделяется от repository-backed statements;
-- при недостатке evidence ответ становится `open`, а не правдоподобной выдумкой.
+- authored blocks are immutable;
+- local blocks are rendered through `textContent`;
+- a local analogy does not change the source of truth;
+- inference is explicitly separated from repository-backed statements;
+- when evidence is insufficient, the answer becomes `open` rather than a plausible invention.

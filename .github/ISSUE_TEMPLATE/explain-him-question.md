@@ -1,33 +1,33 @@
 ---
 name: Explain Him question
-about: Вопрос, противоречие или пробел, обнаруженный при объяснении
+about: A question, contradiction, or gap discovered while explaining the idea
 title: "[Explain Him question] "
 labels: "question"
 assignees: ""
 ---
 
-## Вопрос
+## Question
 
-<!-- Один конкретный вопрос к Оригинатору. -->
+<!-- One concrete question for the Originator. -->
 
-## Почему ответ важен
+## Why the answer matters
 
-<!-- Какое понимание или действие зависит от ответа. -->
+<!-- What understanding or action depends on the answer. -->
 
-## Что уже проверено
+## What has already been checked
 
-<!-- Page section, repository paths, commit/ref и существующие Issues. -->
+<!-- Page section, repository paths, commit/ref, and existing Issues. -->
 
-## Пробел или противоречие
+## Gap or contradiction
 
-<!-- Почему нельзя дать достаточно подтверждённый ответ. -->
+<!-- Why a sufficiently grounded answer cannot be given. -->
 
-## Предлагаемый статус
+## Proposed status
 
 `open`
 
 ## Privacy check
 
-- [ ] В Issue нет secrets, credentials и закрытых материалов.
-- [ ] Удалён лишний персональный контекст пользователя.
-- [ ] Пользователь подтвердил публикацию вопроса.
+- [ ] The Issue contains no secrets, credentials, or private material.
+- [ ] Unnecessary personal user context has been removed.
+- [ ] The user explicitly approved publication of the question.

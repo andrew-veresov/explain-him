@@ -6,7 +6,8 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-TEXT_SUFFIXES = {'.md', '.html', '.js', '.mjs', '.json', '.yaml', '.yml', '.py', '.txt'}
+TEXT_SUFFIXES = {'.md', '.html', '.css', '.js', '.mjs', '.json', '.yaml', '.yml', '.py', '.txt'}
+CYRILLIC_RE = re.compile(r'[\u0400-\u04FF]')
 REQUIRED = [
     'LICENSE', 'README.md', 'AGENTS.md', '00 Home.md', 'index.html', 'explain-him.yaml',
     'skills/explain-him/SKILL.md', 'skills/explain-him/skill.yaml',
@@ -56,10 +57,10 @@ def resolve_wikilink(source: Path, raw: str) -> bool:
     target = raw.split('|', 1)[0].split('#', 1)[0].strip()
     if not target:
         return True
-    candidate = (source.parent / target)
+    candidate = source.parent / target
     if candidate.suffix:
         return candidate.resolve().is_file()
-    return (candidate.with_suffix('.md')).resolve().is_file()
+    return candidate.with_suffix('.md').resolve().is_file()
 
 
 def main() -> int:
@@ -77,6 +78,8 @@ def main() -> int:
         except UnicodeDecodeError:
             continue
         rel = path.relative_to(ROOT)
+        if CYRILLIC_RE.search(text):
+            errors.append(f'{rel}: project text must be English; Cyrillic content found')
         for marker in FORBIDDEN_CONTENT:
             if marker in text:
                 errors.append(f'{rel}: forbidden public content marker {marker!r}')
@@ -91,6 +94,8 @@ def main() -> int:
     html = (ROOT / 'index.html').read_text(encoding='utf-8')
     parser = PageParser()
     parser.feed(html)
+    if '<html lang="en">' not in html:
+        errors.append('index.html: project page language must be English')
     if len(parser.block_ids) != len(set(parser.block_ids)):
         errors.append('index.html: duplicate data-eh-block-id values')
     unknown_slots = sorted(set(parser.slot_ids) - set(parser.block_ids))
@@ -105,7 +110,7 @@ def main() -> int:
 
     manifest = (ROOT / 'explain-him.yaml').read_text(encoding='utf-8')
     for expected in [
-        'repository: andrew-veresov/explain-him', 'root: .',
+        'repository: andrew-veresov/explain-him', 'root: .', 'language: en',
         'browser_readable_knowledge_bundle: none', 'webmcp_repository_access: forbidden',
         'confirmation_before_write: true'
     ]:
@@ -113,12 +118,15 @@ def main() -> int:
             errors.append(f'explain-him.yaml: missing invariant {expected!r}')
 
     agents = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
-    if 'Do not persist this skill' not in agents or 'explicit user confirmation' not in agents:
-        errors.append('AGENTS.md: missing repository-scope or confirmation rule')
+    for expected in ['Do not persist this skill', 'explicit user confirmation', 'Repository-authored content must be English']:
+        if expected not in agents:
+            errors.append(f'AGENTS.md: missing invariant {expected!r}')
 
     skill = (ROOT / 'skills/explain-him/SKILL.md').read_text(encoding='utf-8')
     if not skill.startswith('---\nname: explain-him\n'):
         errors.append('SKILL.md: invalid portable frontmatter')
+    if 'Repository-authored artifacts are English' not in skill:
+        errors.append('SKILL.md: missing English project-language rule')
 
     webmcp = (ROOT / 'runtime/webmcp.mjs').read_text(encoding='utf-8')
     for name in ALLOWED_TOOLS:
@@ -129,7 +137,7 @@ def main() -> int:
             errors.append(f'runtime/webmcp.mjs: forbidden registered tool {name}')
 
     question = (ROOT / 'question-template.md').read_text(encoding='utf-8')
-    if 'явно подтвердил публикацию' not in question:
+    if 'explicitly approved publication' not in question:
         errors.append('question-template.md: user confirmation checkbox is required')
 
     if errors:
