@@ -1,0 +1,37 @@
+schema_version: explain-him-skill.v1
+id: explain-him
+version: 0.1.0
+entrypoint: SKILL.md
+scope:
+  repository: andrew-veresov/explain-him
+  root: .
+  activation: repository-only
+capabilities:
+  - explain-from-authored-page
+  - deepen-from-repository
+  - status-aware-grounding
+  - issue-draft
+  - browser-local-visual-adaptation
+requires_personal_agent_tools:
+  - page-read
+  - repository-read
+optional_personal_agent_tools:
+  - repository-search
+  - github-issues-read
+  - github-issues-write-with-confirmation
+webmcp:
+  role: skill-delivery-and-ui-only
+  related_tools:
+    - get_explanation_context
+    - get_visible_explanation_state
+    - get_local_change_history
+    - focus_explanation_block
+    - add_local_explanation
+    - remove_local_explanation
+    - undo_last_local_change
+    - redo_local_change
+forbidden_webmcp_capabilities:
+  - knowledge-search
+  - repository-read
+  - answer-generation
+  - github-issues

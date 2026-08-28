@@ -1,0 +1,26 @@
+name: Public demo checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      - name: Check public boundaries and static integrity
+        run: python tools/check_public_demo.py
+      - name: Test browser-local workspace and WebMCP contract
+        run: node --test tests/workspace.test.mjs tests/webmcp.test.mjs
