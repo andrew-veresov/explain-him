@@ -22,19 +22,35 @@ Give the agent a link to this repository and ask it to explain the idea. The age
 2. read the current HTML page;
 3. inspect only the minimum repository sources required for deeper context;
 4. distinguish `current`, `target`, `hypothesis`, `open`, and `demo-only`;
-5. form and deliver the answer in its normal chat;
-6. use WebMCP only to synchronize the visual/browser-local layer;
-7. when evidence is insufficient, offer a minimized Issue draft and obtain confirmation before writing.
+5. form and ground the answer in its normal chat;
+6. decide whether a specialized presentation would materially improve understanding;
+7. if useful, resolve a trusted Presentation Capability and form a typed Presentation Artifact;
+8. use WebMCP only to synchronize the visual/browser-local layer;
+9. when evidence is insufficient, offer a minimized Issue draft and obtain confirmation before writing.
 
 ## Model
 
 ```text
 User <-> browser / personal agent
                     |
-          +---------+---------+
-          |                   |
-          v                   v
-  read page/repository   WebMCP UI-only tools
+          +---------+--------------------+
+          |                              |
+          v                              v
+  read page/repository          form grounded meaning
+                                         |
+                                         v
+                               Presentation Artifact
+                                         |
+                              +----------+----------+
+                              |                     |
+                              v                     v
+                       trusted capability     consumer-local tool
+                              |
+                              v
+                     personal representation
+                              |
+                              v
+                      WebMCP UI-only sync
                               |
                               v
 Originator-authored HTML + browser-local operations
@@ -47,51 +63,79 @@ Originator-authored HTML + browser-local operations
 
 ### Personal agent
 
-- owns the conversation and reasoning;
+- owns the conversation, reasoning, and grounding;
 - understands the question and desired depth;
 - reads the authored page and, when needed, the repository;
 - applies source precedence and statuses;
 - forms a grounded answer and provenance;
-- performs the GitHub Issue flow after user confirmation;
-- decides whether visual adaptation would help.
+- decides whether a Presentation Capability would help;
+- forms the typed Presentation Artifact before invoking an external presenter;
+- performs the GitHub Issue flow after user confirmation.
+
+### Presentation Capability
+
+A Presentation Capability is a pluggable ability to represent already-grounded meaning as a diagram, architecture map, workflow, timeline, graph, simulation, data visualization, or another specialized view.
+
+It does **not** own repository reasoning and does not become evidence. The Originator controls what may execute inside the trusted page; the Consumer may use their own local presentation tools outside that surface.
+
+Archify is included only as a reference `originator-approved` capability for technical views. It runs on the personal-agent side; its generated HTML is never injected directly into the Explain Him DOM.
 
 ### Explain Him page / WebMCP
 
-- presents the visual explanation;
+- presents the authored visual explanation;
 - delivers the Explain Him skill/context;
-- reports stable visual targets and local workspace state;
+- reports stable visual targets, presentation capabilities, and local workspace state;
 - focuses an authored block;
-- adds an already-formed answer as a local typed block;
+- adds an already-grounded typed Presentation Artifact to the browser-local layer;
 - supports remove, undo, and redo.
 
-WebMCP **does not** search knowledge, read the repository, form answers, create Issues, or provide a second chat interface.
+WebMCP **does not** search knowledge, read the repository, form answers, execute presentation reasoning, create Issues, or provide a second chat interface.
 
 ## Browser-local workspace
 
 The authored HTML remains immutable. Personalization is stored in the browser as a typed operation log:
 
 ```text
-Originator-authored HTML + browser-local operations = personalized visible page
+Originator-authored HTML + browser-local presentation operations = personalized visible page
 ```
+
+Workspace v2 stores generalized `add-presentation` / `remove-presentation` operations. Existing v1 `add-block` data is migrated to safe-text Presentation Artifacts.
 
 The implementation includes:
 
-- add/remove local blocks;
+- typed Presentation Artifacts with provenance;
+- capability trust/execution metadata;
 - IndexedDB with a memory fallback;
 - undo/redo;
 - JSON export;
 - confirmed reset;
 - safe DOM rendering through `textContent`;
-- WebMCP tools and accessible browser controls over the same workspace API.
+- WebMCP tools and accessible browser controls over the same workspace API;
+- compatibility wrappers for the previous block API.
 
 Cross-device sync, collaboration, private hosted storage, and operational guarantees belong to **Explain Him Pro**.
+
+## Presentation Capability v1
+
+The public reference registry currently contains:
+
+| Capability | Trust | Execution | Purpose |
+|---|---|---|---|
+| `explain-him-safe-text` | `builtin` | `embedded` | deterministic safe fallback |
+| `archify` | `originator-approved` | `personal-agent` | architecture, workflow, sequence, dataflow, lifecycle |
+
+Capability resolution prefers an explicit Consumer request when allowed, then the Originator recommendation, semantic match, runtime availability, and finally the safe fallback. Security policy may veto any candidate.
+
+The page never accepts arbitrary HTML or JavaScript as a Presentation Artifact.
 
 ## What is real and what is a target
 
 | Element | Status |
 |---|---|
-| Public repository, authored page, skill, knowledge, and resolutions | `current` artifacts |
-| Browser-local workspace and WebMCP UI tools on this page | `demo-only` implementation |
+| Public repository, authored page, skill, knowledge, resolutions | `current` artifacts |
+| Presentation Capability contract and reference registry | `current` reference implementation |
+| Browser-local workspace v2 and WebMCP UI tools on this page | `demo-only` implementation |
+| Archify adapter contract | `demo-only`; external execution depends on the personal-agent environment |
 | Native WebMCP `registerSkill()` | `target` until the proposal stabilizes |
 | Conversation in the user's browser/personal agent | `current` product boundary |
 | Embedded Explain Him chat | intentionally absent |
@@ -108,6 +152,8 @@ explain-him.yaml               machine-readable manifest
 skills/explain-him/            repository skill
 knowledge/                     public explanatory sources
 resolutions/                   accepted public decisions
+schemas/                       Presentation Capability / Artifact schemas
+runtime/presentation/          registry, policy checks, artifact validation
 runtime/                       browser-local + WebMCP runtime
 assets/                        UI styles and orchestration
 question-template.md           safe Issue draft
@@ -118,10 +164,10 @@ question-template.md           safe Issue draft
 
 ```bash
 python tools/check_public_demo.py
-node --test tests/workspace.test.mjs tests/webmcp.test.mjs
+node --test tests/workspace.test.mjs tests/webmcp.test.mjs tests/presentation.test.mjs
 ```
 
-The checks reject private dependencies, internal product contours, arbitrary HTML injection, WebMCP retrieval/answer tools, root-scope errors, and non-English Cyrillic content in project text files.
+The checks reject private dependencies, internal product contours, arbitrary HTML injection, untrusted presentation channels, WebMCP retrieval/answer tools, root-scope errors, and non-English Cyrillic content in project text files.
 
 ## Project language
 

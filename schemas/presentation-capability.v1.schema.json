@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://explain-him.dev/schemas/presentation-capability.v1.schema.json",
+  "title": "Explain Him Presentation Capability v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "provider", "trust", "execution", "accepts"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 120},
+    "provider": {"type": "string", "minLength": 1, "maxLength": 240},
+    "version": {"type": ["string", "null"], "maxLength": 80},
+    "trust": {"enum": ["builtin", "originator-approved", "consumer-local", "untrusted"]},
+    "execution": {"enum": ["embedded", "personal-agent", "consumer-local"]},
+    "accepts": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 80}
+    },
+    "fallback": {"type": "boolean", "default": false},
+    "source": {"type": ["string", "null"], "maxLength": 500}
+  }
+}
