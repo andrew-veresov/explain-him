@@ -53,8 +53,15 @@ export function createPresentationArtifact(input, { capabilities } = {}) {
   const execution = input.capability?.execution || registered?.execution;
   if (!TRUST_LEVELS.includes(trust)) throw new TypeError(`Unsupported capability trust: ${trust}`);
   if (!EXECUTION_MODES.includes(execution)) throw new TypeError(`Unsupported capability execution: ${execution}`);
-  if (registered && !registered.accepts.includes(type)) {
-    throw new TypeError(`Capability ${capabilityId} does not accept ${type}`);
+  if (registered) {
+    if (!registered.accepts.includes(type)) {
+      throw new TypeError(`Capability ${capabilityId} does not accept ${type}`);
+    }
+    if (trust !== registered.trust || execution !== registered.execution) {
+      throw new TypeError(`Capability ${capabilityId} trust/execution does not match the registry`);
+    }
+  } else if (!(trust === 'consumer-local' && execution === 'consumer-local')) {
+    throw new TypeError(`Unknown capability ${capabilityId} is allowed only as consumer-local`);
   }
   if (!isCapabilityUseAllowed({ id: capabilityId, trust, execution })) {
     throw new TypeError(`Capability ${capabilityId} is not allowed`);

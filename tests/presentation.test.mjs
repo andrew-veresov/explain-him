@@ -43,3 +43,31 @@ test('presentation artifact preserves provenance', () => {
   assert.equal(artifact.provenance.repositoryRefs[0].path, 'README.md');
   assert.equal(artifact.capability.id, 'archify');
 });
+
+test('unknown capability cannot self-assert originator approval', () => {
+  assert.throws(() => createPresentationArtifact({
+    type: 'graph',
+    capability: { id: 'unknown-renderer', trust: 'originator-approved', execution: 'embedded' },
+    content: { schema: 'unknown.v1', payload: {} },
+    fallback: { title: 'Graph', body: 'Fallback' }
+  }), /consumer-local/);
+});
+
+test('registered capability cannot change its execution mode', () => {
+  assert.throws(() => createPresentationArtifact({
+    type: 'architecture-map',
+    capability: { id: 'archify', trust: 'originator-approved', execution: 'embedded' },
+    content: { schema: 'archify.architecture.v1', payload: {} },
+    fallback: { title: 'Architecture', body: 'Fallback' }
+  }), /registry/);
+});
+
+test('unknown consumer-local capability may carry typed data and safe fallback', () => {
+  const artifact = createPresentationArtifact({
+    type: 'graph',
+    capability: { id: 'my-local-graph', trust: 'consumer-local', execution: 'consumer-local' },
+    content: { schema: 'consumer.graph.v1', payload: { nodes: [{ id: 'a' }] } },
+    fallback: { title: 'Local graph', body: 'Rendered outside the trusted surface.' }
+  });
+  assert.equal(artifact.capability.trust, 'consumer-local');
+});
