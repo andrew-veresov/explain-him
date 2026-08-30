@@ -381,6 +381,25 @@ export function focusAuthoredBlock(document, targetId) {
     if (node.dataset.ehBlockId === targetId) target = node;
   }
   if (!target) throw new RangeError(`Unknown authored target: ${targetId}`);
+  const panel = target.closest?.('[data-section-panel]');
+  const sectionId = panel?.dataset?.sectionPanel;
+  if (panel?.hidden && sectionId) {
+    for (const section of document.querySelectorAll('[data-section-panel]')) {
+      const active = section.dataset.sectionPanel === sectionId;
+      section.hidden = !active;
+      section.classList.toggle?.('is-active', active);
+    }
+    for (const tab of document.querySelectorAll('[data-section]')) {
+      const active = tab.dataset.section === sectionId;
+      tab.classList.toggle?.('is-active', active);
+      if (active) tab.setAttribute?.('aria-current', 'page');
+      else tab.removeAttribute?.('aria-current');
+    }
+    const currentFocus = document.getElementById?.('current-focus');
+    const activeTab = [...document.querySelectorAll('[data-section]')]
+      .find((tab) => tab.dataset.section === sectionId);
+    if (currentFocus && activeTab) currentFocus.textContent = activeTab.textContent.trim();
+  }
   target.classList.add('is-focused');
   target.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
   return { targetId };

@@ -19,6 +19,7 @@ function fakeNode(id, title) {
       contains(value) { return classes.has(value); }
     },
     querySelector() { return { textContent: title }; },
+    closest() { return null; },
     scrollIntoView() { this.scrolled = true; }
   };
 }
