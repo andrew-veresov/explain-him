@@ -18,12 +18,12 @@ function toolTitle(name) {
   return name.split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
 }
 
-function readOnlyTool(name, description, inputSchema, execute) {
+function readOnlyTool(name, description, inputSchema, execute, annotations = {}) {
   return {
     name,
     title: toolTitle(name),
     description,
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, ...annotations },
     inputSchema,
     execute
   };
@@ -54,7 +54,7 @@ function authoredTargetFromNode(node, detailed = false) {
   return {
     id: node.dataset.ehBlockId,
     title: normalizeText(heading, 100),
-    text: normalizeText(node.textContent, detailed ? 700 : 150)
+    text: normalizeText(node.textContent, detailed ? 700 : 120)
   };
 }
 
@@ -80,7 +80,7 @@ function getAuthoredPageContext(workspace, input = {}) {
   }
   const selected = targetId
     ? allNodes.filter((node) => node.dataset.ehBlockId === targetId)
-    : allNodes.slice(0, 10);
+    : allNodes.slice(0, 8);
 
   return {
     schemaVersion: 'explain-him-page-context.v1',
@@ -112,9 +112,13 @@ function summarizePersonalization(workspace) {
   };
 }
 
+function escapeAttributeValue(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
 function revealTarget(document, targetId) {
   if (!document?.querySelector) return;
-  const target = document.querySelector(`[data-eh-block-id="${CSS?.escape ? CSS.escape(targetId) : targetId}"]`);
+  const target = document.querySelector(`[data-eh-block-id="${escapeAttributeValue(targetId)}"]`);
   if (!target) return;
   const panel = target.closest?.('[data-section-panel]');
   const section = panel?.dataset?.sectionPanel;
@@ -190,7 +194,8 @@ export function createWebMcpTools(workspace) {
       'get_personalization_state',
       'Inspect the browser-local personal explanations and whether undo or redo is available. Use when the user asks what the agent changed on this page.',
       EMPTY_INPUT,
-      async () => summarizePersonalization(workspace)
+      async () => summarizePersonalization(workspace),
+      { untrustedContentHint: true }
     ),
     mutationTool(
       'focus_explanation',
@@ -216,6 +221,7 @@ export function createWebMcpTools(workspace) {
             description: 'Authored target ID returned by get_explanation_context.'
           },
           kind: {
+            type: 'string',
             enum: PERSONAL_EXPLANATION_KINDS,
             description: 'Presentation form that best matches the user request.'
           },
@@ -306,6 +312,7 @@ export function registerWebMcpTools(workspace, modelContext = null, options = {}
     supported: Boolean(resolved.modelContext),
     ok: false,
     verified: false,
+    verificationError: null,
     hostSource: resolved.source,
     standardHost: resolved.standard,
     expectedTools: [...EXPLAIN_HIM_WEBMCP_TOOLS],
@@ -343,7 +350,7 @@ export function registerWebMcpTools(workspace, modelContext = null, options = {}
         status.verifiedTools = status.expectedTools.filter((name) => names.includes(name));
         status.verified = status.expectedTools.every((name) => status.verifiedTools.includes(name));
       } catch (error) {
-        status.errors.push({ name: 'getTools', message: String(error?.message || error) });
+        status.verificationError = String(error?.message || error);
       }
     }
 
