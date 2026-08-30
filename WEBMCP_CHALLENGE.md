@@ -126,7 +126,7 @@ Evidence in the public repository:
 - **August 27, 2026** — public repository created;
 - **August 28, 2026** — first public demo with WebMCP and browser-local workspace: commit [`ea61e373`](https://github.com/andrew-veresov/explain-him/commit/ea61e373e5da16fbf0ed171d583b9503f3825cca);
 - **August 30, 2026** — standard `document.modelContext` Site Tools host fix: merge commit [`4c20e83b`](https://github.com/andrew-veresov/explain-him/commit/4c20e83bc4221c051841ec732b55bc38b9c847a3);
-- **August 30, 2026** — challenge-focused redesign on `feature/webmcp-challenge-ready`: smaller non-overlapping tool surface, live-page semantic context, host verification, judge flow, and WebMCP eval cases.
+- **August 30, 2026** — challenge-focused redesign in [PR #7](https://github.com/andrew-veresov/explain-him/pull/7): smaller non-overlapping tool surface, live-page semantic context, host verification, judge flow, and WebMCP eval cases.
 
 This file exists specifically to distinguish pre-existing product ideation from challenge-period WebMCP implementation work.
 
