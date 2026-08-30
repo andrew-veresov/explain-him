@@ -14,19 +14,34 @@ These instructions apply **only** while explaining the public repository `andrew
 
 Repository-authored content must be English, including documentation, UI copy, manifests, templates, resolutions, examples, code-facing text, and repository Issues prepared by an agent. The personal agent may answer the end user in the user's preferred language; this rule governs repository artifacts, not the conversation language.
 
-## Browser/WebMCP bootstrap
+## Browser / WebMCP flow
 
-When the page is opened in a WebMCP-capable browser, prefer the Explain Him skill delivered by the page. The descriptor contains workflow instructions, source-navigation context, Presentation Capability descriptors, and related UI tools; it contains no browser-readable knowledge bundle.
+When the page is open in a WebMCP-capable browser, use the page's Site Tools as the typed contract for current-page meaning and browser-local personalization.
 
-If native `registerSkill()` is unavailable, the page may expose the same descriptor through read-only compatibility tool `get_explain_him_skill`. For non-WebMCP operation, use `skills/explain-him/SKILL.md`.
+Start with `get_explanation_context` when the user asks what the idea means, when you need stable authored target IDs, or before choosing where to focus or add a personal explanation. This tool reads only meaning already authored into the live page; it is not repository retrieval.
+
+The public WebMCP tools are:
+
+- `get_explanation_context` — current authored page context;
+- `get_personalization_state` — browser-local additions and undo/redo state;
+- `focus_explanation` — show and focus one authored target;
+- `add_personal_explanation` — add a safe local analogy, example, summary, warning, or comparison;
+- `remove_personal_explanation` — remove one browser-local addition;
+- `undo_personalization` — undo the latest local change;
+- `redo_personalization` — redo a reverted local change.
+
+Do not look for a WebMCP `registerSkill()` API or a `get_explain_him_skill` tool. Repository-scoped instructions live in this file and `skills/explain-him/SKILL.md`.
+
+If Site Tools are unavailable, read the page normally and use the accessible browser controls over the same local workspace when useful.
 
 ## Source discovery
 
 1. Treat `index.html` as the Originator-authored explanation page and read it when it answers the user's question.
-2. If the page is insufficient, ambiguous, or deeper evidence/version/status is required, use the personal agent's own GitHub/repository integration.
-3. Read `explain-him.yaml` and the minimum relevant files under `knowledge/`.
-4. Check `resolutions/` for accepted clarifications that override older explanatory copy.
-5. Use `README.md` and `00 Home.md` for navigation and summary.
+2. When WebMCP is available, prefer `get_explanation_context` for structured meaning from that current page.
+3. If the page is insufficient, ambiguous, or deeper evidence/version/status is required, use the personal agent's own GitHub/repository integration.
+4. Read `explain-him.yaml` and the minimum relevant files under `knowledge/`.
+5. Check accepted files in `resolutions/` for clarifications that override older explanatory copy.
+6. Use `README.md` and `00 Home.md` for navigation and summary.
 
 Do not use browser-local presentations as canonical evidence.
 
@@ -50,7 +65,8 @@ A lower-priority source must not silently override a higher-priority source.
 - Do not present `target`, `hypothesis`, `open` or `demo-only` as implemented production behavior.
 - Attach page/repository provenance when the answer is material or potentially ambiguous.
 - Mark agent inference separately from source-backed statements.
-- Form and ground the answer before any Presentation Capability or WebMCP UI mutation.
+- Form and ground the answer before any Presentation Capability or WebMCP mutation.
+- When the user asks for a visual/local adaptation, make the browser change visible and then verify the resulting state when needed.
 
 ## Presentation Capability boundary
 
@@ -77,24 +93,23 @@ Archify is the reference external technical presenter. When available, use it on
 
 ## WebMCP boundary
 
-Explain Him WebMCP is **not** a retrieval, reasoning, or answer-generation layer.
+Explain Him WebMCP provides **current-page semantic context plus shared browser-local UI actions**. It is not a repository retrieval, claim-resolution, or answer-generation service.
 
 WebMCP may:
 
-- deliver the Explain Him skill/context;
-- report stable visual target IDs, Presentation Capability descriptors, and browser-local workspace state;
+- return structured meaning already present on the current authored page;
+- report stable authored target IDs and browser-local personalization state;
 - focus an authored visual block;
-- add an already-grounded typed browser-local Presentation Artifact;
-- remove local presentations;
-- support compatibility wrappers for old local explanation blocks;
-- undo/redo local changes.
+- add a safe browser-local personal explanation already formed by the agent;
+- remove browser-local personal explanations;
+- undo/redo browser-local changes.
 
 WebMCP must not:
 
 - search/read repository knowledge;
-- provide a browser-side knowledge index or bundle;
-- resolve claims or generate answers;
-- perform presentation reasoning;
+- provide a hidden browser-side knowledge index or bundle;
+- resolve claims or generate canonical answers;
+- perform repository reasoning;
 - inject arbitrary HTML/JavaScript;
 - search or create GitHub Issues;
 - modify Originator-authored blocks.

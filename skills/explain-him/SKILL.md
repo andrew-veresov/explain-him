@@ -1,13 +1,15 @@
 ---
 name: explain-him
-description: Explain Explain Him from the Originator-authored page and public repository; use Presentation Capabilities only for already-grounded representation and WebMCP only for skill delivery and browser-local UI synchronization.
+description: Explain Explain Him from the Originator-authored page and public repository; use WebMCP for current-page semantic context and safe browser-local personalization, and use Presentation Capabilities only after grounding.
 ---
 
 # Explain Explain Him
 
 ## Purpose
 
-Enable the user's existing personal agent to explain Explain Him. The repository contains an HTML explanation page prepared by the Originator and supporting public materials. The personal agent forms the answer by reading the page and, when needed, the repository through its own GitHub/repository integration. Presentation Capabilities specialize representation after grounding. WebMCP delivers this skill in browser flow and exposes only visual/presentation workspace operations.
+Enable the user's existing personal agent to explain Explain Him. The repository contains an HTML explanation page prepared by the Originator and supporting public materials. The personal agent forms the answer by reading the page and, when needed, the repository through its own GitHub/repository integration.
+
+When WebMCP is available, the current page exposes a typed semantic/action contract so the agent and human can share the same live explanation state.
 
 ## Scope and containment
 
@@ -29,17 +31,34 @@ Repository-authored artifacts are English, including documentation, UI copy, man
 The personal agent is responsible for:
 
 - understanding the user's question and desired depth;
-- reading the current Originator-authored HTML page when it contains enough information;
-- using its GitHub/repository integration when deeper context, versioning, status or evidence is needed;
+- reading structured current-page meaning through `get_explanation_context` when WebMCP is available;
+- reading the authored HTML page directly when needed;
+- using its GitHub/repository integration for deeper context, versioning, status, or evidence;
 - applying source precedence and claim-status rules;
 - forming the grounded answer and provenance;
 - deciding whether a specialized presentation would materially improve understanding;
 - forming a typed Presentation Artifact before invoking an external Presentation Capability;
 - searching or creating GitHub Issues when needed and allowed.
 
+### WebMCP: current-page meaning and shared local UI
+
+WebMCP is responsible for a small user-intent surface:
+
+- `get_explanation_context` — read structured meaning already authored into the live page;
+- `get_personalization_state` — inspect local additions and undo/redo state;
+- `focus_explanation` — show and focus an authored target;
+- `add_personal_explanation` — add a safe local analogy/example/summary/warning/comparison;
+- `remove_personal_explanation` — remove one local addition;
+- `undo_personalization` — undo the latest local change;
+- `redo_personalization` — redo a reverted local change.
+
+WebMCP must **not** search repository knowledge, resolve claims, generate canonical answers, inject arbitrary HTML/JavaScript, or access GitHub Issues.
+
+Do not depend on a `registerSkill()` WebMCP API or compatibility/meta tools. The repository skill is delivered by the repository itself; WebMCP exposes page capabilities.
+
 ### Presentation Capability: represent already-grounded meaning
 
-A Presentation Capability receives a typed Presentation Artifact. It may produce a diagram, architecture map, workflow, sequence, dataflow, lifecycle, timeline, graph, simulation, or other specialized representation.
+A Presentation Capability receives a typed Presentation Artifact. It may produce a diagram, architecture map, workflow, sequence, dataflow, lifecycle, timeline, graph, simulation, or another specialized representation.
 
 It must not independently become a knowledge source for Explain Him. Do not hand it unrestricted repository context as a second reasoning path. Preserve the personal agent's provenance and safe textual fallback.
 
@@ -57,80 +76,40 @@ Archify is the reference `originator-approved` / `personal-agent` capability for
 
 Consumer-local capabilities may be used in a consumer-controlled environment, but their output is not canonical evidence.
 
-### WebMCP: deliver skill and mutate only local UI
-
-WebMCP is responsible only for:
-
-- delivering this skill/context when the host supports WebMCP Skills;
-- exposing stable visual/presentation context;
-- focusing an authored visual block;
-- adding an already-grounded typed Presentation Artifact to the browser-local workspace;
-- persisting local changes through the page workspace;
-- removing local presentations and supporting undo/redo;
-- supporting the previous block API as a compatibility wrapper.
-
-WebMCP must **not** search the page or repository for knowledge, resolve claims, generate answers, perform presentation reasoning, execute repository discovery for a presenter, or access GitHub Issues.
-
 ## Source procedure
 
 1. Read the current explanation page first when it directly addresses the user's question.
-2. If the page is insufficient, ambiguous, or the user asks for implementation/status/evidence details, inspect `explain-him.yaml` and the minimum relevant repository sources.
-3. Apply precedence:
-   1. `resolutions/`;
+2. With WebMCP, call `get_explanation_context`; use its stable target IDs rather than guessing DOM structure.
+3. If the page is insufficient, ambiguous, or the user asks for implementation/status/evidence details, inspect `explain-him.yaml` and the minimum relevant repository sources.
+4. Apply precedence:
+   1. accepted `resolutions/`;
    2. `index.html` and explicit manifest claims;
    3. `knowledge/`;
    4. `README.md`.
-4. Distinguish `current`, `target`, `hypothesis`, `open` and `demo-only`.
-5. Form the grounded answer in the personal agent before any presentation or WebMCP mutation.
-6. Keep source references for important claims: page URL/path and repository path/ref/section/status when available.
-7. Answer in the normal personal-agent chat.
-8. If visual or interactive support helps, resolve a Presentation Capability and form its typed artifact.
-9. Use WebMCP only to synchronize a safe local representation/fallback into the page.
+5. Distinguish `current`, `target`, `hypothesis`, `open` and `demo-only`.
+6. Form the grounded answer before any Presentation Capability or WebMCP mutation.
+7. Keep source references for important claims.
+8. Answer in the normal personal-agent chat.
+9. If useful or requested, use a safe browser-local WebMCP personalization or a trusted Presentation Capability.
+
+## Personalization procedure
+
+1. Call `get_explanation_context` to identify the intended authored target.
+2. Use `focus_explanation` when the user wants navigation or emphasis.
+3. Use `add_personal_explanation` only after the local analogy/example/summary/warning/comparison has been formed.
+4. Use `get_personalization_state` when you need to verify what is currently local.
+5. Remove only IDs returned as browser-local presentations.
+6. Use undo/redo for reversible local collaboration.
+7. Never change or remove authored blocks.
 
 ## Presentation Artifact rules
 
 - Schema: `explain-him-presentation.v1`.
 - Include semantic type, capability id/trust/execution, typed `content.schema` + `content.payload`, safe fallback, provenance, and authorship metadata.
 - The artifact is data, never executable HTML/JavaScript.
-- Do not use payload fields that create executable HTML channels.
+- Never present a Presentation Capability output as new evidence.
 - Capability output never outranks repository evidence.
 - If capability execution fails, retain the chat answer and fall back safely.
-
-## WebMCP UI tools
-
-Primary presentation tools:
-
-- `get_explanation_context`;
-- `get_presentation_context`;
-- `get_visible_explanation_state`;
-- `get_local_change_history`;
-- `focus_explanation_block`;
-- `add_local_presentation`;
-- `remove_local_presentation`;
-- `undo_last_local_change`;
-- `redo_local_change`.
-
-Compatibility wrappers:
-
-- `add_local_explanation`;
-- `remove_local_explanation`.
-
-A compatibility tool `get_explain_him_skill` may exist only to return the same descriptor on hosts that do not implement `registerSkill()`.
-
-There must be no Explain Him WebMCP tools for page knowledge search, repository read/search, claim retrieval, answer generation, presentation reasoning or GitHub Issues.
-
-## Visual update procedure
-
-1. Read `get_explanation_context` for stable visual target IDs.
-2. Read `get_presentation_context` when a specialized representation is useful.
-3. Form and ground the Presentation Artifact outside WebMCP.
-4. Use `focus_explanation_block` for temporary navigation/highlight only.
-5. Use `add_local_presentation` for persistent typed local support.
-6. Check returned workspace state instead of assuming success.
-7. Never change or remove authored blocks.
-8. Remove only `local-*` presentations.
-9. Use undo/redo for local rollback.
-10. If the page reports memory mode, state that changes last only for the current session.
 
 ## Grounding rules
 
@@ -155,7 +134,7 @@ When the page and repository evidence are insufficient:
 ## Fallback order
 
 1. normal grounded chat answer + requested trusted Presentation Capability;
-2. normal grounded chat answer + safe-text local presentation;
+2. normal grounded chat answer + safe-text browser-local explanation;
 3. normal grounded chat answer + accessible Markdown visualization;
 4. normal grounded chat answer only.
 
@@ -163,6 +142,6 @@ When the page and repository evidence are insufficient:
 
 - If the current page is insufficient and repository retrieval is unavailable, say that the deeper answer cannot be grounded; do not ask WebMCP or a presenter to search instead.
 - If a Presentation Capability is unavailable or fails, keep the chat answer and use a safe fallback when useful.
-- If WebMCP is unavailable but source reading works, answer normally and use an agent-side or Markdown presentation fallback.
-- If a WebMCP mutation fails, keep the chat answer and report only the visualization failure.
+- If WebMCP is unavailable but source reading works, answer normally and use the accessible page controls or an agent-side fallback.
+- If a WebMCP mutation fails, keep the chat answer and report only the visualization/personalization failure.
 - Never present a plausible inference, local presentation, or capability output as an Originator-authored fact.
