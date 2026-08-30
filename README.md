@@ -25,7 +25,7 @@ Give the agent a link to this repository and ask it to explain the idea. The age
 5. form and ground the answer in its normal chat;
 6. decide whether a specialized presentation would materially improve understanding;
 7. if useful, resolve a trusted Presentation Capability and form a typed Presentation Artifact;
-8. use WebMCP only to synchronize the visual/browser-local layer;
+8. use WebMCP Site Tools to synchronize the visual/browser-local layer when the current host supports them, otherwise use the accessible browser-agent controls over the same workspace API;
 9. when evidence is insufficient, offer a minimized Issue draft and obtain confirmation before writing.
 
 ## Model
@@ -50,7 +50,7 @@ User <-> browser / personal agent
                      personal representation
                               |
                               v
-                      WebMCP UI-only sync
+               WebMCP Site Tool / browser-control sync
                               |
                               v
 Originator-authored HTML + browser-local operations
@@ -83,13 +83,27 @@ Archify is included only as a reference `originator-approved` capability for tec
 ### Explain Him page / WebMCP
 
 - presents the authored visual explanation;
-- delivers the Explain Him skill/context;
+- exposes the repository-scoped Explain Him bootstrap through the `get_explain_him_skill` WebMCP tool;
+- reports WebMCP availability and registered Site Tools through `get_webmcp_status`;
 - reports stable visual targets, presentation capabilities, and local workspace state;
 - focuses an authored block;
 - adds an already-grounded typed Presentation Artifact to the browser-local layer;
 - supports remove, undo, and redo.
 
+The current standard host is `document.modelContext`. `navigator.modelContext` is retained only as a legacy compatibility fallback. Explain Him does not depend on a non-standard `registerSkill()` API.
+
 WebMCP **does not** search knowledge, read the repository, form answers, execute presentation reasoning, create Issues, or provide a second chat interface.
+
+## Agent host compatibility
+
+| Host | Explain Him integration |
+|---|---|
+| ChatGPT desktop built-in browser | Native WebMCP/Site Tools through `document.modelContext`; this is the primary acceptance path. |
+| Google Chrome with WebMCP enabled by experimental flag or origin trial | Standard WebMCP tools register through `document.modelContext` and are available to WebMCP-aware agents. |
+| ChatGPT Chrome extension/sidebar | The page remains usable through page reading and accessible browser controls. OpenAI currently does not expose ChatGPT Site Tools in Chrome, so the sidebar cannot directly invoke the WebMCP tool surface yet. |
+| Browser without WebMCP | Accessible controls call the same browser-local workspace API. |
+
+For Desktop ChatGPT, Site Tools availability also depends on the account, selected model, and the **Enable site tools** browser permission. For Chrome WebMCP testing, use the current Chrome experimental flag or origin trial.
 
 ## Browser-local workspace
 
@@ -110,7 +124,9 @@ The implementation includes:
 - JSON export;
 - confirmed reset;
 - safe DOM rendering through `textContent`;
-- WebMCP tools and accessible browser controls over the same workspace API;
+- WebMCP Site Tools and accessible browser controls over the same workspace API;
+- standard `document.modelContext` host discovery with a legacy fallback;
+- a WebMCP diagnostics tool and repository-scoped bootstrap tool;
 - compatibility wrappers for the previous block API.
 
 Cross-device sync, collaboration, private hosted storage, and operational guarantees belong to **Explain Him Pro**.
@@ -134,12 +150,12 @@ The page never accepts arbitrary HTML or JavaScript as a Presentation Artifact.
 |---|---|
 | Public repository, authored page, skill, knowledge, resolutions | `current` artifacts |
 | Presentation Capability contract and reference registry | `current` reference implementation |
-| Browser-local workspace v2 and WebMCP UI tools on this page | `demo-only` implementation |
+| Browser-local workspace v2 and WebMCP Site Tools on this page | `demo-only` implementation |
+| Standard WebMCP host discovery through `document.modelContext` | `current` implementation |
 | Archify adapter contract | `demo-only`; external execution depends on the personal-agent environment |
-| Native WebMCP `registerSkill()` | `target` until the proposal stabilizes |
 | Conversation in the user's browser/personal agent | `current` product boundary |
 | Embedded Explain Him chat | intentionally absent |
-| Compatibility with a specific browser agent | `open` until real E2E validation |
+| Direct Site Tool invocation from the ChatGPT Chrome sidebar | external platform limitation; accessible browser controls are the compatibility path |
 | GitHub Issues as the only mass-market feedback UX | `hypothesis` |
 | A2UI | optional target, not a web-flow requirement |
 
@@ -167,7 +183,7 @@ python tools/check_public_demo.py
 node --test tests/workspace.test.mjs tests/webmcp.test.mjs tests/presentation.test.mjs
 ```
 
-The checks reject private dependencies, internal product contours, arbitrary HTML injection, untrusted presentation channels, WebMCP retrieval/answer tools, root-scope errors, and non-English Cyrillic content in project text files.
+The checks reject private dependencies, internal product contours, arbitrary HTML injection, untrusted presentation channels, WebMCP retrieval/answer tools, obsolete host wiring, root-scope errors, and non-English Cyrillic content in project text files.
 
 ## Project language
 

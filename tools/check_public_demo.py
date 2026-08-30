@@ -26,7 +26,8 @@ FORBIDDEN_RUNTIME_SNIPPETS = ['innerHTML', 'insertAdjacentHTML', 'eval(', 'new F
 ALLOWED_TOOLS = {
     'get_explanation_context', 'get_presentation_context', 'get_visible_explanation_state', 'get_local_change_history',
     'focus_explanation_block', 'add_local_presentation', 'remove_local_presentation',
-    'add_local_explanation', 'remove_local_explanation', 'undo_last_local_change', 'redo_local_change'
+    'add_local_explanation', 'remove_local_explanation', 'undo_last_local_change', 'redo_local_change',
+    'get_webmcp_status', 'get_explain_him_skill'
 }
 FORBIDDEN_TOOL_NAMES = {
     'search_knowledge', 'read_repository', 'search_repository', 'resolve_answer',
@@ -145,10 +146,16 @@ def main() -> int:
     webmcp = (ROOT / 'runtime/webmcp.mjs').read_text(encoding='utf-8')
     for name in ALLOWED_TOOLS:
         if f"'{name}'" not in webmcp:
-            errors.append(f'runtime/webmcp.mjs: missing UI tool {name}')
+            errors.append(f'runtime/webmcp.mjs: missing WebMCP tool {name}')
+    if "source: 'document.modelContext'" not in webmcp or "webmcpApi: 'document.modelContext'" not in webmcp:
+        errors.append('runtime/webmcp.mjs: standard document.modelContext host must be primary')
     for name in FORBIDDEN_TOOL_NAMES:
         if re.search(rf"register(?:Tool)?[^\n]*['\"]{re.escape(name)}['\"]", webmcp):
             errors.append(f'runtime/webmcp.mjs: forbidden registered tool {name}')
+
+    app = (ROOT / 'assets/app.mjs').read_text(encoding='utf-8')
+    if 'environment: globalThis' not in app:
+        errors.append('assets/app.mjs: WebMCP registration must use runtime host discovery')
 
     artifact = (ROOT / 'runtime/presentation/artifact.mjs').read_text(encoding='utf-8')
     for expected in ['DANGEROUS_KEYS', 'content.payload', 'explain-him-presentation.v1']:
