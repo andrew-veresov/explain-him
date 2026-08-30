@@ -20,7 +20,7 @@ PRIVATE_ONLY_FILES = {
 TEXT_SUFFIXES = {'.md', '.html', '.css', '.js', '.mjs', '.json', '.yaml', '.yml', '.py', '.txt'}
 CYRILLIC_RE = re.compile(r'[\u0400-\u04FF]')
 REQUIRED = [
-    'LICENSE', 'README.md', 'AGENTS.md', '00 Home.md', 'index.html', 'explain-him.yaml',
+    'LICENSE', 'README.md', 'AGENTS.md', '00 Home.md', 'index.html', 'explain-him.yaml', '.nojekyll',
     'WEBMCP_CHALLENGE.md',
     'skills/explain-him/SKILL.md', 'skills/explain-him/skill.yaml',
     'skills/explain-him-presentation/SKILL.md', 'schemas/explanation-block.v1.schema.json',
@@ -140,6 +140,11 @@ def main() -> int:
     ]:
         if expected not in html:
             errors.append(f'index.html: missing machine-readable bootstrap {expected!r}')
+    for skill_path in ['skills/explain-him/SKILL.md', 'skills/explain-him-presentation/SKILL.md']:
+        if skill_path not in html or not (ROOT / skill_path).is_file():
+            errors.append(f'index.html: missing raw skill bootstrap path {skill_path!r}')
+        if (ROOT / skill_path).with_suffix('.html').exists():
+            errors.append(f'{skill_path}: generated HTML substitute is forbidden; GitHub Pages must expose the raw Markdown route')
     if len(parser.block_ids) != len(set(parser.block_ids)):
         errors.append('index.html: duplicate data-eh-block-id values')
     unknown_slots = sorted(set(parser.slot_ids) - set(parser.block_ids))
@@ -177,7 +182,7 @@ def main() -> int:
             errors.append('distribution/public-facade.yml: missing private-to-public publication policy')
         else:
             policy = distribution.read_text(encoding='utf-8')
-            for expected in ['source: demo/tests/**', 'target: tests/**', 'source: demo/tools/check_public_demo.py', 'target: tools/check_public_demo.py', 'transactional-typed-presentation-operation-log']:
+            for expected in ['source: demo/.nojekyll', 'target: .nojekyll', 'source: demo/tests/**', 'target: tests/**', 'source: demo/tools/check_public_demo.py', 'target: tools/check_public_demo.py', 'transactional-typed-presentation-operation-log', 'github-pages-preserves-raw-skill-markdown']:
                 if expected not in policy:
                     errors.append(f'distribution/public-facade.yml: missing controlled facade rule {expected!r}')
 
