@@ -1,0 +1,63 @@
+[
+  {
+    "id": "understand-page",
+    "prompt": "What is this idea about? Explain it briefly.",
+    "expectedTool": "get_explanation_context",
+    "arguments": {},
+    "expectedEffect": "Agent grounds the answer in structured meaning from the current authored page."
+  },
+  {
+    "id": "deepen-target",
+    "prompt": "Explain the grounding section in more detail.",
+    "expectedTool": "get_explanation_context",
+    "arguments": { "targetId": "grounding-contract" },
+    "expectedEffect": "Agent gets a deeper semantic view of one authored target."
+  },
+  {
+    "id": "inspect-personalization",
+    "prompt": "What have you added to this page so far?",
+    "expectedTool": "get_personalization_state",
+    "arguments": {},
+    "expectedEffect": "Agent reports browser-local additions without treating them as authored knowledge."
+  },
+  {
+    "id": "focus-grounding",
+    "prompt": "Show me the part about grounding.",
+    "expectedTool": "focus_explanation",
+    "arguments": { "targetId": "grounding-contract" },
+    "expectedEffect": "The grounding target becomes visible and focused."
+  },
+  {
+    "id": "add-analogy",
+    "prompt": "Add a short analogy next to the mechanism so I can remember it.",
+    "expectedTool": "add_personal_explanation",
+    "arguments": {
+      "targetId": "flow-model",
+      "kind": "analogy",
+      "title": "A score and an arrangement",
+      "body": "The authored page is the score; your agent can add a local arrangement without rewriting the score."
+    },
+    "expectedEffect": "A browser-local Personal presentation appears beside the mechanism."
+  },
+  {
+    "id": "remove-local",
+    "prompt": "Remove that personal explanation.",
+    "expectedTool": "remove_personal_explanation",
+    "arguments": { "presentationId": "local-example-id" },
+    "expectedEffect": "Only the selected browser-local presentation is removed."
+  },
+  {
+    "id": "undo",
+    "prompt": "Undo my last personalization.",
+    "expectedTool": "undo_personalization",
+    "arguments": {},
+    "expectedEffect": "The previous browser-local state is restored."
+  },
+  {
+    "id": "redo",
+    "prompt": "Redo that change.",
+    "expectedTool": "redo_personalization",
+    "arguments": {},
+    "expectedEffect": "The undone browser-local change is restored."
+  }
+]
