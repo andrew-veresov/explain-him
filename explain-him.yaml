@@ -1,6 +1,6 @@
-schema_version: explain-him-explanation.v2
+schema_version: explain-him-explanation.v3
 id: explain-him-public-demo
-version: 0.2.0
+version: 0.3.0
 title: How Explain Him works
 language: en
 status: public-demo
@@ -20,8 +20,8 @@ skills:
     manifest: skills/explain-him/skill.yaml
     entrypoint: skills/explain-him/SKILL.md
     browser_delivery:
-      preferred: webmcp-register-skill
-      compatibility_fallback: webmcp-readonly-skill-tool
+      preferred: webmcp-authored-page-context
+      note: WebMCP exposes page meaning and shared UI actions; repository instructions remain repository-scoped.
     non_browser_delivery: repository-skill
 
 answer_runtime:
@@ -126,23 +126,28 @@ presentation:
     destructive_reset_requires_confirmation: true
 
 webmcp:
-  skill_delivery:
-    preferred: registerSkill
-    status: target-proposal
-    compatibility_fallback_tool: get_explain_him_skill
-    descriptor_contains_knowledge: false
+  status: current-demo
+  api: document.modelContext
+  registration: imperative-top-level-javascript
+  declarative_api_required: false
+  repository_access: forbidden
+  purpose: authored-page-context-and-shared-ui
+  tools:
+    - get_explanation_context
+    - get_personalization_state
+    - focus_explanation
+    - add_personal_explanation
+    - remove_personal_explanation
+    - undo_personalization
+    - redo_personalization
   allowed_capabilities:
-    - skill-delivery
-    - visual-context-read
-    - presentation-context-read
-    - local-workspace-read
+    - authored-page-context-read
+    - local-personalization-state-read
     - visual-focus
-    - local-presentation-add
-    - local-presentation-remove
-    - local-undo-redo
-  compatibility_capabilities:
-    - local-block-add
-    - local-block-remove
+    - local-explanation-add
+    - local-explanation-remove
+    - local-undo
+    - local-redo
   forbidden_capabilities:
     - knowledge-search
     - repository-read
@@ -183,15 +188,12 @@ claims:
   - id: archify-reference-capability
     status: demo-only
     evidence: knowledge/07-presentation-capabilities.md
-  - id: webmcp-is-ui-only
+  - id: webmcp-exposes-page-context-and-shared-ui
     status: current
     evidence: resolutions/2026-08-27-webmcp-skill-ui-runtime.md
-  - id: native-register-skill
-    status: target
-    evidence: resolutions/2026-08-27-webmcp-skill-ui-runtime.md
-  - id: universal-browser-agent-compatibility
+  - id: direct-chatgpt-chrome-sidebar-site-tools
     status: open
-    evidence: knowledge/06-browser-local-workspace.md
+    evidence: WEBMCP_CHALLENGE.md
   - id: github-issues-are-sufficient-feedback
     status: hypothesis
     evidence: knowledge/04-question-loop.md
