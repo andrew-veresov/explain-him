@@ -22,5 +22,5 @@ jobs:
           node-version: '22.x'
       - name: Check public boundaries and static integrity
         run: python tools/check_public_demo.py
-      - name: Test workspace, WebMCP and Presentation Capability contract
-        run: node --test tests/workspace.test.mjs tests/webmcp.test.mjs tests/presentation.test.mjs
+      - name: Test workspace, WebMCP, evals and Presentation Capability contract
+        run: node --test tests/*.test.mjs
