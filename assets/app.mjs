@@ -32,10 +32,54 @@ function downloadJson(text) {
   URL.revokeObjectURL(url);
 }
 
+function make(tag, text, className = '') {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function installWebMcpDemoCard() {
+  if (byId('webmcp-demo-card')) return;
+  const anchor = document.querySelector('[data-eh-local-slot="flow-model"]')
+    || document.querySelector('[data-eh-block-id="flow-model"]');
+  if (!anchor?.parentNode) return;
+
+  const card = make('section', undefined, 'browser-agent-note');
+  card.id = 'webmcp-demo-card';
+  card.dataset.webmcpDemo = 'challenge';
+  const heading = make('strong', 'Try the WebMCP human–agent flow');
+  const copy = make('p', 'In a WebMCP-capable browser, ask your agent to use the page itself as a shared explanation surface.');
+  const prompts = make('ol');
+  for (const prompt of [
+    'Explain this idea in one paragraph, then add a short analogy next to the mechanism.',
+    'Focus the part about grounding.',
+    'Undo my last personalization.'
+  ]) {
+    prompts.append(make('li', prompt));
+  }
+  const statusLine = make('p');
+  statusLine.append(make('strong', 'Site Tools: '));
+  const status = make('span', 'Checking WebMCP host…');
+  status.id = 'webmcp-status-hero';
+  status.setAttribute('role', 'status');
+  status.setAttribute('aria-live', 'polite');
+  statusLine.append(status);
+  card.append(heading, copy, prompts, statusLine);
+  anchor.parentNode.insertBefore(card, anchor.nextSibling);
+}
+
+function setWebMcpStatusText(text) {
+  if (byId('webmcp-status')) byId('webmcp-status').textContent = text;
+  if (byId('webmcp-status-hero')) byId('webmcp-status-hero').textContent = text;
+}
+
 function publishWebMcpStatus(registration) {
   globalThis.explainHimWebMcp = registration;
   document.documentElement.dataset.webmcpState = registration.supported ? 'detected' : 'unavailable';
   document.documentElement.dataset.webmcpHost = registration.hostSource || 'none';
+  document.documentElement.dataset.webmcpApi = 'document.modelContext';
+  document.documentElement.dataset.webmcpTools = registration.expectedTools.join(',');
 }
 
 function dispatchWebMcpReady(registration) {
@@ -44,13 +88,17 @@ function dispatchWebMcpReady(registration) {
     detail: {
       supported: registration.supported,
       ok: registration.ok,
+      verified: registration.verified,
       hostSource: registration.hostSource,
-      registeredTools: [...registration.registered]
+      registeredTools: [...registration.registered],
+      verifiedTools: [...registration.verifiedTools]
     }
   }));
 }
 
 async function main() {
+  installWebMcpDemoCard();
+
   for (const tab of document.querySelectorAll('[data-section]')) {
     tab.addEventListener('click', () => activateSection(tab.dataset.section));
   }
@@ -115,34 +163,36 @@ async function main() {
   });
   byId('history-close')?.addEventListener('click', () => byId('history-dialog').close());
 
-  const registration = registerWebMcpTools(workspace, null, {
-    environment: globalThis,
-    pageUrl: globalThis.location?.href,
-    repository: 'andrew-veresov/explain-him'
-  });
+  const registration = registerWebMcpTools(workspace, null, { environment: globalThis });
   publishWebMcpStatus(registration);
 
-  const status = byId('webmcp-status');
   if (!registration.supported) {
-    if (status) status.textContent = 'WebMCP host not detected · browser-agent controls available';
+    setWebMcpStatusText('WebMCP host not detected · accessible browser controls remain available');
     dispatchWebMcpReady(registration);
     return;
   }
 
-  if (status) status.textContent = `WebMCP detected via ${registration.hostSource} · registering Site Tools…`;
+  setWebMcpStatusText(`WebMCP detected via ${registration.hostSource} · registering ${registration.expectedTools.length} Site Tools…`);
   await registration.ready;
-  document.documentElement.dataset.webmcpState = registration.ok ? 'ready' : 'partial';
-  if (status) {
-    status.textContent = registration.ok
-      ? `WebMCP ready · ${registration.registered.length} Site Tools · ${registration.hostSource}`
-      : `WebMCP partial · ${registration.registered.length}/${registration.expectedTools.length} Site Tools · ${registration.hostSource}`;
+
+  const state = registration.verified ? 'verified' : registration.ok ? 'ready' : 'partial';
+  document.documentElement.dataset.webmcpState = state;
+  document.documentElement.dataset.webmcpVerified = String(registration.verified);
+  document.documentElement.dataset.webmcpRegistered = registration.registered.join(',');
+  document.documentElement.dataset.webmcpVerifiedTools = registration.verifiedTools.join(',');
+
+  if (registration.verified) {
+    setWebMcpStatusText(`WebMCP verified · ${registration.verifiedTools.length}/${registration.expectedTools.length} Site Tools · ${registration.hostSource}`);
+  } else if (registration.ok) {
+    setWebMcpStatusText(`WebMCP ready · ${registration.registered.length} Site Tools · ${registration.hostSource}`);
+  } else {
+    setWebMcpStatusText(`WebMCP partial · ${registration.registered.length}/${registration.expectedTools.length} Site Tools · ${registration.hostSource}`);
   }
   dispatchWebMcpReady(registration);
 }
 
 main().catch((error) => {
   console.error(error);
-  const status = byId('webmcp-status');
-  if (status) status.textContent = `Initialization error: ${error.message}`;
+  setWebMcpStatusText(`Initialization error: ${error.message}`);
   document.documentElement.dataset.webmcpState = 'error';
 });
