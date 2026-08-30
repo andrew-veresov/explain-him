@@ -125,6 +125,8 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .conversation-panel .agent-action-form { margin: 0 14px 14px; max-height: 390px; overflow: auto; }
 
 .source-drawer { position: fixed; inset: 68px 0 0 auto; width: min(420px, 92vw); background: white; border-left: 1px solid var(--line); box-shadow: var(--shadow); padding: 22px; z-index: 30; overflow: auto; }
+.source-drawer-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.source-drawer-heading h2 { margin: 0; }
 .source-drawer li { margin: 8px 0; }
 dialog { width: min(760px, 92vw); border: 1px solid var(--line); border-radius: 16px; padding: 0; box-shadow: var(--shadow); }
 dialog::backdrop { background: rgba(24,32,43,.45); }

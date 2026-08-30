@@ -41,11 +41,13 @@ async function main() {
   }
 
   const sourceToggle = byId('source-toggle');
-  sourceToggle?.addEventListener('click', () => {
+  function setSourceDrawerOpen(open) {
     const drawer = byId('source-drawer');
-    drawer.hidden = !drawer.hidden;
-    sourceToggle.setAttribute('aria-expanded', String(!drawer.hidden));
-  });
+    drawer.hidden = !open;
+    sourceToggle?.setAttribute('aria-expanded', String(open));
+  }
+  sourceToggle?.addEventListener('click', () => setSourceDrawerOpen(byId('source-drawer')?.hidden));
+  byId('source-close')?.addEventListener('click', () => setSourceDrawerOpen(false));
 
   const canonicalIds = [...document.querySelectorAll('[data-eh-block-id]')].map((node) => node.dataset.ehBlockId);
   const workspace = await createExplanationWorkspace({
