@@ -76,7 +76,7 @@ Use the minimum relevant files:
 3. relevant files under `knowledge/`;
 4. `README.md` and navigation material.
 
-Exclude `tests/`, `tools/`, and `.github/` from normal product knowledge unless the user explicitly asks about implementation/testing.
+Exclude `tests/`, `tools/`, `.github/`, and `evaluation/` from normal product knowledge unless the user explicitly asks about implementation/testing. Do not read evaluation fixtures during an ordinary explanation.
 
 ## Source precedence
 
@@ -115,7 +115,7 @@ For each user question:
 6. Form the answer in the user's preferred language.
 7. Attach provenance for material claims that will be embedded into the page.
 8. Answer in the normal personal-agent chat first.
-9. If a visual/page-local explanation would help, pass the grounded result to the presentation skill.
+9. If the question exposes a visible ambiguity, terminology inconsistency, confusing text, diagram, structure, or the user asks to see the result on the page, page adaptation is required when a Site Tool is available. Pass the grounded result to the presentation skill.
 10. When the user benefits from a walkthrough, focus the relevant authored target after applying the grounded block and continue the explanation in chat.
 
 Do not call `apply_explanation` before the meaning is grounded.
@@ -144,7 +144,7 @@ Use browser-local presentation when one or more are true:
 - the answer benefits from comparison, flow, timeline, concept map, architecture, or a highlighted insight;
 - the user is exploring the idea iteratively and persistent local context will reduce repetition.
 
-Do not embed every conversational answer. The page should remain selective and useful.
+Do not embed every conversational answer. The page should remain selective and useful. A correction to what the user can currently see is the exception: deliver that correction to the personalized layer when Site Tools are available.
 
 Then read and follow `skills/explain-him-presentation/SKILL.md`.
 
@@ -171,5 +171,6 @@ WebMCP is never the GitHub Issue gateway.
 
 - If GitHub retrieval is unavailable and the page is insufficient, say the deeper answer cannot be grounded.
 - If presentation fails, keep the conversational answer; presentation failure must not destroy the answer.
-- If WebMCP is unavailable, answer normally and use accessible page controls or an agent-side presentation fallback if helpful.
+- In Chrome sidebar, treat missing WebMCP as a chat-only fallback: answer normally and never claim the page changed. Explain that the full Site Tools flow requires a supported ChatGPT Desktop built-in browser surface.
+- If WebMCP is unavailable for another reason, answer normally and use accessible page controls or an agent-side presentation fallback if helpful.
 - Never present local personalization or external presentation output as Originator-authored knowledge.

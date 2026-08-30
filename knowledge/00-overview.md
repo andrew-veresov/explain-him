@@ -36,7 +36,7 @@ flowchart LR
 2. **Authored page** – a visual explanation prepared by the Originator.
 3. **Bootstrap** – `README.md`, `AGENTS.md`, the portable skill, and the manifest.
 4. **Knowledge and resolutions** – deeper context, statuses, provenance, and accepted clarifications.
-5. **WebMCP Site Tools** – repository/skill/target discovery plus safe typed add/remove/focus operations.
+5. **WebMCP Site Tools** – repository/skill/target discovery plus safe typed add/replace/update/remove/focus operations.
 6. **User's personal agent** – the primary conversational and reasoning interface.
 7. **GitHub Issues** – the confirmed feedback loop for new questions.
 

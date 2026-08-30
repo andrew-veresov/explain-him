@@ -39,6 +39,7 @@ knowledge:
     - knowledge
     - README.md
   excluded_paths:
+    - evaluation
     - tests
     - tools
     - .github
@@ -107,10 +108,10 @@ presentation:
       output_embedding: translate-to-safe-typed-block
   browser_local_workspace:
     status: demo-only
-    schema_version: explain-him-local-workspace.v2
-    state_model: typed-presentation-operation-log
+    schema_version: explain-him-local-workspace.v3
+    state_model: transactional-typed-presentation-operation-log
     authored_layer: immutable
-    durable_operations: [add-presentation, remove-presentation]
+    durable_operations: [add-presentation, update-presentation, remove-presentation]
     persistence: indexeddb-with-memory-fallback
     renderer: safe-typed-dom
     undo_redo: human-control
@@ -133,13 +134,20 @@ webmcp:
     - typed-block-schema-location
     - authored-insertion-targets
     - browser-local-block-ids
+    - absolute-repository-and-skill-urls
+    - workspace-revision
+    - replaceable-semantic-targets
   apply_operations:
     - add
+    - replace
+    - update
     - remove
     - focus
   allowed_capabilities:
     - integration-contract-read
     - typed-local-block-add
+    - typed-local-block-replace
+    - typed-local-block-update
     - typed-local-block-remove
     - authored-target-focus
   forbidden_capabilities:
@@ -164,6 +172,11 @@ question_loop:
   confirmation_before_write: true
   minimize_personal_context: true
   repository_language: en
+
+evaluation:
+  corpus: evaluation
+  product_knowledge: false
+  release_gating: scripted
 
 claims:
   - id: repository-is-public-source-of-truth

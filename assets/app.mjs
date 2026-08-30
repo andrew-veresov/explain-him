@@ -12,6 +12,7 @@ function activateSection(name) {
     const active = tab.dataset.section === name;
     tab.classList.toggle('is-active', active);
     tab.setAttribute('aria-selected', String(active));
+    tab.tabIndex = active ? 0 : -1;
   }
   for (const panel of document.querySelectorAll('[data-section-panel]')) {
     const active = panel.dataset.sectionPanel === name;
@@ -71,8 +72,6 @@ function installWebMcpDemoCard() {
   statusLine.append(make('strong', 'Site Tools: '));
   const status = make('span', 'Checking WebMCP host…');
   status.id = 'webmcp-status-hero';
-  status.setAttribute('role', 'status');
-  status.setAttribute('aria-live', 'polite');
   statusLine.append(status);
   card.append(heading, copy, prompts, statusLine);
   anchor.parentNode.insertBefore(card, anchor.nextSibling);
@@ -109,21 +108,50 @@ async function main() {
   refreshWebMcpCopy();
   installWebMcpDemoCard();
 
-  for (const tab of document.querySelectorAll('[data-section]')) {
+  const sectionTabs = [...document.querySelectorAll('[data-section]')];
+  for (const tab of sectionTabs) {
     tab.addEventListener('click', () => activateSection(tab.dataset.section));
+    tab.addEventListener('keydown', (event) => {
+      const current = sectionTabs.indexOf(tab);
+      const delta = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? sectionTabs.length - 1 : delta ? (current + delta + sectionTabs.length) % sectionTabs.length : null;
+      if (next === null) return;
+      event.preventDefault();
+      const selected = sectionTabs[next];
+      activateSection(selected.dataset.section);
+      selected.focus();
+    });
   }
   for (const button of document.querySelectorAll('[data-open-section]')) {
     button.addEventListener('click', () => activateSection(button.dataset.openSection));
   }
 
   const sourceToggle = byId('source-toggle');
-  function setSourceDrawerOpen(open) {
+  let sourceOpener = null;
+  function setSourceDrawerOpen(open, { restoreFocus = false } = {}) {
     const drawer = byId('source-drawer');
+    if (!drawer) return;
     drawer.hidden = !open;
     sourceToggle?.setAttribute('aria-expanded', String(open));
+    if (open) {
+      sourceOpener = sourceToggle;
+      queueMicrotask(() => byId('source-close')?.focus());
+    } else if (restoreFocus) {
+      sourceOpener?.focus();
+      sourceOpener = null;
+    }
   }
-  sourceToggle?.addEventListener('click', () => setSourceDrawerOpen(byId('source-drawer')?.hidden));
-  byId('source-close')?.addEventListener('click', () => setSourceDrawerOpen(false));
+  sourceToggle?.addEventListener('click', () => {
+    const opening = byId('source-drawer')?.hidden;
+    setSourceDrawerOpen(opening, { restoreFocus: !opening });
+  });
+  byId('source-close')?.addEventListener('click', () => setSourceDrawerOpen(false, { restoreFocus: true }));
+  byId('source-drawer')?.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setSourceDrawerOpen(false, { restoreFocus: true });
+    }
+  });
 
   const canonicalIds = [...document.querySelectorAll('[data-eh-block-id]')].map((node) => node.dataset.ehBlockId);
   const workspace = await createExplanationWorkspace({
@@ -134,6 +162,20 @@ async function main() {
   });
   globalThis.explainHimWorkspace = workspace;
 
+  if (!byId('agent-placement')) {
+    const kindLabel = byId('agent-kind')?.closest('label');
+    if (kindLabel?.parentNode) {
+      const label = document.createElement('label');
+      label.textContent = 'Placement';
+      const select = document.createElement('select');
+      select.id = 'agent-placement';
+      for (const [value, text] of [['after', 'Add beside'], ['replace', 'Replace locally']]) {
+        const option = document.createElement('option'); option.value = value; option.textContent = text; select.append(option);
+      }
+      label.append(select); kindLabel.parentNode.insertBefore(label, kindLabel);
+    }
+  }
+
   byId('agent-action-form')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const feedback = byId('agent-action-feedback');
@@ -141,13 +183,14 @@ async function main() {
       const targetId = byId('agent-target').value;
       await workspace.addLocalBlock({
         targetId,
+        placement: byId('agent-placement')?.value || 'after',
         kind: byId('agent-kind').value,
         title: byId('agent-title').value,
         body: byId('agent-body').value,
         actor: { kind: 'agent', channel: 'browser-control' },
         provenance: { sourceBlockIds: [targetId], repositoryRefs: [] }
       });
-      feedback.textContent = 'Added to the browser-local workspace.';
+      feedback.textContent = byId('agent-placement')?.value === 'replace' ? 'Replaced locally in the personalized view.' : 'Added to the browser-local workspace.';
     } catch (error) {
       feedback.textContent = String(error?.message || error);
     }
@@ -162,6 +205,9 @@ async function main() {
 
   byId('workspace-undo')?.addEventListener('click', () => workspace.undo());
   byId('workspace-redo')?.addEventListener('click', () => workspace.redo());
+  for (const button of document.querySelectorAll('[data-workspace-view]')) {
+    button.addEventListener('click', () => workspace.setViewMode(button.dataset.workspaceView));
+  }
   byId('workspace-export')?.addEventListener('click', () => downloadJson(workspace.exportJson()));
   byId('workspace-reset')?.addEventListener('click', async () => {
     if (globalThis.confirm('Remove all browser-local explanations and restore the original page?')) {
@@ -169,17 +215,22 @@ async function main() {
     }
   });
 
-  byId('workspace-history-open')?.addEventListener('click', () => {
+  let historyOpener = null;
+  const historyDialog = byId('history-dialog');
+  byId('workspace-history-open')?.addEventListener('click', (event) => {
+    historyOpener = event.currentTarget;
     byId('history-output').textContent = JSON.stringify(workspace.getLocalChangeHistory(), null, 2);
-    byId('history-dialog').showModal();
+    historyDialog?.showModal();
+    queueMicrotask(() => byId('history-close')?.focus());
   });
-  byId('history-close')?.addEventListener('click', () => byId('history-dialog').close());
+  byId('history-close')?.addEventListener('click', () => historyDialog?.close());
+  historyDialog?.addEventListener('close', () => { historyOpener?.focus(); historyOpener = null; });
 
   const registration = registerWebMcpTools(workspace, null, { environment: globalThis });
   publishWebMcpStatus(registration);
 
   if (!registration.supported) {
-    setWebMcpStatusText('WebMCP host not detected · accessible browser controls remain available');
+    setWebMcpStatusText('WebMCP host not detected · no Site Tools mutation was performed; accessible browser controls remain available');
     dispatchWebMcpReady(registration);
     return;
   }

@@ -16,7 +16,7 @@ typed local operation log
 personalized visible DOM
 ```
 
-The personal agent does not receive arbitrary access to HTML. `get_explanation_contract` exposes stable authored targets and browser-local block IDs. `apply_explanation` can add a safe typed local block, remove only a local block, or focus an authored target. Undo/redo remain human controls.
+The personal agent does not receive arbitrary access to HTML. `get_explanation_contract` exposes stable authored targets and browser-local block IDs. `apply_explanation` can add, locally replace, update, remove, or focus safe typed results. Undo/redo remain human controls.
 
 ## Persistence
 

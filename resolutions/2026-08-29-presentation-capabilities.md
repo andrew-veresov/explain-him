@@ -16,4 +16,4 @@ Accepted resolution:
 5. Presentation Artifacts never carry executable HTML or JavaScript for direct DOM injection.
 6. External capabilities run agent-side unless an embedded implementation is explicitly trusted and bundled.
 7. Archify is a reference `originator-approved` / `personal-agent` capability, not an Explain Him dependency.
-8. Browser-local workspace v2 stores generalized presentations and migrates v1 blocks to safe-text artifacts.
+8. Browser-local workspace v3 stores transactional generalized presentations and migrates v1/v2 state to safe-text artifacts.

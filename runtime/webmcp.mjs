@@ -1,625 +1,89 @@
-export const EXPLAIN_HIM_WEBMCP_TOOLS = Object.freeze([
-  'get_explanation_contract',
-  'apply_explanation'
-]);
+import { createAddPresentationOperation, createRemovePresentationOperation, createUpdatePresentationOperation } from './workspace.mjs';
 
-// Compatibility export for tests/code that groups the public WebMCP surface as UI tools.
+export const EXPLAIN_HIM_WEBMCP_TOOLS = Object.freeze(['get_explanation_contract', 'apply_explanation']);
 export const EXPLAIN_HIM_UI_TOOLS = EXPLAIN_HIM_WEBMCP_TOOLS;
-
-export const EXPLANATION_BLOCK_TYPES = Object.freeze([
-  'callout', 'comparison', 'workflow', 'timeline', 'diagram'
-]);
-
+export const EXPLANATION_BLOCK_TYPES = Object.freeze(['callout', 'comparison', 'workflow', 'timeline', 'diagram']);
 const REPOSITORY = 'andrew-veresov/explain-him';
 const REPOSITORY_URL = `https://github.com/${REPOSITORY}`;
-const SKILL_PATH = 'skills/explain-him/SKILL.md';
-const SKILL_URL = `${REPOSITORY_URL}/blob/main/${SKILL_PATH}`;
-const PRESENTATION_SKILL_PATH = 'skills/explain-him-presentation/SKILL.md';
-const PRESENTATION_SKILL_URL = `${REPOSITORY_URL}/blob/main/${PRESENTATION_SKILL_PATH}`;
-const BLOCK_SCHEMA_PATH = 'schemas/explanation-block.v1.schema.json';
-const BLOCK_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/${BLOCK_SCHEMA_PATH}`;
-const EMPTY_INPUT = Object.freeze({ type: 'object', properties: {}, additionalProperties: false });
-
-function toolTitle(name) {
-  return name.split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
+const SKILLS = Object.freeze([
+  { id: 'explain-him', responsibility: 'grounding-and-repository-retrieval', path: 'skills/explain-him/SKILL.md', url: `${REPOSITORY_URL}/blob/main/skills/explain-him/SKILL.md` },
+  { id: 'explain-him-presentation', responsibility: 'typed-page-presentation-and-guided-focus', path: 'skills/explain-him-presentation/SKILL.md', url: `${REPOSITORY_URL}/blob/main/skills/explain-him-presentation/SKILL.md` }
+]);
+const clone = (value) => JSON.parse(JSON.stringify(value));
+function required(value, field, max = 500) { if (typeof value !== 'string' || !value.trim()) throw new TypeError(`${field} must be a non-empty string`); if (value.trim().length > max) throw new RangeError(`${field} exceeds ${max} characters`); return value.trim(); }
+function optional(value, max = 500) { return value === undefined || value === null || value === '' ? null : required(value, 'optional text', max); }
+function titleFor(name) { return name.split('_').map((word) => word[0].toUpperCase() + word.slice(1)).join(' '); }
+function targetDescriptors(workspace) { const nodes = workspace.document?.querySelectorAll?.('[data-eh-block-id]'); if (!nodes) return (workspace.getContext?.().authoredTargetIds || []).map((id) => ({ id, title: id, replaceable: true, acceptedTypes: [...EXPLANATION_BLOCK_TYPES] })); return [...nodes].map((node) => ({ id: node.dataset.ehBlockId, title: String(node.querySelector?.('h1,h2,h3,h4,strong')?.textContent || node.dataset.ehBlockId).trim().slice(0, 120), replaceable: node.dataset.ehReplaceable !== 'false', acceptedTypes: [...EXPLANATION_BLOCK_TYPES] })); }
+function localDescriptors(workspace) { return (workspace.getVisibleState?.().presentations || []).map((item) => ({ id: item.id, targetId: item.targetId, placement: item.placement, type: item.artifact?.type, title: item.artifact?.fallback?.title, updatedAt: item.updatedAt })); }
+function contractFor(workspace) { const base = workspace.getContext?.() || {}; return { schemaVersion: 'explain-him-webmcp-contract.v2', explanationId: base.explanationId || null, baseRevision: base.baseRevision || null, workspaceRevision: base.workspaceRevision ?? 0, repository: { fullName: REPOSITORY, url: REPOSITORY_URL }, skills: SKILLS, skillLoadOrder: SKILLS.map((skill) => skill.id), instruction: 'Call this contract first. Load the grounding skill, ground the answer with the page and repository when necessary, then load the presentation skill before applying a visible page adaptation.', blockSchema: { path: 'schemas/explanation-block.v1.schema.json', url: `${REPOSITORY_URL}/blob/main/schemas/explanation-block.v1.schema.json`, types: [...EXPLANATION_BLOCK_TYPES] }, targets: targetDescriptors(workspace), localBlocks: localDescriptors(workspace), applyOperations: ['add', 'replace', 'update', 'remove', 'focus'], authoredLayerMutable: false, repositoryAccessViaWebMcp: false }; }
+function source(value) { if (!value || typeof value !== 'object') throw new TypeError('source must be an object'); return { repository: optional(value.repository, 200) || REPOSITORY, path: required(value.path, 'sources.path', 500), ref: optional(value.ref, 160), section: optional(value.section, 300), status: optional(value.status, 40) }; }
+function sources(value) { return value === undefined ? [] : Array.isArray(value) && value.length <= 20 ? value.map(source) : (() => { throw new TypeError('sources must contain 0 to 20 entries'); })(); }
+function safeObject(value, field) { if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError(`${field} must be an object`); for (const key of Object.keys(value)) if (['html', 'innerhtml', 'outerhtml', 'srcdoc', 'script', 'javascript', 'svg', 'selector'].includes(key.toLowerCase())) throw new TypeError(`${field}.${key} is forbidden`); return value; }
+function validateBlock(input) {
+  const block = safeObject(input, 'block'); const type = required(block.type, 'block.type', 40); if (!EXPLANATION_BLOCK_TYPES.includes(type)) throw new TypeError(`Unsupported explanation block type: ${type}`); const title = required(block.title, 'block.title', 160); const refs = sources(block.sources);
+  if (type === 'callout') return { type, title, body: required(block.body, 'block.body', 5000), tone: ['neutral', 'example', 'warning', 'insight'].includes(block.tone) ? block.tone : 'neutral', sources: refs };
+  if (type === 'comparison') { if (!Array.isArray(block.columns) || block.columns.length < 2 || block.columns.length > 4) throw new TypeError('comparison.columns must contain 2 to 4 columns'); return { type, title, sources: refs, columns: block.columns.map((column) => ({ title: required(column?.title, 'comparison.columns.title', 120), items: Array.isArray(column?.items) && column.items.length ? column.items.slice(0, 10).map((item) => required(item, 'comparison.columns.items', 500)) : (() => { throw new TypeError('comparison.columns.items must not be empty'); })() })) }; }
+  if (type === 'workflow') { if (!Array.isArray(block.steps) || block.steps.length < 2 || block.steps.length > 12) throw new TypeError('workflow.steps must contain 2 to 12 steps'); return { type, title, sources: refs, steps: block.steps.map((step) => ({ title: required(step?.title, 'workflow.steps.title', 120), body: optional(step?.body, 800) })) }; }
+  if (type === 'timeline') { if (!Array.isArray(block.items) || block.items.length < 2 || block.items.length > 16) throw new TypeError('timeline.items must contain 2 to 16 items'); return { type, title, sources: refs, items: block.items.map((item) => ({ label: required(item?.label, 'timeline.items.label', 100), body: required(item?.body, 'timeline.items.body', 800) })) }; }
+  if (!Array.isArray(block.nodes) || block.nodes.length < 2 || block.nodes.length > 16) throw new TypeError('diagram.nodes must contain 2 to 16 nodes'); const nodes = block.nodes.map((node) => ({ id: required(node?.id, 'diagram.nodes.id', 80), label: required(node?.label, 'diagram.nodes.label', 140), body: optional(node?.body, 600) })); const ids = new Set(nodes.map((node) => node.id)); if (ids.size !== nodes.length) throw new TypeError('diagram node IDs must be unique'); const edges = block.edges === undefined ? [] : Array.isArray(block.edges) && block.edges.length <= 30 ? block.edges.map((edge) => { const from = required(edge?.from, 'diagram.edges.from', 80); const to = required(edge?.to, 'diagram.edges.to', 80); if (!ids.has(from) || !ids.has(to)) throw new TypeError('diagram edges must reference existing node IDs'); return { from, to, label: optional(edge?.label, 120) }; }) : (() => { throw new TypeError('diagram.edges must contain 0 to 30 entries'); })(); return { type, title, sources: refs, variant: ['concept', 'architecture', 'sequence', 'flow'].includes(block.variant) ? block.variant : 'concept', nodes, edges };
 }
-
-function readOnlyTool(name, description, inputSchema, execute) {
-  return {
-    name,
-    title: toolTitle(name),
-    description,
-    annotations: { readOnlyHint: true },
-    inputSchema,
-    execute
-  };
+function fallbackBody(block) { if (block.type === 'callout') return block.body; if (block.type === 'comparison') return block.columns.map((column) => `${column.title}: ${column.items.join('; ')}`).join('\n'); if (block.type === 'workflow') return block.steps.map((step, index) => `${index + 1}. ${step.title}${step.body ? ` – ${step.body}` : ''}`).join('\n'); if (block.type === 'timeline') return block.items.map((item) => `${item.label}: ${item.body}`).join('\n'); return [...block.nodes.map((node) => `${node.id}: ${node.label}${node.body ? ` – ${node.body}` : ''}`), ...block.edges.map((edge) => `${edge.from} -> ${edge.to}${edge.label ? ` (${edge.label})` : ''}`)].join('\n'); }
+function artifactFor(input, targetId) { const block = validateBlock(input); const { sources: repositoryRefs, ...payload } = block; return { type: block.type, capability: { id: 'explain-him-safe-block', trust: 'builtin', execution: 'embedded' }, content: { schema: `explain-him.block.${block.type}.v1`, payload }, fallback: { title: block.title, body: fallbackBody(block) }, provenance: { sourceBlockIds: [targetId], repositoryRefs }, authorship: { meaning: 'personal-agent', presentation: 'explain-him-safe-block', requestedBy: 'agent' } }; }
+function prepare(workspace, input) {
+  if (!input || typeof input !== 'object') throw new TypeError('input must be an object'); if (!Array.isArray(input.operations) || !input.operations.length || input.operations.length > 8) throw new TypeError('operations must contain 1 to 8 items'); const targets = new Map(targetDescriptors(workspace).map((item) => [item.id, item])); const locals = new Map(localDescriptors(workspace).map((item) => [item.id, item])); const created = new Map(); const mutations = []; const focuses = [];
+  for (const raw of input.operations) { const operation = safeObject(raw, 'operation'); const op = required(operation.op, 'operation.op', 20); if (op === 'focus') { if (operation.blockId) { const blockId = required(operation.blockId, 'operation.blockId', 120); if (!locals.has(blockId) && !created.has(blockId)) throw new RangeError(`Unknown local explanation block: ${blockId}`); focuses.push({ op, blockId }); } else { const targetId = required(operation.targetId, 'operation.targetId', 120); if (!targets.has(targetId)) throw new RangeError(`Unknown authored target: ${targetId}`); focuses.push({ op, targetId }); } continue; }
+    if (op === 'add' || op === 'replace') { const targetId = required(operation.targetId, 'operation.targetId', 120); const target = targets.get(targetId); if (!target) throw new RangeError(`Unknown authored target: ${targetId}`); if (op === 'replace' && !target.replaceable) throw new RangeError(`Target is not replaceable: ${targetId}`); if (op === 'replace' && [...locals.values(), ...created.values()].some((item) => item.targetId === targetId && item.placement === 'replace')) throw new RangeError(`Target already has a local replacement: ${targetId}`); const id = operation.blockId ? required(operation.blockId, 'operation.blockId', 120) : null; if (id && (!id.startsWith('local-') || locals.has(id) || created.has(id))) throw new RangeError(`Invalid new local block ID: ${id}`); const add = createAddPresentationOperation({ targetId, placement: op === 'replace' ? 'replace' : 'after', artifact: artifactFor(operation.block, targetId), actor: { kind: 'agent', channel: 'webmcp' } }, id ? { id } : {}); created.set(add.presentation.id, add.presentation); mutations.push({ op, operation: add }); continue; }
+    if (op === 'update') { const blockId = required(operation.blockId, 'operation.blockId', 120); const current = locals.get(blockId) || created.get(blockId); if (!blockId.startsWith('local-') || !current) throw new RangeError(`Unknown local explanation block: ${blockId}`); const update = createUpdatePresentationOperation(blockId, { artifact: artifactFor(operation.block, current.targetId) }); mutations.push({ op, blockId, operation: update }); continue; }
+    if (op === 'remove') { const blockId = required(operation.blockId, 'operation.blockId', 120); if (!blockId.startsWith('local-') || (!locals.has(blockId) && !created.has(blockId))) throw new RangeError(`Unknown local explanation block: ${blockId}`); locals.delete(blockId); created.delete(blockId); mutations.push({ op, blockId, operation: createRemovePresentationOperation(blockId) }); continue; } throw new TypeError('operation.op must be add, replace, update, remove, or focus'); }
+  return { requestId: input.requestId ? required(input.requestId, 'requestId', 160) : null, expectedWorkspaceRevision: input.expectedWorkspaceRevision, mutations, focuses };
 }
-
-function mutationTool(name, description, inputSchema, execute) {
-  return {
-    name,
-    title: toolTitle(name),
-    description,
-    annotations: { readOnlyHint: false },
-    inputSchema,
-    execute
-  };
-}
-
-function clone(value) {
-  return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
-}
-
-function stringValue(value, field, maxLength = 500) {
-  if (typeof value !== 'string' || !value.trim()) throw new TypeError(`${field} must be a non-empty string`);
-  const normalized = value.trim();
-  if (normalized.length > maxLength) throw new RangeError(`${field} exceeds ${maxLength} characters`);
-  return normalized;
-}
-
-function optionalString(value, maxLength = 500) {
-  if (value === undefined || value === null || value === '') return null;
-  if (typeof value !== 'string') throw new TypeError('Optional text field must be a string');
-  return value.trim().slice(0, maxLength) || null;
-}
-
-function nodeTitle(node) {
-  return String(
-    node.querySelector?.('h1,h2,h3,h4,[data-eh-title]')?.textContent
-      || node.querySelector?.('strong')?.textContent
-      || node.dataset?.ehBlockId
-      || 'Explanation target'
-  ).replace(/\s+/g, ' ').trim().slice(0, 120);
-}
-
-function targetDescriptors(workspace) {
-  const document = workspace.document;
-  if (!document?.querySelectorAll) {
-    return (workspace.getContext?.().authoredTargetIds || []).map((id) => ({ id, title: id }));
-  }
-  return [...document.querySelectorAll('[data-eh-block-id]')].map((node) => ({
-    id: node.dataset.ehBlockId,
-    title: nodeTitle(node)
-  }));
-}
-
-function localBlockDescriptors(workspace) {
-  const presentations = workspace.getVisibleState?.().presentations || [];
-  return presentations.slice(-30).map((presentation) => ({
-    id: presentation.id,
-    targetId: presentation.targetId,
-    type: presentation.artifact?.type || null,
-    title: presentation.artifact?.fallback?.title || 'Personal explanation'
-  }));
-}
-
-function contractFor(workspace) {
-  const base = workspace.getContext?.() || {};
-  return {
-    schemaVersion: 'explain-him-webmcp-contract.v1',
-    explanationId: base.explanationId || null,
-    baseRevision: base.baseRevision || null,
-    repository: {
-      fullName: REPOSITORY,
-      url: REPOSITORY_URL
-    },
-    skills: [
-      {
-        id: 'explain-him',
-        responsibility: 'grounding-and-repository-retrieval',
-        path: SKILL_PATH,
-        url: SKILL_URL
-      },
-      {
-        id: 'explain-him-presentation',
-        responsibility: 'typed-page-presentation-and-guided-focus',
-        path: PRESENTATION_SKILL_PATH,
-        url: PRESENTATION_SKILL_URL
-      }
-    ],
-    instruction: 'Load both repository-scoped skills before grounding, presenting, or guiding the user through this explanation.',
-    blockSchema: {
-      path: BLOCK_SCHEMA_PATH,
-      url: BLOCK_SCHEMA_URL,
-      types: [...EXPLANATION_BLOCK_TYPES]
-    },
-    targets: targetDescriptors(workspace),
-    localBlocks: localBlockDescriptors(workspace),
-    applyOperations: ['add', 'remove', 'focus'],
-    authoredLayerMutable: false,
-    repositoryAccessViaWebMcp: false
-  };
-}
-
-function sourceSchema() {
-  return {
-    type: 'object',
-    required: ['path'],
-    additionalProperties: false,
-    properties: {
-      repository: { type: 'string', maxLength: 200, description: 'Repository full name. Defaults to andrew-veresov/explain-him.' },
-      path: { type: 'string', maxLength: 500, description: 'Repository path supporting this explanation block.' },
-      ref: { type: 'string', maxLength: 160, description: 'Optional branch, tag, or commit reference.' },
-      section: { type: 'string', maxLength: 300, description: 'Optional heading or section within the source.' },
-      status: { type: 'string', maxLength: 40, description: 'Optional claim status such as current, target, hypothesis, open, or demo-only.' }
-    }
-  };
-}
-
-function blockSchema() {
-  const sources = {
-    type: 'array',
-    maxItems: 20,
-    description: 'Repository provenance collected by the personal agent while grounding this block.',
-    items: sourceSchema()
-  };
+function stableJson(value) { if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`; if (value && typeof value === 'object') return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`; return JSON.stringify(value); }
+function requestFingerprint(input) { return stableJson({ operations: input?.operations || [] }); }
+async function applyOperations(workspace, input) { const requestId = input?.requestId ? required(input.requestId, 'requestId', 160) : null; const fingerprint = requestFingerprint(input); const existing = requestId ? workspace.getLocalChangeHistory?.().transactions?.find((item) => item.requestId === requestId) : null; if (existing) { if (!existing.requestFingerprint || existing.requestFingerprint !== fingerprint) throw new RangeError(`requestId ${requestId} was already used with a different payload`); if (!existing.result) throw new RangeError(`requestId ${requestId} has no replayable result`); return { ...clone(existing.result), idempotent: true }; } const plan = prepare(workspace, input); const currentRevision = workspace.getContext?.().workspaceRevision ?? 0; if (plan.expectedWorkspaceRevision !== undefined && plan.expectedWorkspaceRevision !== currentRevision) throw new RangeError(`Stale workspace revision: expected ${plan.expectedWorkspaceRevision}, current ${currentRevision}`); if (plan.mutations.length) await workspace.applyTransaction(plan.mutations.map((item) => item.operation), { requestId: plan.requestId, requestFingerprint: fingerprint, actor: { kind: 'agent', channel: 'webmcp' } }); const applied = plan.mutations.map((item) => ({ op: item.op, blockId: item.operation.presentation?.id || item.blockId, targetId: item.operation.presentation?.targetId || undefined, type: item.operation.presentation?.artifact.type || undefined })); for (const focus of plan.focuses) { const value = workspace.focusBlock(focus); applied.push({ op: 'focus', ...value }); } const history = workspace.getLocalChangeHistory?.(); const result = { ok: true, idempotent: false, requestId: plan.requestId, transactionId: plan.mutations.length ? history?.transactions?.at(-1)?.id || null : null, workspaceRevision: workspace.getContext?.().workspaceRevision ?? currentRevision, applied, localBlocks: localDescriptors(workspace) }; if (result.transactionId && workspace.attachTransactionResult) await workspace.attachTransactionResult(result.transactionId, result); return result; }
+function sourceSchema() { return { type: 'object', additionalProperties: false, required: ['path'], properties: { repository: { type: 'string', maxLength: 200 }, path: { type: 'string', minLength: 1, maxLength: 500 }, ref: { type: 'string', maxLength: 160 }, section: { type: 'string', maxLength: 300 }, status: { type: 'string', maxLength: 40 } } }; }
+function typedBlockSchema() {
+  const common = { title: { type: 'string', minLength: 1, maxLength: 160 }, sources: { type: 'array', maxItems: 20, items: sourceSchema() } };
+  const variant = (type, requiredFields, properties) => ({ type: 'object', additionalProperties: false, required: ['type', 'title', ...requiredFields], properties: { type: { const: type }, ...common, ...properties } });
+  const column = { type: 'object', additionalProperties: false, required: ['title', 'items'], properties: { title: { type: 'string', minLength: 1, maxLength: 120 }, items: { type: 'array', minItems: 1, maxItems: 10, items: { type: 'string', minLength: 1, maxLength: 500 } } } };
+  const step = { type: 'object', additionalProperties: false, required: ['title'], properties: { title: { type: 'string', minLength: 1, maxLength: 120 }, body: { type: 'string', maxLength: 800 } } };
+  const timelineItem = { type: 'object', additionalProperties: false, required: ['label', 'body'], properties: { label: { type: 'string', minLength: 1, maxLength: 100 }, body: { type: 'string', minLength: 1, maxLength: 800 } } };
+  const node = { type: 'object', additionalProperties: false, required: ['id', 'label'], properties: { id: { type: 'string', minLength: 1, maxLength: 80 }, label: { type: 'string', minLength: 1, maxLength: 140 }, body: { type: 'string', maxLength: 600 } } };
+  const edge = { type: 'object', additionalProperties: false, required: ['from', 'to'], properties: { from: { type: 'string', minLength: 1, maxLength: 80 }, to: { type: 'string', minLength: 1, maxLength: 80 }, label: { type: 'string', maxLength: 120 } } };
   return {
     oneOf: [
-      {
-        title: 'Callout',
-        type: 'object',
-        required: ['type', 'title', 'body'],
-        additionalProperties: false,
-        properties: {
-          type: { const: 'callout' },
-          title: { type: 'string', maxLength: 160 },
-          body: { type: 'string', maxLength: 5000 },
-          tone: { type: 'string', enum: ['neutral', 'example', 'warning', 'insight'] },
-          sources
-        }
-      },
-      {
-        title: 'Comparison',
-        type: 'object',
-        required: ['type', 'title', 'columns'],
-        additionalProperties: false,
-        properties: {
-          type: { const: 'comparison' },
-          title: { type: 'string', maxLength: 160 },
-          columns: {
-            type: 'array', minItems: 2, maxItems: 4,
-            items: {
-              type: 'object', required: ['title', 'items'], additionalProperties: false,
-              properties: {
-                title: { type: 'string', maxLength: 120 },
-                items: { type: 'array', minItems: 1, maxItems: 10, items: { type: 'string', maxLength: 500 } }
-              }
-            }
-          },
-          sources
-        }
-      },
-      {
-        title: 'Workflow',
-        type: 'object',
-        required: ['type', 'title', 'steps'],
-        additionalProperties: false,
-        properties: {
-          type: { const: 'workflow' },
-          title: { type: 'string', maxLength: 160 },
-          steps: {
-            type: 'array', minItems: 2, maxItems: 12,
-            items: {
-              type: 'object', required: ['title'], additionalProperties: false,
-              properties: {
-                title: { type: 'string', maxLength: 120 },
-                body: { type: 'string', maxLength: 800 }
-              }
-            }
-          },
-          sources
-        }
-      },
-      {
-        title: 'Timeline',
-        type: 'object',
-        required: ['type', 'title', 'items'],
-        additionalProperties: false,
-        properties: {
-          type: { const: 'timeline' },
-          title: { type: 'string', maxLength: 160 },
-          items: {
-            type: 'array', minItems: 2, maxItems: 16,
-            items: {
-              type: 'object', required: ['label', 'body'], additionalProperties: false,
-              properties: {
-                label: { type: 'string', maxLength: 100 },
-                body: { type: 'string', maxLength: 800 }
-              }
-            }
-          },
-          sources
-        }
-      },
-      {
-        title: 'Diagram',
-        type: 'object',
-        required: ['type', 'title', 'variant', 'nodes'],
-        additionalProperties: false,
-        properties: {
-          type: { const: 'diagram' },
-          title: { type: 'string', maxLength: 160 },
-          variant: { type: 'string', enum: ['concept', 'architecture', 'sequence', 'flow'] },
-          nodes: {
-            type: 'array', minItems: 2, maxItems: 16,
-            items: {
-              type: 'object', required: ['id', 'label'], additionalProperties: false,
-              properties: {
-                id: { type: 'string', maxLength: 80 },
-                label: { type: 'string', maxLength: 140 },
-                body: { type: 'string', maxLength: 600 }
-              }
-            }
-          },
-          edges: {
-            type: 'array', maxItems: 30,
-            items: {
-              type: 'object', required: ['from', 'to'], additionalProperties: false,
-              properties: {
-                from: { type: 'string', maxLength: 80 },
-                to: { type: 'string', maxLength: 80 },
-                label: { type: 'string', maxLength: 120 }
-              }
-            }
-          },
-          sources
-        }
-      }
+      variant('callout', ['body'], { body: { type: 'string', minLength: 1, maxLength: 5000 }, tone: { enum: ['neutral', 'example', 'warning', 'insight'] } }),
+      variant('comparison', ['columns'], { columns: { type: 'array', minItems: 2, maxItems: 4, items: column } }),
+      variant('workflow', ['steps'], { steps: { type: 'array', minItems: 2, maxItems: 12, items: step } }),
+      variant('timeline', ['items'], { items: { type: 'array', minItems: 2, maxItems: 16, items: timelineItem } }),
+      variant('diagram', ['nodes'], { variant: { enum: ['concept', 'architecture', 'sequence', 'flow'] }, nodes: { type: 'array', minItems: 2, maxItems: 16, items: node }, edges: { type: 'array', maxItems: 30, items: edge } })
     ]
   };
 }
-
-function applySchema(workspace) {
-  const targetIds = targetDescriptors(workspace).map((target) => target.id);
+function applySchema() {
+  const block = typedBlockSchema();
+  const localId = { type: 'string', pattern: '^local-[A-Za-z0-9._:-]+$', maxLength: 120 };
+  const targetId = { type: 'string', minLength: 1, maxLength: 120 };
+  const operation = (op, requiredFields, properties) => ({ type: 'object', additionalProperties: false, required: ['op', ...requiredFields], properties: { op: { const: op }, ...properties } });
   return {
-    type: 'object',
-    required: ['operations'],
-    additionalProperties: false,
+    type: 'object', required: ['operations'], additionalProperties: false,
     properties: {
+      requestId: { type: 'string', minLength: 1, maxLength: 160 },
+      expectedWorkspaceRevision: { type: 'integer', minimum: 0 },
       operations: {
-        type: 'array',
-        minItems: 1,
-        maxItems: 8,
-        description: 'Typed explanation changes to apply to the browser-local layer in order.',
+        type: 'array', minItems: 1, maxItems: 8,
         items: {
           oneOf: [
-            {
-              title: 'Add typed explanation block',
-              type: 'object',
-              required: ['op', 'targetId', 'block'],
-              additionalProperties: false,
-              properties: {
-                op: { const: 'add' },
-                targetId: {
-                  type: 'string',
-                  enum: targetIds,
-                  description: 'Authored target where the grounded explanation block should appear.'
-                },
-                block: blockSchema()
-              }
-            },
-            {
-              title: 'Remove browser-local explanation block',
-              type: 'object',
-              required: ['op', 'blockId'],
-              additionalProperties: false,
-              properties: {
-                op: { const: 'remove' },
-                blockId: {
-                  type: 'string',
-                  pattern: '^local-',
-                  maxLength: 120,
-                  description: 'Browser-local block ID returned by get_explanation_contract.'
-                }
-              }
-            },
-            {
-              title: 'Focus authored explanation target',
-              type: 'object',
-              required: ['op', 'targetId'],
-              additionalProperties: false,
-              properties: {
-                op: { const: 'focus' },
-                targetId: {
-                  type: 'string',
-                  enum: targetIds,
-                  description: 'Authored target to reveal, highlight, and scroll into view during a guided explanation.'
-                }
-              }
-            }
+            operation('add', ['targetId', 'block'], { targetId, blockId: localId, block }),
+            operation('replace', ['targetId', 'block'], { targetId, blockId: localId, block }),
+            operation('update', ['blockId', 'block'], { blockId: localId, block }),
+            operation('remove', ['blockId'], { blockId: localId }),
+            { type: 'object', additionalProperties: false, required: ['op'], properties: { op: { const: 'focus' }, targetId, blockId: localId }, oneOf: [{ required: ['targetId'] }, { required: ['blockId'] }] }
           ]
         }
       }
     }
   };
 }
-
-function normalizeSources(value) {
-  if (!Array.isArray(value)) return [];
-  return value.slice(0, 20).map((source) => ({
-    repository: optionalString(source?.repository, 200) || REPOSITORY,
-    path: stringValue(source?.path, 'sources.path', 500),
-    ref: optionalString(source?.ref, 160),
-    section: optionalString(source?.section, 300),
-    status: optionalString(source?.status, 40)
-  }));
-}
-
-function validateBlock(block) {
-  if (!block || typeof block !== 'object') throw new TypeError('block must be an object');
-  const type = stringValue(block.type, 'block.type', 40);
-  if (!EXPLANATION_BLOCK_TYPES.includes(type)) throw new TypeError(`Unsupported explanation block type: ${type}`);
-  const title = stringValue(block.title, 'block.title', 160);
-  const sources = normalizeSources(block.sources);
-
-  if (type === 'callout') {
-    return { type, title, body: stringValue(block.body, 'block.body', 5000), tone: block.tone || 'neutral', sources };
-  }
-
-  if (type === 'comparison') {
-    if (!Array.isArray(block.columns) || block.columns.length < 2 || block.columns.length > 4) {
-      throw new TypeError('comparison.columns must contain 2 to 4 columns');
-    }
-    return {
-      type, title, sources,
-      columns: block.columns.map((column) => ({
-        title: stringValue(column?.title, 'comparison.columns.title', 120),
-        items: (column?.items || []).map((item) => stringValue(item, 'comparison.columns.items', 500))
-      }))
-    };
-  }
-
-  if (type === 'workflow') {
-    if (!Array.isArray(block.steps) || block.steps.length < 2 || block.steps.length > 12) {
-      throw new TypeError('workflow.steps must contain 2 to 12 steps');
-    }
-    return {
-      type, title, sources,
-      steps: block.steps.map((step) => ({
-        title: stringValue(step?.title, 'workflow.steps.title', 120),
-        body: optionalString(step?.body, 800)
-      }))
-    };
-  }
-
-  if (type === 'timeline') {
-    if (!Array.isArray(block.items) || block.items.length < 2 || block.items.length > 16) {
-      throw new TypeError('timeline.items must contain 2 to 16 items');
-    }
-    return {
-      type, title, sources,
-      items: block.items.map((item) => ({
-        label: stringValue(item?.label, 'timeline.items.label', 100),
-        body: stringValue(item?.body, 'timeline.items.body', 800)
-      }))
-    };
-  }
-
-  if (!Array.isArray(block.nodes) || block.nodes.length < 2 || block.nodes.length > 16) {
-    throw new TypeError('diagram.nodes must contain 2 to 16 nodes');
-  }
-  const nodes = block.nodes.map((node) => ({
-    id: stringValue(node?.id, 'diagram.nodes.id', 80),
-    label: stringValue(node?.label, 'diagram.nodes.label', 140),
-    body: optionalString(node?.body, 600)
-  }));
-  const nodeIds = new Set(nodes.map((node) => node.id));
-  if (nodeIds.size !== nodes.length) throw new TypeError('diagram node IDs must be unique');
-  const edges = Array.isArray(block.edges) ? block.edges.map((edge) => {
-    const from = stringValue(edge?.from, 'diagram.edges.from', 80);
-    const to = stringValue(edge?.to, 'diagram.edges.to', 80);
-    if (!nodeIds.has(from) || !nodeIds.has(to)) throw new TypeError('diagram edges must reference existing node IDs');
-    return { from, to, label: optionalString(edge?.label, 120) };
-  }) : [];
-  return {
-    type, title, sources,
-    variant: ['concept', 'architecture', 'sequence', 'flow'].includes(block.variant) ? block.variant : 'concept',
-    nodes,
-    edges
-  };
-}
-
-function fallbackBody(block) {
-  if (block.type === 'callout') return block.body;
-  if (block.type === 'comparison') {
-    return block.columns.map((column) => `${column.title}: ${column.items.join('; ')}`).join('\n');
-  }
-  if (block.type === 'workflow') {
-    return block.steps.map((step, index) => `${index + 1}. ${step.title}${step.body ? ` – ${step.body}` : ''}`).join('\n');
-  }
-  if (block.type === 'timeline') {
-    return block.items.map((item) => `${item.label}: ${item.body}`).join('\n');
-  }
-  const lines = block.nodes.map((node) => `${node.id}: ${node.label}${node.body ? ` – ${node.body}` : ''}`);
-  for (const edge of block.edges) lines.push(`${edge.from} -> ${edge.to}${edge.label ? ` (${edge.label})` : ''}`);
-  return lines.join('\n');
-}
-
-function artifactFor(block, targetId) {
-  const normalized = validateBlock(block);
-  const { sources, ...payload } = normalized;
-  return {
-    type: normalized.type,
-    capability: {
-      id: 'explain-him-safe-block',
-      trust: 'builtin',
-      execution: 'embedded'
-    },
-    content: {
-      schema: `explain-him.block.${normalized.type}.v1`,
-      payload
-    },
-    fallback: {
-      title: normalized.title,
-      body: fallbackBody(normalized)
-    },
-    provenance: {
-      sourceBlockIds: [targetId],
-      repositoryRefs: sources
-    },
-    authorship: {
-      meaning: 'personal-agent',
-      presentation: 'explain-him-safe-block',
-      requestedBy: 'agent'
-    }
-  };
-}
-
-function prepareOperations(workspace, input) {
-  if (!Array.isArray(input?.operations) || input.operations.length < 1 || input.operations.length > 8) {
-    throw new TypeError('operations must contain 1 to 8 items');
-  }
-  const targetIds = new Set(targetDescriptors(workspace).map((target) => target.id));
-  const localIds = new Set(localBlockDescriptors(workspace).map((block) => block.id));
-  return input.operations.map((operation) => {
-    if (operation?.op === 'add') {
-      const targetId = stringValue(operation.targetId, 'operation.targetId', 120);
-      if (!targetIds.has(targetId)) throw new RangeError(`Unknown authored target: ${targetId}`);
-      return { op: 'add', targetId, artifact: artifactFor(operation.block, targetId) };
-    }
-    if (operation?.op === 'remove') {
-      const blockId = stringValue(operation.blockId, 'operation.blockId', 120);
-      if (!blockId.startsWith('local-') || !localIds.has(blockId)) throw new RangeError(`Unknown local explanation block: ${blockId}`);
-      localIds.delete(blockId);
-      return { op: 'remove', blockId };
-    }
-    if (operation?.op === 'focus') {
-      const targetId = stringValue(operation.targetId, 'operation.targetId', 120);
-      if (!targetIds.has(targetId)) throw new RangeError(`Unknown authored target: ${targetId}`);
-      return { op: 'focus', targetId };
-    }
-    throw new TypeError('operation.op must be add, remove, or focus');
-  });
-}
-
-function createdBlock(beforeIds, workspace) {
-  return (workspace.getVisibleState?.().presentations || []).find((item) => !beforeIds.has(item.id)) || null;
-}
-
-async function applyOperations(workspace, input) {
-  const plan = prepareOperations(workspace, input);
-  const applied = [];
-  for (const operation of plan) {
-    if (operation.op === 'focus') {
-      const focused = workspace.focusBlock({ targetId: operation.targetId });
-      applied.push({ op: 'focus', targetId: focused?.targetId || operation.targetId });
-      continue;
-    }
-    if (operation.op === 'remove') {
-      await workspace.removeLocalPresentation({ presentationId: operation.blockId });
-      applied.push({ op: 'remove', blockId: operation.blockId });
-      continue;
-    }
-    const beforeIds = new Set((workspace.getVisibleState?.().presentations || []).map((item) => item.id));
-    await workspace.addLocalPresentation({
-      targetId: operation.targetId,
-      artifact: clone(operation.artifact),
-      actor: { kind: 'agent', channel: 'webmcp' }
-    });
-    const created = createdBlock(beforeIds, workspace);
-    applied.push({
-      op: 'add',
-      blockId: created?.id || null,
-      targetId: operation.targetId,
-      type: operation.artifact.type,
-      title: operation.artifact.fallback.title
-    });
-  }
-  return {
-    ok: true,
-    applied,
-    localBlocks: localBlockDescriptors(workspace)
-  };
-}
-
-export function resolveWebMcpHost(environment = globalThis) {
-  const standardHost = environment?.document?.modelContext;
-  if (standardHost && typeof standardHost.registerTool === 'function') {
-    return { modelContext: standardHost, source: 'document.modelContext', standard: true };
-  }
-
-  const legacyHost = environment?.navigator?.modelContext;
-  if (legacyHost && typeof legacyHost.registerTool === 'function') {
-    return { modelContext: legacyHost, source: 'navigator.modelContext', standard: false };
-  }
-
-  return { modelContext: null, source: 'none', standard: false };
-}
-
-export function createWebMcpTools(workspace) {
-  return [
-    readOnlyTool(
-      'get_explanation_contract',
-      'Call first on an Explain Him page. Returns the repository and both repository-scoped skills, typed block schema, authored targets, and existing browser-local blocks. Skills – not WebMCP – define grounding, repository retrieval, presentation, and guided focus.',
-      EMPTY_INPUT,
-      async () => contractFor(workspace)
-    ),
-    mutationTool(
-      'apply_explanation',
-      'Apply already-grounded results to the page: add safe typed browser-local blocks, remove earlier local blocks, or focus authored targets for a guided walkthrough. Load the skills returned by get_explanation_contract first. WebMCP does not retrieve GitHub knowledge or generate answers.',
-      applySchema(workspace),
-      async (input) => applyOperations(workspace, input)
-    )
-  ];
-}
-
-export function registerWebMcpTools(workspace, modelContext = null, options = {}) {
-  const resolved = modelContext && typeof modelContext.registerTool === 'function'
-    ? {
-        modelContext,
-        source: options.hostSource || 'explicit',
-        standard: options.standardHost ?? options.hostSource === 'document.modelContext'
-      }
-    : resolveWebMcpHost(options.environment || globalThis);
-
-  const status = {
-    supported: Boolean(resolved.modelContext),
-    ok: false,
-    verified: false,
-    verificationError: null,
-    hostSource: resolved.source,
-    standardHost: resolved.standard,
-    expectedTools: [...EXPLAIN_HIM_WEBMCP_TOOLS],
-    registered: [],
-    verifiedTools: [],
-    errors: [],
-    ready: null
-  };
-
-  if (!resolved.modelContext) {
-    status.ready = Promise.resolve(status);
-    return status;
-  }
-
-  const tools = createWebMcpTools(workspace);
-  status.ready = (async () => {
-    for (const tool of tools) {
-      try {
-        await resolved.modelContext.registerTool(tool);
-        status.registered.push(tool.name);
-      } catch (error) {
-        status.errors.push({ name: tool.name, message: String(error?.message || error) });
-      }
-    }
-
-    status.ok = status.errors.length === 0
-      && status.expectedTools.every((name) => status.registered.includes(name));
-
-    if (typeof resolved.modelContext.getTools === 'function') {
-      try {
-        const available = await resolved.modelContext.getTools();
-        const names = Array.isArray(available)
-          ? available.map((item) => typeof item === 'string' ? item : item?.name).filter(Boolean)
-          : [];
-        status.verifiedTools = status.expectedTools.filter((name) => names.includes(name));
-        status.verified = status.expectedTools.every((name) => status.verifiedTools.includes(name));
-      } catch (error) {
-        status.verificationError = String(error?.message || error);
-      }
-    }
-
-    return status;
-  })();
-
-  return status;
-}
+export function resolveWebMcpHost(environment = globalThis) { const standard = environment?.document?.modelContext; if (standard && typeof standard.registerTool === 'function') return { modelContext: standard, source: 'document.modelContext', standard: true }; const legacy = environment?.navigator?.modelContext; if (legacy && typeof legacy.registerTool === 'function') return { modelContext: legacy, source: 'navigator.modelContext', standard: false }; return { modelContext: null, source: 'none', standard: false }; }
+export function createWebMcpTools(workspace) { let contractRead = false; return [{ name: 'get_explanation_contract', title: titleFor('get_explanation_contract'), description: 'Call first for an Explain Him page. It returns the public repository, both scoped skills in load order, semantic targets, current local presentations, and the typed contract. Skills own grounding and repository retrieval.', annotations: { readOnlyHint: true }, inputSchema: { type: 'object', properties: {}, additionalProperties: false }, execute: async () => { contractRead = true; return contractFor(workspace); } }, { name: 'apply_explanation', title: titleFor('apply_explanation'), description: 'After loading both skills and grounding the answer, atomically add, replace, update, remove, or focus safe local page presentations. The canonical authored source is never written. Call get_explanation_contract first; use expectedWorkspaceRevision and requestId for safe retries.', annotations: { readOnlyHint: false }, inputSchema: applySchema(), execute: async (input) => { if (!contractRead) throw new TypeError('Call get_explanation_contract before apply_explanation in this page session'); return applyOperations(workspace, input); } }]; }
+export function registerWebMcpTools(workspace, modelContext = null, options = {}) { const resolved = modelContext && typeof modelContext.registerTool === 'function' ? { modelContext, source: options.hostSource || 'explicit', standard: options.standardHost ?? options.hostSource === 'document.modelContext' } : resolveWebMcpHost(options.environment || globalThis); const status = { supported: Boolean(resolved.modelContext), ok: false, verified: false, verificationError: null, hostSource: resolved.source, standardHost: resolved.standard, expectedTools: [...EXPLAIN_HIM_WEBMCP_TOOLS], registered: [], verifiedTools: [], errors: [], ready: null }; if (!resolved.modelContext) { status.ready = Promise.resolve(status); return status; } status.ready = (async () => { for (const tool of createWebMcpTools(workspace)) try { await resolved.modelContext.registerTool(tool); status.registered.push(tool.name); } catch (error) { status.errors.push({ name: tool.name, message: String(error?.message || error) }); } status.ok = !status.errors.length && status.expectedTools.every((name) => status.registered.includes(name)); if (typeof resolved.modelContext.getTools === 'function') try { const available = await resolved.modelContext.getTools(); const names = Array.isArray(available) ? available.map((item) => typeof item === 'string' ? item : item?.name) : []; status.verifiedTools = status.expectedTools.filter((name) => names.includes(name)); status.verified = status.verifiedTools.length === status.expectedTools.length; } catch (error) { status.verificationError = String(error?.message || error); } return status; })(); return status; }

@@ -12,7 +12,7 @@ tags: [explain-him, user, agent, webmcp]
 4. If version, evidence, or deeper context is needed, the agent follows repository-scoped instructions in `AGENTS.md` / `SKILL.md` and reads the minimum required repository sources through its own GitHub integration.
 5. The agent distinguishes `current`, `target`, `hypothesis`, `open`, and `demo-only`.
 6. The user receives the explanation in the personal-agent interface they already use. Explain Him does not provide a second chat UI.
-7. When navigation or local support helps, the agent calls `apply_explanation` with safe typed `add`, `remove`, or `focus` operations.
+7. When navigation or local support helps, the agent calls `apply_explanation` with safe typed `add`, `replace`, `update`, `remove`, or `focus` operations.
 8. The human immediately sees the same page mutation; undo/redo remain available through human controls.
 9. If evidence is insufficient, the agent offers a minimized Issue draft and waits for user confirmation.
 
@@ -31,7 +31,7 @@ User ↔ browser/personal agent
               │
               ├── get_explanation_contract → load both skills
               ├── answer in agent chat
-              └── apply_explanation → add / remove / focus
+              └── apply_explanation → add / replace / update / remove / focus
                            │
                            ▼
 Originator-authored page + local operation log = personalized visible page

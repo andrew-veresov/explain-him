@@ -35,12 +35,14 @@ The only write capability is `apply_explanation`.
 It accepts an ordered list of operations:
 
 - `add` – add one typed block next to an authored target;
-- `remove` – remove one earlier browser-local block.
-- `focus` – reveal, highlight, and scroll an authored target into view.
+- `replace` – locally substitute a whole registered semantic target with a safe typed block;
+- `update` – change an earlier local block while preserving its ID;
+- `remove` – remove one earlier browser-local block or replacement;
+- `focus` – reveal and focus an authored target or visible local result.
 
-Replacement is `remove` + `add` in one `apply_explanation` call.
+One call is one atomic browser-local transaction and one undo step. `replace` never changes canonical HTML: the authored subtree remains intact and returns with Original view or removal of the replacement.
 
-Do not use WebMCP for retrieval, reasoning, diagnostics, tool discovery, or GitHub operations. `focus` is limited to guided navigation of authored targets returned by the contract.
+Do not use WebMCP for retrieval, reasoning, diagnostics, tool discovery, or GitHub operations.
 
 ## Supported typed blocks
 
@@ -228,7 +230,7 @@ Example input:
 }
 ```
 
-## Removing or replacing blocks
+## Replacing, updating, or removing blocks
 
 Use only block IDs returned by `get_explanation_contract` or a successful `apply_explanation` response.
 
@@ -242,13 +244,12 @@ Remove:
 }
 ```
 
-Replace atomically from the agent perspective by sending remove then add in the same call:
+Use `replace` when a visible authored target needs a user-local correction or simplification. Use `update` for a later refinement of that same local result so its ID stays stable. Use `remove` when the user asks to restore the author version.
 
 ```json
 {
   "operations": [
-    { "op": "remove", "blockId": "local-presentation-..." },
-    { "op": "add", "targetId": "flow-model", "block": { "type": "callout", "title": "Updated", "body": "..." } }
+    { "op": "replace", "targetId": "workflow-diagram", "block": { "type": "diagram", "title": "Personal terminology", "variant": "flow", "nodes": [{ "id": "user", "label": "User" }, { "id": "agent", "label": "Agent" }], "edges": [{ "from": "user", "to": "agent" }] } }
   ]
 }
 ```
@@ -266,6 +267,7 @@ If the personal agent uses Archify or another external presenter to help design 
 
 - Never emit arbitrary HTML, JavaScript, CSS, iframe content, or executable URLs through `apply_explanation`.
 - Never remove Originator-authored content.
+- For terminology normalization, replace every affected visible semantic target. Do not leave a mixed User/Consumer presentation in Personalized view.
 - Browser-local blocks are personalization, not evidence.
 - A visualization must not add claims that were not grounded first.
 - Prefer fewer, clearer blocks over many decorative blocks.

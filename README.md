@@ -14,7 +14,7 @@ Explain Him publishes an Originator-authored visual explanation, repository-scop
 Without WebMCP, a browser agent can read pixels/DOM and click controls, but it has to infer application structure and state. Explain Him gives the agent an explicit contract for two things that matter to the product:
 
 1. **integration discovery** – the public repository, both repository-scoped skills, typed-block schema, authored targets, and local block IDs;
-2. **typed result delivery** – safe add, remove, and focus operations over the same page the human is viewing.
+2. **typed result delivery** – safe add, replace, update, remove, and focus operations over the same page the human is viewing.
 
 ```text
 Human asks a question
@@ -26,7 +26,7 @@ Personal AI agent
         |
         +---- read page/repository + answer in normal chat
         |
-        +---- apply_explanation ----------> typed add/remove/focus
+        +---- apply_explanation ----------> typed add/replace/update/remove/focus
                                                 |
                                                 v
                                   human sees the same change
@@ -43,7 +43,7 @@ The public surface is deliberately small and user-oriented:
 | Tool | Purpose |
 |---|---|
 | `get_explanation_contract` | Discover the repository, both skills, typed-block schema, authored targets, and local block IDs |
-| `apply_explanation` | Apply already-grounded typed add/remove/focus operations to the browser-local page layer |
+| `apply_explanation` | Atomically apply already-grounded typed add/replace/update/remove/focus operations to the browser-local page layer |
 
 There are no duplicate compatibility tools, diagnostic tools, or WebMCP tools for repository search/answer generation. The browser contract models user intentions rather than internal implementation details.
 
@@ -51,7 +51,7 @@ When the host also exposes `document.modelContext.getTools()`, the page verifies
 
 ## Try the human–agent flow
 
-Open the live page in the ChatGPT desktop in-app browser with Site Tools enabled, or a WebMCP-enabled Chrome build, then try:
+Open the live page in the ChatGPT Desktop built-in browser when it exposes `document.modelContext`, then try:
 
 1. **“What should I do as the author of an idea to get my own explanation? Show the sequence on the page.”**
 2. **“Compare the authored and personal layers and add that comparison to the page.”**
@@ -112,7 +112,7 @@ browser-local typed operations
 personalized visible explanation
 ```
 
-Workspace v2 provides:
+Workspace v3 provides transactional, persisted local state:
 
 - typed local Presentation Artifacts with provenance;
 - IndexedDB with a memory fallback;
@@ -140,12 +140,14 @@ Important statuses are `current`, `target`, `hypothesis`, `open`, `demo-only`, a
 
 | Host | Behavior |
 |---|---|
-| ChatGPT desktop in-app browser | Uses the two Site Tools when the host exposes `document.modelContext` |
-| Chrome with WebMCP enabled | Uses the same imperative tool surface; `getTools()` verification is used when available |
-| ChatGPT/Codex Chrome sidebar without Site Tool access | Page reading + accessible controls remain the graceful fallback |
+| ChatGPT Desktop built-in browser | Full Site Tools flow only when the host exposes `document.modelContext` |
+| WebMCP-enabled Chrome build | Conditional, non-standard surface that may expose the same imperative tools; never a promise for ordinary Chrome |
+| Ordinary ChatGPT/Codex Chrome sidebar | Chat-only fallback: it must not claim Site Tool discovery or page mutation |
 | Browser without WebMCP | Human controls continue to work over the same local workspace |
 
 `navigator.modelContext` is retained only as a legacy fallback for older experimental hosts. Explain Him does not depend on the non-standard `registerSkill()` proposal or on declarative WebMCP support.
+
+The ordinary Chrome sidebar can still provide a grounded chat answer, but it cannot be treated as evidence that WebMCP changed the page. The full personal-agent page flow is supported only on a host that actually exposes `document.modelContext`. A WebMCP-enabled Chrome build is a conditional integration surface, not a statement about the standard Chrome sidebar.
 
 ## Challenge-period work
 

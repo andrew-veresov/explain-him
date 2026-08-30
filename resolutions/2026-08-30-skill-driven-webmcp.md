@@ -12,7 +12,7 @@ tags: [explain-him, resolution, webmcp, skills, typed-ui]
 Explain Him uses the standard imperative WebMCP API through `document.modelContext` and exposes exactly two public Site Tools:
 
 1. `get_explanation_contract` returns the public repository, grounding skill, presentation skill, typed-block schema, authored targets, and current local block IDs.
-2. `apply_explanation` applies an ordered list of safe `add`, `remove`, and `focus` operations.
+2. `apply_explanation` atomically applies safe `add`, `replace`, `update`, `remove`, and `focus` operations.
 
 The page also publishes invisible machine-readable repository and skill links in its `<head>` as a bootstrap hint. Repository-scoped skills own source discovery, grounding, provenance, typed-block selection, and guided walkthrough behavior. WebMCP does not perform those tasks.
 

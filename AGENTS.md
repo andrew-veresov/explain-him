@@ -40,7 +40,7 @@ The complete public WebMCP surface is intentionally only:
 - `get_explanation_contract`;
 - `apply_explanation`.
 
-Do not look for separate diagnostics, state, focus, undo/redo, compatibility, retrieval, answer-generation, or skill-registration WebMCP tools. Guided focus is an operation inside `apply_explanation`; undo/redo remain human controls.
+Do not look for separate diagnostics, state, focus, undo/redo, compatibility, retrieval, answer-generation, or skill-registration WebMCP tools. `apply_explanation` contains add, replace, update, remove, and focus; undo/redo and Original/Personalized remain human controls.
 
 The page may still expose ordinary accessible controls for humans/browser automation. Those controls are not additional WebMCP capabilities.
 
@@ -112,8 +112,7 @@ It may:
 
 - expose the current page integration contract and insertion anchors;
 - expose the locations of the repository skills and block schema;
-- add safe typed browser-local explanation blocks;
-- remove previously added browser-local blocks.
+- add, locally replace, update, or remove safe typed browser-local explanation blocks;
 - focus an authored target so the agent can guide the user through grounded page changes.
 
 It must not:
@@ -126,7 +125,7 @@ It must not:
 - expose diagnostics as agent tools;
 - inject arbitrary HTML/JavaScript;
 - search or create GitHub Issues;
-- modify Originator-authored blocks.
+- modify Originator-authored source or DOM subtrees. A personalized replacement may hide a registered target visually while preserving that subtree for Original view.
 
 Repository and Issue operations belong to the personal agent's own GitHub/repository integration.
 

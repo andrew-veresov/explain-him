@@ -3,10 +3,20 @@ from __future__ import annotations
 from html.parser import HTMLParser
 from pathlib import Path
 import json
+import os
 import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+PRIVATE_DEMO = os.environ.get('EXPLAIN_HIM_PRIVATE_DEMO') == '1'
+PRIVATE_ONLY_PREFIXES = {
+    'evaluation', 'assets/workspace',
+}
+PRIVATE_ONLY_FILES = {
+    'assets/app.js', 'assets/workspace.css',
+    'knowledge/05-boundaries.md', 'knowledge/06-open-questions.md', 'knowledge/07-browser-local-workspace.md',
+    'tests/browser_workspace_test.py', 'tests/webmcp-runtime.test.mjs', 'tests/workspace-core.test.mjs',
+}
 TEXT_SUFFIXES = {'.md', '.html', '.css', '.js', '.mjs', '.json', '.yaml', '.yml', '.py', '.txt'}
 CYRILLIC_RE = re.compile(r'[\u0400-\u04FF]')
 REQUIRED = [
@@ -68,8 +78,12 @@ class PageParser(HTMLParser):
 
 def text_files():
     for path in ROOT.rglob('*'):
-        if path.is_file() and '.git' not in path.parts and path.suffix.lower() in TEXT_SUFFIXES:
-            yield path
+        if not path.is_file() or '.git' in path.parts or path.suffix.lower() not in TEXT_SUFFIXES:
+            continue
+        relative = path.relative_to(ROOT).as_posix()
+        if PRIVATE_DEMO and (relative in PRIVATE_ONLY_FILES or any(relative == prefix or relative.startswith(prefix + '/') for prefix in PRIVATE_ONLY_PREFIXES)):
+            continue
+        yield path
 
 
 def resolve_wikilink(source: Path, raw: str) -> bool:
@@ -99,7 +113,8 @@ def main() -> int:
         rel = path.relative_to(ROOT)
         if CYRILLIC_RE.search(text):
             errors.append(f'{rel}: project text must be English; Cyrillic content found')
-        for marker in FORBIDDEN_CONTENT:
+        forbidden = FORBIDDEN_CONTENT if not PRIVATE_DEMO else [marker for marker in FORBIDDEN_CONTENT if marker not in {'community/evaluation', 'demo/evaluation'}]
+        for marker in forbidden:
             if marker in text:
                 errors.append(f'{rel}: forbidden public content marker {marker!r}')
         if path.is_relative_to(ROOT / 'runtime') or path == ROOT / 'assets' / 'app.mjs':
@@ -115,6 +130,9 @@ def main() -> int:
     parser.feed(html)
     if '<html lang="en">' not in html:
         errors.append('index.html: project page language must be English')
+    for expected in ['role="tablist"', 'role="tab"', 'role="tabpanel"', 'role="group" aria-label="Explanation view"', 'id="webmcp-status" role="status" aria-live="polite"', 'id="source-toggle" aria-controls="source-drawer"', 'id="source-drawer" class="source-drawer" role="region" tabindex="-1" hidden aria-labelledby="source-drawer-title"']:
+        if expected not in html:
+            errors.append(f'index.html: missing accessible UI invariant {expected!r}')
     for expected in [
         'name="explain-him-repository" content="andrew-veresov/explain-him"',
         'name="explain-him-skill" content="skills/explain-him/SKILL.md"',
@@ -139,7 +157,7 @@ def main() -> int:
         'repository: andrew-veresov/explain-him', 'root: .', 'language: en',
         'browser_readable_knowledge_bundle: none', 'webmcp_repository_access: forbidden',
         'consumer_local_capabilities: allowed', 'arbitrary_html: forbidden',
-        'state_model: typed-presentation-operation-log', 'confirmation_before_write: true',
+        'state_model: transactional-typed-presentation-operation-log', 'confirmation_before_write: true',
         'api: document.modelContext', 'registration: imperative-top-level-javascript',
         'purpose: typed-result-delivery-to-shared-page', 'presentation-skill-location',
         '- focus'
@@ -152,6 +170,16 @@ def main() -> int:
     for name in PUBLIC_WEBMCP_TOOLS:
         if f'- {name}' not in manifest:
             errors.append(f'explain-him.yaml: missing public WebMCP tool {name}')
+
+    if PRIVATE_DEMO:
+        distribution = ROOT.parent / 'distribution' / 'public-facade.yml'
+        if not distribution.is_file():
+            errors.append('distribution/public-facade.yml: missing private-to-public publication policy')
+        else:
+            policy = distribution.read_text(encoding='utf-8')
+            for expected in ['source: demo/tests/**', 'target: tests/**', 'source: demo/tools/check_public_demo.py', 'target: tools/check_public_demo.py', 'transactional-typed-presentation-operation-log']:
+                if expected not in policy:
+                    errors.append(f'distribution/public-facade.yml: missing controlled facade rule {expected!r}')
 
     agents = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
     for expected in [

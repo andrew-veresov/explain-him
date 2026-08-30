@@ -49,7 +49,7 @@ The public surface intentionally avoids compatibility aliases, diagnostics, retr
 
 ## Judge flow
 
-Use the live page in ChatGPT Desktop with Site Tools enabled or in a WebMCP-enabled Chrome surface.
+Use the live page in the ChatGPT Desktop built-in browser only when it actually exposes `document.modelContext`. A WebMCP-enabled Chrome surface is conditional and non-standard; the ordinary ChatGPT/Codex Chrome sidebar is chat-only and must not be presented as a Site Tools or page-mutation flow.
 
 ### Prompt 1 – originator workflow
 
@@ -91,7 +91,7 @@ When the host implements `document.modelContext.getTools()`, Explain Him verifie
 
 ## Human fallback
 
-Accessible controls use the same browser-local workspace API. Without Site Tools the agent may still read and operate the page generically, but it does not receive the typed contract. Chat answers remain available even when page presentation fails.
+Accessible controls use the same browser-local workspace API. Without Site Tools, the user may operate those controls, while the ordinary Chrome sidebar remains a chat-only fallback and does not receive the typed contract. It must not report that it changed the page. Chat answers remain available when page presentation is unavailable.
 
 ## Security and trust boundary
 
