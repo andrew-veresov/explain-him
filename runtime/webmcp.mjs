@@ -14,9 +14,17 @@ export const EXPLAIN_HIM_UI_TOOLS = Object.freeze([
   'redo_local_change'
 ]);
 
+export const EXPLAIN_HIM_DIAGNOSTIC_TOOL = 'get_webmcp_status';
+export const EXPLAIN_HIM_BOOTSTRAP_TOOL = 'get_explain_him_skill';
+export const EXPLAIN_HIM_WEBMCP_TOOLS = Object.freeze([
+  ...EXPLAIN_HIM_UI_TOOLS,
+  EXPLAIN_HIM_DIAGNOSTIC_TOOL,
+  EXPLAIN_HIM_BOOTSTRAP_TOOL
+]);
+
 export function createExplainHimSkillDescriptor(options = {}) {
   return {
-    schemaVersion: 'explain-him-webmcp-skill.v2',
+    schemaVersion: 'explain-him-webmcp-skill.v3',
     name: 'explain-him',
     description: 'Explain the current Originator-authored page and public repository; use related tools only for browser-local presentation adaptation.',
     instructions: [
@@ -43,32 +51,84 @@ export function createExplainHimSkillDescriptor(options = {}) {
       excludedPaths: ['tests', 'tools', '.github'],
       statusVocabulary: ['current', 'target', 'hypothesis', 'open', 'demo-only', 'deprecated'],
       webmcpRole: 'skill-delivery-and-ui-only',
+      webmcpApi: 'document.modelContext',
+      webmcpBootstrapTool: EXPLAIN_HIM_BOOTSTRAP_TOOL,
       knowledgeBundle: null,
       repositoryAccessOwner: 'personal-agent',
       presentationArtifactSchema: 'explain-him-presentation.v1',
       presentationCapabilities: getDefaultPresentationCapabilities()
     },
-    relatedTools: [...EXPLAIN_HIM_UI_TOOLS]
+    relatedTools: [...EXPLAIN_HIM_UI_TOOLS, EXPLAIN_HIM_DIAGNOSTIC_TOOL]
   };
 }
 
-function readOnlyTool(name, description, execute) {
-  return { name, description, annotations: { readOnlyHint: true },
-    inputSchema: { type: 'object', properties: {}, additionalProperties: false }, execute };
-}
-function mutationTool(name, description, inputSchema, execute) {
-  return { name, description, annotations: { readOnlyHint: false }, inputSchema, execute };
-}
-function getSkillHost(modelContext) {
-  if (modelContext && typeof modelContext.registerSkill === 'function') return modelContext;
-  const host = globalThis.navigator?.modelContext;
-  return host && typeof host.registerSkill === 'function' ? host : null;
+function toolTitle(name) {
+  return name.split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
 }
 
-export function registerWebMcpTools(workspace, modelContext, options = {}) {
-  if (!modelContext || typeof modelContext.registerTool !== 'function') {
-    return { supported: false, registered: [], registeredUiTools: [], errors: [],
-      skill: { mode: 'unavailable', registered: false }, ready: Promise.resolve() };
+function readOnlyTool(name, description, execute) {
+  return {
+    name,
+    title: toolTitle(name),
+    description,
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    execute
+  };
+}
+
+function mutationTool(name, description, inputSchema, execute) {
+  return {
+    name,
+    title: toolTitle(name),
+    description,
+    annotations: { readOnlyHint: false },
+    inputSchema,
+    execute
+  };
+}
+
+export function resolveWebMcpHost(environment = globalThis) {
+  const standardHost = environment?.document?.modelContext;
+  if (standardHost && typeof standardHost.registerTool === 'function') {
+    return { modelContext: standardHost, source: 'document.modelContext', standard: true };
+  }
+
+  const legacyHost = environment?.navigator?.modelContext;
+  if (legacyHost && typeof legacyHost.registerTool === 'function') {
+    return { modelContext: legacyHost, source: 'navigator.modelContext', standard: false };
+  }
+
+  return { modelContext: null, source: 'none', standard: false };
+}
+
+export function registerWebMcpTools(workspace, modelContext = null, options = {}) {
+  const resolved = modelContext && typeof modelContext.registerTool === 'function'
+    ? {
+        modelContext,
+        source: options.hostSource || 'explicit',
+        standard: options.standardHost ?? options.hostSource === 'document.modelContext'
+      }
+    : resolveWebMcpHost(options.environment || globalThis);
+
+  const descriptor = createExplainHimSkillDescriptor({
+    pageUrl: options.pageUrl || options.environment?.location?.href || globalThis.location?.href || null,
+    repository: options.repository || 'andrew-veresov/explain-him'
+  });
+
+  if (!resolved.modelContext) {
+    return {
+      supported: false,
+      ok: false,
+      hostSource: resolved.source,
+      standardHost: false,
+      expectedTools: [...EXPLAIN_HIM_WEBMCP_TOOLS],
+      registered: [],
+      registeredUiTools: [],
+      errors: [],
+      skill: { mode: 'unavailable', registered: false, name: descriptor.name },
+      ready: Promise.resolve()
+    };
   }
 
   const emptyInput = { type: 'object', properties: {}, additionalProperties: false };
@@ -118,33 +178,41 @@ export function registerWebMcpTools(workspace, modelContext, options = {}) {
     }
   };
 
-  const descriptor = createExplainHimSkillDescriptor({
-    pageUrl: options.pageUrl || globalThis.location?.href || null,
-    repository: options.repository || 'andrew-veresov/explain-him'
-  });
+  const status = {
+    supported: true,
+    ok: false,
+    hostSource: resolved.source,
+    standardHost: resolved.standard,
+    expectedTools: [...EXPLAIN_HIM_WEBMCP_TOOLS],
+    registered: [],
+    registeredUiTools: [],
+    errors: [],
+    skill: { mode: 'webmcp-tool', registered: false, name: descriptor.name, tool: EXPLAIN_HIM_BOOTSTRAP_TOOL },
+    ready: null
+  };
 
   const tools = [
-    readOnlyTool('get_explanation_context', 'Returns stable authored target IDs and browser-local capabilities; no knowledge content.', async () => workspace.getContext()),
-    readOnlyTool('get_presentation_context', 'Returns Presentation Capability descriptors and trust/execution metadata; no idea knowledge.', async () => ({
+    readOnlyTool('get_explanation_context', 'WebMCP Site Tool: returns stable authored target IDs and browser-local capabilities; no knowledge content.', async () => workspace.getContext()),
+    readOnlyTool('get_presentation_context', 'WebMCP Site Tool: returns Presentation Capability descriptors and trust/execution metadata; no idea knowledge.', async () => ({
       schemaVersion: 'explain-him-presentation-context.v1', artifactSchema: 'explain-him-presentation.v1',
       capabilities: getDefaultPresentationCapabilities(), arbitraryHtml: 'forbidden', arbitraryJavascript: 'forbidden'
     })),
-    readOnlyTool('get_visible_explanation_state', 'Returns browser-local personalized state; it is not a knowledge-search API.', async () => workspace.getVisibleState()),
-    readOnlyTool('get_local_change_history', 'Returns only the local operation history and undo/redo cursor.', async () => workspace.getLocalChangeHistory()),
-    mutationTool('focus_explanation_block', 'Focuses an authored target for the current session.', {
+    readOnlyTool('get_visible_explanation_state', 'WebMCP Site Tool: returns browser-local personalized state; it is not a knowledge-search API.', async () => workspace.getVisibleState()),
+    readOnlyTool('get_local_change_history', 'WebMCP Site Tool: returns only the local operation history and undo/redo cursor.', async () => workspace.getLocalChangeHistory()),
+    mutationTool('focus_explanation_block', 'WebMCP Site Tool: focuses an authored target for the current session.', {
       type: 'object', required: ['targetId'], additionalProperties: false, properties: { targetId: { type: 'string', maxLength: 120 } }
     }, async (input) => workspace.focusBlock(input)),
-    mutationTool('add_local_presentation', 'Adds an already-grounded typed Presentation Artifact to the browser-local layer. Arbitrary HTML/JS is forbidden.', {
+    mutationTool('add_local_presentation', 'WebMCP Site Tool: adds an already-grounded typed Presentation Artifact to the browser-local layer. Arbitrary HTML/JS is forbidden.', {
       type: 'object', required: ['targetId', 'artifact'], additionalProperties: false,
       properties: { targetId: { type: 'string', maxLength: 120 }, artifact: artifactSchema }
     }, async (input) => workspace.addLocalPresentation({
       targetId: input.targetId, artifact: input.artifact, actor: { kind: 'agent', channel: 'webmcp' }
     })),
-    mutationTool('remove_local_presentation', 'Removes one local-* presentation; authored content cannot be removed.', {
+    mutationTool('remove_local_presentation', 'WebMCP Site Tool: removes one local-* presentation; authored content cannot be removed.', {
       type: 'object', required: ['presentationId'], additionalProperties: false,
       properties: { presentationId: { type: 'string', pattern: '^local-', maxLength: 120 } }
     }, async (input) => workspace.removeLocalPresentation(input)),
-    mutationTool('add_local_explanation', 'Compatibility wrapper: adds an already-formed answer as a safe-text browser-local presentation.', {
+    mutationTool('add_local_explanation', 'WebMCP Site Tool compatibility wrapper: adds an already-formed answer as a safe-text browser-local presentation.', {
       type: 'object', required: ['targetId', 'kind', 'title', 'body'], additionalProperties: false,
       properties: {
         targetId: { type: 'string', maxLength: 120 }, kind: { enum: blockKinds }, title: { type: 'string', maxLength: 160 },
@@ -156,39 +224,44 @@ export function registerWebMcpTools(workspace, modelContext, options = {}) {
       actor: { kind: 'agent', channel: 'webmcp' },
       provenance: { sourceBlockIds: input.sourceBlockIds || [input.targetId], repositoryRefs: input.repositoryRefs || [], conversationRef: input.conversationRef || null }
     })),
-    mutationTool('remove_local_explanation', 'Compatibility wrapper for removing one local-* presentation.', {
+    mutationTool('remove_local_explanation', 'WebMCP Site Tool compatibility wrapper for removing one local-* presentation.', {
       type: 'object', required: ['blockId'], additionalProperties: false, properties: { blockId: { type: 'string', pattern: '^local-', maxLength: 120 } }
     }, async (input) => workspace.removeLocalBlock(input)),
-    mutationTool('undo_last_local_change', 'Moves the local operation cursor one step backwards.', emptyInput, async () => workspace.undo()),
-    mutationTool('redo_local_change', 'Moves the local operation cursor one step forwards.', emptyInput, async () => workspace.redo())
+    mutationTool('undo_last_local_change', 'WebMCP Site Tool: moves the local operation cursor one step backwards.', emptyInput, async () => workspace.undo()),
+    mutationTool('redo_local_change', 'WebMCP Site Tool: moves the local operation cursor one step forwards.', emptyInput, async () => workspace.redo()),
+    readOnlyTool(EXPLAIN_HIM_DIAGNOSTIC_TOOL,
+      'Reports whether this page exposes Explain Him through WebMCP/Site Tools and lists the registered tool surface. Use for questions about WebMCP or Site Tool availability.',
+      async () => ({
+        schemaVersion: 'explain-him-webmcp-status.v1',
+        available: true,
+        hostSource: status.hostSource,
+        standardHost: status.standardHost,
+        expectedTools: [...status.expectedTools],
+        registeredTools: [...status.registered],
+        errors: [...status.errors]
+      })),
+    readOnlyTool(EXPLAIN_HIM_BOOTSTRAP_TOOL,
+      'Explain Him WebMCP/Site Tool bootstrap. Returns the repository-scoped explanation instructions and navigation context; call it when you need to understand how to explain this page.',
+      async () => descriptor)
   ];
 
-  const compatibilityTool = readOnlyTool('get_explain_him_skill',
-    'Compatibility fallback for hosts without registerSkill(); returns instructions and navigation context, not knowledge.', async () => descriptor);
-  const status = { supported: true, registered: [], registeredUiTools: [], errors: [],
-    skill: { mode: 'pending', registered: false, name: descriptor.name }, ready: null };
   const register = async (tool) => {
     try {
-      await modelContext.registerTool(tool); status.registered.push(tool.name);
+      await resolved.modelContext.registerTool(tool);
+      status.registered.push(tool.name);
       if (EXPLAIN_HIM_UI_TOOLS.includes(tool.name)) status.registeredUiTools.push(tool.name);
     } catch (error) {
-      status.errors.push({ kind: 'tool', name: tool.name, message: String(error?.message || error) }); throw error;
+      status.errors.push({ kind: 'tool', name: tool.name, message: String(error?.message || error) });
     }
   };
+
   status.ready = (async () => {
-    const results = await Promise.allSettled(tools.map(register));
-    const allUiRegistered = results.every((result) => result.status === 'fulfilled')
-      && status.registeredUiTools.length === EXPLAIN_HIM_UI_TOOLS.length;
-    if (!allUiRegistered) { status.skill = { mode: 'not-registered', registered: false, name: descriptor.name }; return status; }
-    const skillHost = getSkillHost(modelContext);
-    if (skillHost) {
-      try { await skillHost.registerSkill(descriptor); status.skill = { mode: 'registerSkill', registered: true, name: descriptor.name }; return status; }
-      catch (error) { status.errors.push({ kind: 'skill', name: descriptor.name, message: String(error?.message || error) }); }
-    }
-    await register(compatibilityTool).catch(() => undefined);
-    status.skill = { mode: 'compatibility-tool', registered: false, name: descriptor.name,
-      compatibilityToolRegistered: status.registered.includes('get_explain_him_skill') };
+    for (const tool of tools) await register(tool);
+    status.skill.registered = status.registered.includes(EXPLAIN_HIM_BOOTSTRAP_TOOL);
+    status.ok = status.errors.length === 0
+      && status.expectedTools.every((name) => status.registered.includes(name));
     return status;
   })();
+
   return status;
 }
