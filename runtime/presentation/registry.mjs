@@ -23,6 +23,15 @@ const DEFAULT_CAPABILITIES = Object.freeze([
     description: 'Safe text fallback rendered by Explain Him with textContent.'
   }),
   Object.freeze({
+    id: 'explain-him-safe-block',
+    provider: 'explain-him',
+    trust: 'builtin',
+    execution: 'embedded',
+    accepts: ['callout', 'comparison', 'workflow', 'timeline', 'diagram'],
+    fallback: false,
+    description: 'Safe typed explanation blocks rendered from structured data without arbitrary HTML or JavaScript.'
+  }),
+  Object.freeze({
     id: 'archify',
     provider: 'github:tt-a1i/archify',
     trust: 'originator-approved',
