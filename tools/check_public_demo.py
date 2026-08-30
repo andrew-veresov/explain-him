@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from html.parser import HTMLParser
 from pathlib import Path
+import json
 import re
 import sys
 
@@ -10,11 +11,14 @@ TEXT_SUFFIXES = {'.md', '.html', '.css', '.js', '.mjs', '.json', '.yaml', '.yml'
 CYRILLIC_RE = re.compile(r'[\u0400-\u04FF]')
 REQUIRED = [
     'LICENSE', 'README.md', 'AGENTS.md', '00 Home.md', 'index.html', 'explain-him.yaml',
+    'WEBMCP_CHALLENGE.md',
     'skills/explain-him/SKILL.md', 'skills/explain-him/skill.yaml',
     'schemas/presentation-capability.v1.schema.json', 'schemas/presentation-artifact.v1.schema.json',
     'runtime/presentation/registry.mjs', 'runtime/presentation/artifact.mjs',
     'runtime/workspace.mjs', 'runtime/webmcp.mjs', 'assets/app.mjs', 'assets/styles.css',
     'knowledge/07-presentation-capabilities.md', 'resolutions/2026-08-29-presentation-capabilities.md',
+    'resolutions/2026-08-30-webmcp-challenge-surface.md',
+    'tests/webmcp-eval-cases.json', 'tests/webmcp-evals.test.mjs',
     'question-template.md', '.github/ISSUE_TEMPLATE/explain-him-question.md',
     '.obsidian/app.json', '.obsidian/core-plugins.json'
 ]
@@ -23,8 +27,17 @@ FORBIDDEN_CONTENT = [
     'community/evaluation', 'demo/evaluation', 'docs/90 Internal', 'docs/99 Inbox'
 ]
 FORBIDDEN_RUNTIME_SNIPPETS = ['innerHTML', 'insertAdjacentHTML', 'eval(', 'new Function']
-ALLOWED_TOOLS = {
-    'get_explanation_context', 'get_presentation_context', 'get_visible_explanation_state', 'get_local_change_history',
+PUBLIC_WEBMCP_TOOLS = [
+    'get_explanation_context',
+    'get_personalization_state',
+    'focus_explanation',
+    'add_personal_explanation',
+    'remove_personal_explanation',
+    'undo_personalization',
+    'redo_personalization',
+]
+OBSOLETE_PUBLIC_TOOLS = {
+    'get_presentation_context', 'get_visible_explanation_state', 'get_local_change_history',
     'focus_explanation_block', 'add_local_presentation', 'remove_local_presentation',
     'add_local_explanation', 'remove_local_explanation', 'undo_last_local_change', 'redo_local_change',
     'get_webmcp_status', 'get_explain_him_skill'
@@ -120,13 +133,17 @@ def main() -> int:
         'repository: andrew-veresov/explain-him', 'root: .', 'language: en',
         'browser_readable_knowledge_bundle: none', 'webmcp_repository_access: forbidden',
         'consumer_local_capabilities: allowed', 'arbitrary_html: forbidden',
-        'state_model: typed-presentation-operation-log', 'confirmation_before_write: true'
+        'state_model: typed-presentation-operation-log', 'confirmation_before_write: true',
+        'api: document.modelContext', 'registration: imperative-top-level-javascript'
     ]:
         if expected not in manifest:
             errors.append(f'explain-him.yaml: missing invariant {expected!r}')
-    for stale in ['layout: two-panel', 'right_panel:', 'chat_runtime:']:
+    for stale in ['layout: two-panel', 'right_panel:', 'chat_runtime:', 'preferred: registerSkill']:
         if stale in manifest:
-            errors.append(f'explain-him.yaml: stale embedded-chat marker {stale!r}')
+            errors.append(f'explain-him.yaml: stale marker {stale!r}')
+    for name in PUBLIC_WEBMCP_TOOLS:
+        if f'- {name}' not in manifest:
+            errors.append(f'explain-him.yaml: missing public WebMCP tool {name}')
 
     agents = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
     for expected in [
@@ -144,18 +161,40 @@ def main() -> int:
             errors.append(f'SKILL.md: missing presentation/grounding rule {expected!r}')
 
     webmcp = (ROOT / 'runtime/webmcp.mjs').read_text(encoding='utf-8')
-    for name in ALLOWED_TOOLS:
-        if f"'{name}'" not in webmcp:
-            errors.append(f'runtime/webmcp.mjs: missing WebMCP tool {name}')
-    if "source: 'document.modelContext'" not in webmcp or "webmcpApi: 'document.modelContext'" not in webmcp:
+    if 'environment?.document?.modelContext' not in webmcp or "source: 'document.modelContext'" not in webmcp:
         errors.append('runtime/webmcp.mjs: standard document.modelContext host must be primary')
+    if 'registerSkill' in webmcp:
+        errors.append('runtime/webmcp.mjs: non-standard registerSkill dependency is forbidden')
+    if 'getTools' not in webmcp:
+        errors.append('runtime/webmcp.mjs: optional host verification through getTools is required')
+    for name in PUBLIC_WEBMCP_TOOLS:
+        if f"'{name}'" not in webmcp:
+            errors.append(f'runtime/webmcp.mjs: missing public WebMCP tool {name}')
+    for name in OBSOLETE_PUBLIC_TOOLS:
+        if re.search(rf"(?:readOnlyTool|mutationTool)\(\s*['\"]{re.escape(name)}['\"]", webmcp):
+            errors.append(f'runtime/webmcp.mjs: obsolete/overlapping public tool {name}')
     for name in FORBIDDEN_TOOL_NAMES:
-        if re.search(rf"register(?:Tool)?[^\n]*['\"]{re.escape(name)}['\"]", webmcp):
+        if re.search(rf"(?:readOnlyTool|mutationTool)\(\s*['\"]{re.escape(name)}['\"]", webmcp):
             errors.append(f'runtime/webmcp.mjs: forbidden registered tool {name}')
 
     app = (ROOT / 'assets/app.mjs').read_text(encoding='utf-8')
-    if 'environment: globalThis' not in app:
-        errors.append('assets/app.mjs: WebMCP registration must use runtime host discovery')
+    for expected in ['environment: globalThis', 'data', 'webmcp-status-hero', 'webmcpVerifiedTools']:
+        if expected not in app:
+            errors.append(f'assets/app.mjs: missing WebMCP runtime/judge signal {expected!r}')
+
+    challenge = (ROOT / 'WEBMCP_CHALLENGE.md').read_text(encoding='utf-8')
+    for expected in [
+        'Why WebMCP is essential', 'Judge flow', 'Challenge-period work and provenance',
+        'document.modelContext', 'public demo video under three minutes'
+    ]:
+        if expected not in challenge:
+            errors.append(f'WEBMCP_CHALLENGE.md: missing challenge evidence {expected!r}')
+
+    eval_cases = json.loads((ROOT / 'tests/webmcp-eval-cases.json').read_text(encoding='utf-8'))
+    covered = {item.get('expectedTool') for item in eval_cases}
+    missing_eval_tools = sorted(set(PUBLIC_WEBMCP_TOOLS) - covered)
+    if missing_eval_tools:
+        errors.append(f'tests/webmcp-eval-cases.json: missing tool coverage {missing_eval_tools}')
 
     artifact = (ROOT / 'runtime/presentation/artifact.mjs').read_text(encoding='utf-8')
     for expected in ['DANGEROUS_KEYS', 'content.payload', 'explain-him-presentation.v1']:

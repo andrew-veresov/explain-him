@@ -8,19 +8,23 @@ tags: [explain-him, overview]
 
 ## Short formula
 
-**The Originator's repository stores the authored explanation and versioned materials; a repository-scoped skill turns them into a capability of the user's personal agent; GitHub Issues return questions to the Originator when the available evidence is still insufficient.**
+**The Originator publishes canonical meaning once; a user's personal agent explains it at the right depth; WebMCP turns the authored page into a shared human–agent surface where both can inspect and personalize the same live explanation without rewriting the original.**
 
 ```mermaid
 flowchart LR
     O[Originator] --> R[Public repository]
     R --> P[Authored HTML page]
-    R --> S[Repository-scoped skill]
+    R --> S[Repository-scoped instructions]
     U[User] --> A[Personal agent]
-    P --> A
+    P --> W[WebMCP page context + actions]
+    W --> A
     S --> A
     A --> E[Grounded explanation]
-    E --> Q{Enough evidence?}
-    Q -->|Yes| U
+    E --> U
+    A --> W
+    W --> L[Browser-local personalization]
+    L --> U
+    A --> Q{Enough evidence?}
     Q -->|No| I[GitHub Issue after confirmation]
     I --> O
     O --> R
@@ -30,22 +34,23 @@ flowchart LR
 
 1. **Idea repository** — storage, versioning, public address, and access model.
 2. **Authored page** — a visual explanation prepared by the Originator.
-3. **Bootstrap** — `README.md`, `AGENTS.md`, and the manifest.
-4. **Knowledge and resolutions** — context, statuses, provenance, and accepted clarifications.
-5. **Repository-scoped skill** — the procedure for discovery, grounding, visualization, and escalation.
-6. **User's personal agent** — the primary conversational interface.
-7. **GitHub Issues** — the feedback loop for new questions.
+3. **Bootstrap** — `README.md`, `AGENTS.md`, the portable skill, and the manifest.
+4. **Knowledge and resolutions** — deeper context, statuses, provenance, and accepted clarifications.
+5. **WebMCP Site Tools** — structured meaning from the current page plus safe shared focus/personalization actions.
+6. **User's personal agent** — the primary conversational and reasoning interface.
+7. **GitHub Issues** — the confirmed feedback loop for new questions.
 
 A separate hosted Explain Him Pro runtime is not required for this model.
 
 ## Ownership principle
 
-> The Originator controls canonical meaning. The user controls the question and depth. The personal agent controls the path of a specific explanation within grounded sources.
+> The Originator controls canonical meaning. The user controls the question and depth. The personal agent controls the path of a specific explanation within grounded sources. WebMCP controls only the typed interaction contract with the current page.
 
 ## Status
 
-- Public repository, page, knowledge, and skill are `current` artifacts.
-- Browser-local workspace and WebMCP tools are a `demo-only` implementation.
-- Native cross-browser `registerSkill()` compatibility is `target`/`open` depending on the host.
+- Public repository, authored page, knowledge, instructions, and current WebMCP implementation are `current` artifacts of the public demo.
+- Browser-local workspace/personalization is `demo-only` product behavior.
+- Cross-device/private hosted capabilities belong to Explain Him Pro.
+- Direct Site Tool support depends on the browser/agent host.
 
-See [[03-grounding-and-status]], [[04-question-loop]], and [[06-browser-local-workspace]].
+See [[03-grounding-and-status]], [[04-question-loop]], [[06-browser-local-workspace]], and [[../resolutions/2026-08-30-webmcp-challenge-surface]].

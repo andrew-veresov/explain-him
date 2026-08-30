@@ -1,8 +1,162 @@
 # Explain Him
 
-**Explain Him** is a way to publish an idea so that a user's personal AI agent can understand it, explain it at the required depth, and keep an Originator-authored HTML page synchronized with the conversation.
+**Express your idea once. Explain Him lets each person's AI explain it to them — and use the same live page as a shared explanation surface.**
 
-This repository is a standalone public demo/reference package for the core approach. It does not require a separate hosted Explain Him runtime or a separate Explain Him chat.
+Explain Him publishes an Originator-authored visual explanation together with a typed WebMCP contract. A user's personal agent can understand the current page, answer at the right depth, focus relevant parts, and add reversible browser-local analogies, examples, summaries, warnings, or comparisons without rewriting the original.
+
+- **Live demo:** <https://andrew-veresov.github.io/explain-him/>
+- **WebMCP Challenge judge guide:** [[WEBMCP_CHALLENGE]]
+- **Public source:** <https://github.com/andrew-veresov/explain-him>
+- **License:** Apache-2.0
+
+## Why WebMCP
+
+Without WebMCP, a browser agent can read pixels/DOM and click controls, but it has to infer application structure and state. Explain Him gives the agent an explicit contract for two things that matter to the product:
+
+1. **meaning on the current authored page** — stable semantic targets, headings, and concise text;
+2. **the shared local explanation state** — focus, add, remove, undo, and redo actions that change the same page the human is viewing.
+
+```text
+Human asks a question
+        |
+        v
+Personal AI agent
+        |
+        +---- get_explanation_context ----> authored page meaning
+        |
+        +---- answer in normal chat
+        |
+        +---- focus/add/remove/undo/redo --> browser-local page state
+                                                |
+                                                v
+                                  human sees the same change
+```
+
+The authored layer remains immutable. Personalization is local, visible, reversible, and never becomes canonical evidence.
+
+## WebMCP Site Tools
+
+Explain Him uses top-level imperative WebMCP through `document.modelContext.registerTool()`.
+
+The public surface is deliberately small and user-oriented:
+
+| Tool | Purpose |
+|---|---|
+| `get_explanation_context` | Read structured meaning already present on the current authored page |
+| `get_personalization_state` | Inspect browser-local additions and undo/redo state |
+| `focus_explanation` | Show and focus one authored target |
+| `add_personal_explanation` | Add a safe local analogy/example/summary/warning/comparison |
+| `remove_personal_explanation` | Remove one browser-local addition |
+| `undo_personalization` | Undo the latest local change |
+| `redo_personalization` | Redo a reverted local change |
+
+There are no duplicate compatibility tools, diagnostic tools, or WebMCP tools for repository search/answer generation. The browser contract models user intentions rather than internal implementation details.
+
+When the host also exposes `document.modelContext.getTools()`, the page verifies the seven expected tools against the host and reports **WebMCP verified**. Otherwise successful `registerTool()` registration reports **WebMCP ready**.
+
+## Try the human–agent flow
+
+Open the live page in the ChatGPT desktop in-app browser with Site Tools enabled, or a WebMCP-enabled Chrome build, then try:
+
+1. **“Explain this idea in one paragraph, then add a short analogy next to the mechanism.”**
+2. **“Focus the part about grounding.”**
+3. **“Undo my last personalization.”**
+
+The first prompt exercises structured page understanding plus a visible local mutation; the next two show shared navigation and reversible collaboration.
+
+See [[WEBMCP_CHALLENGE]] for the exact judge flow, expected tool calls, challenge-period commit provenance, and submission checklist.
+
+## Responsibility split
+
+### Personal agent
+
+The personal agent owns conversation, reasoning, and grounding. It:
+
+- understands the user's question and desired depth;
+- uses WebMCP current-page context when available;
+- reads repository sources only when deeper evidence is necessary;
+- applies source precedence and statuses;
+- forms the grounded answer and provenance;
+- decides whether a specialized Presentation Capability would improve understanding;
+- handles the confirmed GitHub Issue feedback flow when evidence is insufficient.
+
+### Explain Him page / WebMCP
+
+The page:
+
+- presents Originator-authored visual meaning;
+- exposes structured meaning from that current page;
+- exposes stable targets and browser-local state;
+- lets the agent and human share focus and local personalization;
+- persists browser-local changes and supports undo/redo.
+
+WebMCP **does not** search the repository, resolve claims, generate canonical answers, inject arbitrary HTML/JavaScript, or create GitHub Issues.
+
+### Presentation Capability
+
+A Presentation Capability is a pluggable way to represent already-grounded meaning as a diagram, architecture map, workflow, timeline, graph, simulation, data visualization, or another specialized view.
+
+The personal agent owns meaning; the presenter owns representation. Presenter output is not new evidence.
+
+The public reference registry includes:
+
+| Capability | Trust | Execution | Purpose |
+|---|---|---|---|
+| `explain-him-safe-text` | `builtin` | `embedded` | deterministic safe fallback |
+| `archify` | `originator-approved` | `personal-agent` | architecture, workflow, sequence, dataflow, lifecycle |
+
+External presenter HTML is never injected into the Explain Him DOM.
+
+## Browser-local workspace
+
+```text
+Originator-authored HTML
+        +
+browser-local typed operations
+        =
+personalized visible explanation
+```
+
+Workspace v2 provides:
+
+- typed local Presentation Artifacts with provenance;
+- IndexedDB with a memory fallback;
+- undo/redo;
+- JSON export;
+- confirmed reset;
+- safe DOM rendering through `textContent`;
+- the same underlying workspace API for Site Tools and accessible browser controls.
+
+Cross-device sync, collaboration, private hosted storage, and operational guarantees belong to **Explain Him Pro**.
+
+## Source and grounding model
+
+When sources conflict, use this precedence:
+
+1. accepted `resolutions/`;
+2. Originator-authored `index.html` and explicit `explain-him.yaml` claims;
+3. `knowledge/`;
+4. `README.md` and navigation material;
+5. agent inference.
+
+Important statuses are `current`, `target`, `hypothesis`, `open`, `demo-only`, and `deprecated`. Browser-local additions are never canonical evidence.
+
+## Browser compatibility
+
+| Host | Behavior |
+|---|---|
+| ChatGPT desktop in-app browser | Primary Site Tools / challenge path through `document.modelContext` |
+| Chrome with WebMCP enabled | Same imperative tool surface; `getTools()` verification is used when available |
+| ChatGPT/Codex Chrome sidebar without Site Tool access | Page reading + accessible controls remain the graceful fallback |
+| Browser without WebMCP | Human controls continue to work over the same local workspace |
+
+`navigator.modelContext` is retained only as a legacy fallback for older experimental hosts. Explain Him does not depend on the non-standard `registerSkill()` proposal or on declarative WebMCP support.
+
+## Challenge-period work
+
+The Explain Him concept predates the WebMCP Challenge, but the public WebMCP implementation was created and substantially extended after the challenge start. The public repository itself was created on August 27, 2026.
+
+Key evidence and the distinction between earlier product ideation and challenge-period implementation are documented in [[WEBMCP_CHALLENGE]].
 
 ## Quick start
 
@@ -12,182 +166,39 @@ python -m http.server 8000
 
 Open `http://localhost:8000/`.
 
-`index.html` is a visual explanation page prepared by the Originator. Conversation happens in the user's browser/personal agent; the page itself contains no chat panel.
+Conversation happens in the user's existing agent interface; the Explain Him page intentionally contains no second chat panel.
 
-## Using Explain Him with a personal agent
+## Tests and evals
 
-Give the agent a link to this repository and ask it to explain the idea. The agent should:
-
-1. read `AGENTS.md` and the repository-scoped skill;
-2. read the current HTML page;
-3. inspect only the minimum repository sources required for deeper context;
-4. distinguish `current`, `target`, `hypothesis`, `open`, and `demo-only`;
-5. form and ground the answer in its normal chat;
-6. decide whether a specialized presentation would materially improve understanding;
-7. if useful, resolve a trusted Presentation Capability and form a typed Presentation Artifact;
-8. use WebMCP Site Tools to synchronize the visual/browser-local layer when the current host supports them, otherwise use the accessible browser-agent controls over the same workspace API;
-9. when evidence is insufficient, offer a minimized Issue draft and obtain confirmation before writing.
-
-## Model
-
-```text
-User <-> browser / personal agent
-                    |
-          +---------+--------------------+
-          |                              |
-          v                              v
-  read page/repository          form grounded meaning
-                                         |
-                                         v
-                               Presentation Artifact
-                                         |
-                              +----------+----------+
-                              |                     |
-                              v                     v
-                       trusted capability     consumer-local tool
-                              |
-                              v
-                     personal representation
-                              |
-                              v
-               WebMCP Site Tool / browser-control sync
-                              |
-                              v
-Originator-authored HTML + browser-local operations
-                              |
-                              v
-                 personalized visual explanation
+```bash
+python tools/check_public_demo.py
+node --test tests/*.test.mjs
 ```
 
-## Responsibility split
-
-### Personal agent
-
-- owns the conversation, reasoning, and grounding;
-- understands the question and desired depth;
-- reads the authored page and, when needed, the repository;
-- applies source precedence and statuses;
-- forms a grounded answer and provenance;
-- decides whether a Presentation Capability would help;
-- forms the typed Presentation Artifact before invoking an external presenter;
-- performs the GitHub Issue flow after user confirmation.
-
-### Presentation Capability
-
-A Presentation Capability is a pluggable ability to represent already-grounded meaning as a diagram, architecture map, workflow, timeline, graph, simulation, data visualization, or another specialized view.
-
-It does **not** own repository reasoning and does not become evidence. The Originator controls what may execute inside the trusted page; the Consumer may use their own local presentation tools outside that surface.
-
-Archify is included only as a reference `originator-approved` capability for technical views. It runs on the personal-agent side; its generated HTML is never injected directly into the Explain Him DOM.
-
-### Explain Him page / WebMCP
-
-- presents the authored visual explanation;
-- exposes the repository-scoped Explain Him bootstrap through the `get_explain_him_skill` WebMCP tool;
-- reports WebMCP availability and registered Site Tools through `get_webmcp_status`;
-- reports stable visual targets, presentation capabilities, and local workspace state;
-- focuses an authored block;
-- adds an already-grounded typed Presentation Artifact to the browser-local layer;
-- supports remove, undo, and redo.
-
-The current standard host is `document.modelContext`. `navigator.modelContext` is retained only as a legacy compatibility fallback. Explain Him does not depend on a non-standard `registerSkill()` API.
-
-WebMCP **does not** search knowledge, read the repository, form answers, execute presentation reasoning, create Issues, or provide a second chat interface.
-
-## Agent host compatibility
-
-| Host | Explain Him integration |
-|---|---|
-| ChatGPT desktop built-in browser | Native WebMCP/Site Tools through `document.modelContext`; this is the primary acceptance path. |
-| Google Chrome with WebMCP enabled by experimental flag or origin trial | Standard WebMCP tools register through `document.modelContext` and are available to WebMCP-aware agents. |
-| ChatGPT Chrome extension/sidebar | The page remains usable through page reading and accessible browser controls. OpenAI currently does not expose ChatGPT Site Tools in Chrome, so the sidebar cannot directly invoke the WebMCP tool surface yet. |
-| Browser without WebMCP | Accessible controls call the same browser-local workspace API. |
-
-For Desktop ChatGPT, Site Tools availability also depends on the account, selected model, and the **Enable site tools** browser permission. For Chrome WebMCP testing, use the current Chrome experimental flag or origin trial.
-
-## Browser-local workspace
-
-The authored HTML remains immutable. Personalization is stored in the browser as a typed operation log:
-
-```text
-Originator-authored HTML + browser-local presentation operations = personalized visible page
-```
-
-Workspace v2 stores generalized `add-presentation` / `remove-presentation` operations. Existing v1 `add-block` data is migrated to safe-text Presentation Artifacts.
-
-The implementation includes:
-
-- typed Presentation Artifacts with provenance;
-- capability trust/execution metadata;
-- IndexedDB with a memory fallback;
-- undo/redo;
-- JSON export;
-- confirmed reset;
-- safe DOM rendering through `textContent`;
-- WebMCP Site Tools and accessible browser controls over the same workspace API;
-- standard `document.modelContext` host discovery with a legacy fallback;
-- a WebMCP diagnostics tool and repository-scoped bootstrap tool;
-- compatibility wrappers for the previous block API.
-
-Cross-device sync, collaboration, private hosted storage, and operational guarantees belong to **Explain Him Pro**.
-
-## Presentation Capability v1
-
-The public reference registry currently contains:
-
-| Capability | Trust | Execution | Purpose |
-|---|---|---|---|
-| `explain-him-safe-text` | `builtin` | `embedded` | deterministic safe fallback |
-| `archify` | `originator-approved` | `personal-agent` | architecture, workflow, sequence, dataflow, lifecycle |
-
-Capability resolution prefers an explicit Consumer request when allowed, then the Originator recommendation, semantic match, runtime availability, and finally the safe fallback. Security policy may veto any candidate.
-
-The page never accepts arbitrary HTML or JavaScript as a Presentation Artifact.
-
-## What is real and what is a target
-
-| Element | Status |
-|---|---|
-| Public repository, authored page, skill, knowledge, resolutions | `current` artifacts |
-| Presentation Capability contract and reference registry | `current` reference implementation |
-| Browser-local workspace v2 and WebMCP Site Tools on this page | `demo-only` implementation |
-| Standard WebMCP host discovery through `document.modelContext` | `current` implementation |
-| Archify adapter contract | `demo-only`; external execution depends on the personal-agent environment |
-| Conversation in the user's browser/personal agent | `current` product boundary |
-| Embedded Explain Him chat | intentionally absent |
-| Direct Site Tool invocation from the ChatGPT Chrome sidebar | external platform limitation; accessible browser controls are the compatibility path |
-| GitHub Issues as the only mass-market feedback UX | `hypothesis` |
-| A2UI | optional target, not a web-flow requirement |
+Checks cover public boundaries, WebMCP host discovery, tool registration/verification, schema quality, semantic page context, visible mutations, workspace behavior, Presentation Artifact safety, and prompt-to-tool eval fixtures.
 
 ## Repository structure
 
 ```text
-index.html                     authored explanation page
-AGENTS.md                      repository-scoped bootstrap
+index.html                     Originator-authored explanation page
+WEBMCP_CHALLENGE.md            challenge judge guide and provenance
+AGENTS.md                      repository-scoped agent instructions
 explain-him.yaml               machine-readable manifest
-skills/explain-him/            repository skill
+skills/explain-him/            portable repository skill
 knowledge/                     public explanatory sources
-resolutions/                   accepted public decisions
+resolutions/                   accepted/superseded decisions
 schemas/                       Presentation Capability / Artifact schemas
-runtime/presentation/          registry, policy checks, artifact validation
-runtime/                       browser-local + WebMCP runtime
-assets/                        UI styles and orchestration
-question-template.md           safe Issue draft
+runtime/webmcp.mjs             Site Tool contract and registration
+runtime/workspace.mjs          browser-local state and safe rendering
+runtime/presentation/          presentation registry and validation
+assets/                        page UI and orchestration
+tests/                         contracts and WebMCP eval fixtures
 00 Home.md + .obsidian/        Obsidian Vault entrypoint
 ```
 
-## Checks
-
-```bash
-python tools/check_public_demo.py
-node --test tests/workspace.test.mjs tests/webmcp.test.mjs tests/presentation.test.mjs
-```
-
-The checks reject private dependencies, internal product contours, arbitrary HTML injection, untrusted presentation channels, WebMCP retrieval/answer tools, obsolete host wiring, root-scope errors, and non-English Cyrillic content in project text files.
-
 ## Project language
 
-Repository-authored content is English: documentation, UI copy, manifests, templates, resolutions, examples, code-facing text, and tests. A personal agent may still answer an end user in the user's preferred language.
+Repository-authored content is English: documentation, UI copy, manifests, templates, resolutions, examples, code-facing text, and tests. A personal agent may answer an end user in the user's preferred language.
 
 ## License
 
