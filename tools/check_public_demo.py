@@ -99,7 +99,10 @@ def resolve_wikilink(source: Path, raw: str) -> bool:
 def main() -> int:
     errors: list[str] = []
 
-    for item in REQUIRED:
+    deployment_required = ['tools/check_live_pages.py', '.github/workflows/live-pages-smoke.yml']
+    if PRIVATE_DEMO:
+        deployment_required = ['../tools/check_live_pages.py', '../distribution/public-workflows/live-pages-smoke.yml']
+    for item in [*REQUIRED, *deployment_required]:
         if not (ROOT / item).is_file():
             errors.append(f'Missing required file: {item}')
 
@@ -182,9 +185,20 @@ def main() -> int:
             errors.append('distribution/public-facade.yml: missing private-to-public publication policy')
         else:
             policy = distribution.read_text(encoding='utf-8')
-            for expected in ['source: demo/.nojekyll', 'target: .nojekyll', 'source: demo/tests/**', 'target: tests/**', 'source: demo/tools/check_public_demo.py', 'target: tools/check_public_demo.py', 'transactional-typed-presentation-operation-log', 'github-pages-preserves-raw-skill-markdown']:
+            for expected in ['source: demo/.nojekyll', 'target: .nojekyll', 'source: demo/tests/**', 'target: tests/**', 'source: demo/tools/check_public_demo.py', 'target: tools/check_public_demo.py', 'source: tools/check_live_pages.py', 'target: tools/check_live_pages.py', 'source: distribution/public-workflows/live-pages-smoke.yml', 'target: .github/workflows/live-pages-smoke.yml', 'transactional-typed-presentation-operation-log', 'github-pages-preserves-raw-skill-markdown', 'deployed-pages-matches-exact-public-sha']:
                 if expected not in policy:
                     errors.append(f'distribution/public-facade.yml: missing controlled facade rule {expected!r}')
+
+    workflow_path = ROOT / '.github' / 'workflows' / 'live-pages-smoke.yml'
+    if PRIVATE_DEMO:
+        workflow_path = ROOT.parent / 'distribution' / 'public-workflows' / 'live-pages-smoke.yml'
+    live_workflow = workflow_path.read_text(encoding='utf-8')
+    for expected in ['workflow_run:', 'pages-build-deployment', 'workflow_dispatch:', 'head_branch == \'main\'', 'contents: read', 'deployments: read', 'WORKFLOW_RUN_SHA:', 'DISPATCH_SHA:', '[[ "$candidate" =~ ^[0-9a-f]{40}$ ]]', 'printf \'sha=%s\\n\' "$candidate" >> "$GITHUB_OUTPUT"', 'ref: ${{ steps.revision.outputs.sha }}', 'EXPECTED_SHA:', 'tools/check_live_pages.py', '--expected-sha "$EXPECTED_SHA"', 'GITHUB_STEP_SUMMARY', 'actions/upload-artifact@v4']:
+        if expected not in live_workflow:
+            errors.append(f'.github/workflows/live-pages-smoke.yml: missing deployment smoke invariant {expected!r}')
+    for unsafe in ['echo "sha=${{', '--expected-sha "${{', 'candidate="${{']:
+        if unsafe in live_workflow:
+            errors.append(f'.github/workflows/live-pages-smoke.yml: unsafe direct shell interpolation {unsafe!r}')
 
     agents = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
     for expected in [

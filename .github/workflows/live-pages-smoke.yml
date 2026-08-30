@@ -1,0 +1,74 @@
+name: Live Pages smoke
+
+on:
+  workflow_run:
+    workflows: [pages-build-deployment]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Exact public commit SHA to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  deployments: read
+
+jobs:
+  smoke:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Resolve exact deployed SHA
+        id: revision
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          WORKFLOW_RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          DISPATCH_SHA: ${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            candidate="$WORKFLOW_RUN_SHA"
+          else
+            candidate="$DISPATCH_SHA"
+          fi
+          [[ "$candidate" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid exact SHA" >&2; exit 1; }
+          printf 'sha=%s\n' "$candidate" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.revision.outputs.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify deployed facade and GitHub Pages provenance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ steps.revision.outputs.sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          python tools/check_live_pages.py \
+            --expected-sha "$EXPECTED_SHA" \
+            --repository "$REPOSITORY" \
+            --report live-pages-smoke.json \
+            --markdown-report live-pages-smoke.md
+      - name: Publish smoke summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f live-pages-smoke.md ]; then
+            cat live-pages-smoke.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '%s\n' '# Explain Him live Pages smoke' '' 'No report was produced.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-pages-smoke-${{ steps.revision.outputs.sha }}
+          path: |
+            live-pages-smoke.json
+            live-pages-smoke.md
+          if-no-files-found: warn
