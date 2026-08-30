@@ -1,6 +1,6 @@
-schema_version: explain-him-explanation.v3
+schema_version: explain-him-explanation.v4
 id: explain-him-public-demo
-version: 0.3.0
+version: 0.4.0
 title: How Explain Him works
 language: en
 status: public-demo
@@ -17,12 +17,11 @@ bootstrap:
 
 skills:
   - id: explain-him
-    manifest: skills/explain-him/skill.yaml
     entrypoint: skills/explain-him/SKILL.md
-    browser_delivery:
-      preferred: webmcp-authored-page-context
-      note: WebMCP exposes page meaning and shared UI actions; repository instructions remain repository-scoped.
-    non_browser_delivery: repository-skill
+    responsibility: grounding-and-github-retrieval
+  - id: explain-him-presentation
+    entrypoint: skills/explain-him-presentation/SKILL.md
+    responsibility: typed-block-selection-and-webmcp-embedding
 
 answer_runtime:
   owner: personal-agent
@@ -66,6 +65,13 @@ knowledge:
 presentation:
   authored_entrypoint: index.html
   authored_by: originator
+  typed_block_schema: schemas/explanation-block.v1.schema.json
+  supported_typed_blocks:
+    - callout
+    - comparison
+    - workflow
+    - timeline
+    - diagram
   policy:
     authored_layer: immutable
     consumer_local_capabilities: allowed
@@ -78,50 +84,36 @@ presentation:
       trust: builtin
       execution: embedded
       fallback: true
+      role: legacy-safe-text-fallback
+    - id: explain-him-safe-block
+      provider: explain-him
+      trust: builtin
+      execution: embedded
+      fallback: false
+      role: typed-page-block-renderer
       accepts:
-        - text
         - callout
         - comparison
-        - diagram
-        - architecture-map
         - workflow
-        - sequence
-        - dataflow
-        - lifecycle
         - timeline
-        - graph
-        - simulation
-        - data-visualization
+        - diagram
     - id: archify
       provider: github:tt-a1i/archify
       trust: originator-approved
       execution: personal-agent
       fallback: false
-      accepts:
-        - architecture-map
-        - workflow
-        - sequence
-        - dataflow
-        - lifecycle
       role: reference-presentation-specialist
       repository_reasoning: forbidden
-      output_embedding: fallback-only
-  resolution_order:
-    - explicit-consumer-request
-    - originator-recommendation
-    - semantic-match
-    - runtime-availability
-    - safe-fallback
+      output_embedding: translate-to-safe-typed-block
   browser_local_workspace:
     status: demo-only
     schema_version: explain-him-local-workspace.v2
     state_model: typed-presentation-operation-log
     authored_layer: immutable
     durable_operations: [add-presentation, remove-presentation]
-    compatibility_operations: [add-block, remove-block]
     persistence: indexeddb-with-memory-fallback
-    renderer: safe-dom-text-content
-    undo_redo: true
+    renderer: safe-typed-dom
+    undo_redo: human-control
     export: json
     destructive_reset_requires_confirmation: true
 
@@ -130,31 +122,32 @@ webmcp:
   api: document.modelContext
   registration: imperative-top-level-javascript
   declarative_api_required: false
-  repository_access: forbidden
-  purpose: authored-page-context-and-shared-ui
+  purpose: typed-result-delivery-to-shared-page
   tools:
-    - get_explanation_context
-    - get_personalization_state
-    - focus_explanation
-    - add_personal_explanation
-    - remove_personal_explanation
-    - undo_personalization
-    - redo_personalization
+    - get_explanation_contract
+    - apply_explanation
+  contract_returns:
+    - repository-location
+    - grounding-skill-location
+    - typed-block-schema-location
+    - authored-insertion-targets
+    - browser-local-block-ids
+  apply_operations:
+    - add
+    - remove
   allowed_capabilities:
-    - authored-page-context-read
-    - local-personalization-state-read
-    - visual-focus
-    - local-explanation-add
-    - local-explanation-remove
-    - local-undo
-    - local-redo
+    - integration-contract-read
+    - typed-local-block-add
+    - typed-local-block-remove
   forbidden_capabilities:
+    - diagnostics-as-agent-tool
     - knowledge-search
     - repository-read
     - repository-search
     - claim-resolution
     - answer-generation
-    - presentation-reasoning
+    - grounding
+    - presentation-strategy
     - arbitrary-html-injection
     - github-issue-search
     - github-issue-create
@@ -176,19 +169,16 @@ claims:
   - id: originator-authored-page-is-first-class-source
     status: current
     evidence: resolutions/2026-08-30-webmcp-challenge-surface.md
-  - id: repository-scoped-skill-exists
+  - id: grounding-skill-exists
     status: current
     evidence: skills/explain-him/SKILL.md
+  - id: typed-presentation-skill-exists
+    status: current
+    evidence: skills/explain-him-presentation/SKILL.md
   - id: browser-local-typed-workspace-exists
     status: demo-only
     evidence: resolutions/2026-08-26-browser-local-workspace.md
-  - id: presentation-capability-model
-    status: current
-    evidence: resolutions/2026-08-29-presentation-capabilities.md
-  - id: archify-reference-capability
-    status: demo-only
-    evidence: knowledge/07-presentation-capabilities.md
-  - id: webmcp-exposes-page-context-and-shared-ui
+  - id: webmcp-is-typed-result-delivery-channel
     status: current
     evidence: resolutions/2026-08-30-webmcp-challenge-surface.md
   - id: direct-chatgpt-chrome-sidebar-site-tools
