@@ -32,6 +32,24 @@ function downloadJson(text) {
   URL.revokeObjectURL(url);
 }
 
+function publishWebMcpStatus(registration) {
+  globalThis.explainHimWebMcp = registration;
+  document.documentElement.dataset.webmcpState = registration.supported ? 'detected' : 'unavailable';
+  document.documentElement.dataset.webmcpHost = registration.hostSource || 'none';
+}
+
+function dispatchWebMcpReady(registration) {
+  if (typeof globalThis.CustomEvent !== 'function' || typeof globalThis.dispatchEvent !== 'function') return;
+  globalThis.dispatchEvent(new CustomEvent('explain-him:webmcp-ready', {
+    detail: {
+      supported: registration.supported,
+      ok: registration.ok,
+      hostSource: registration.hostSource,
+      registeredTools: [...registration.registered]
+    }
+  }));
+}
+
 async function main() {
   for (const tab of document.querySelectorAll('[data-section]')) {
     tab.addEventListener('click', () => activateSection(tab.dataset.section));
@@ -97,26 +115,34 @@ async function main() {
   });
   byId('history-close')?.addEventListener('click', () => byId('history-dialog').close());
 
-  const registration = registerWebMcpTools(workspace, globalThis.navigator?.modelContext, {
+  const registration = registerWebMcpTools(workspace, null, {
+    environment: globalThis,
     pageUrl: globalThis.location?.href,
     repository: 'andrew-veresov/explain-him'
   });
+  publishWebMcpStatus(registration);
+
   const status = byId('webmcp-status');
   if (!registration.supported) {
-    status.textContent = 'WebMCP host not detected · browser controls available';
-  } else {
-    status.textContent = 'Registering WebMCP…';
-    await registration.ready;
-    status.textContent = registration.skill.mode === 'registerSkill'
-      ? 'Skill and UI tools registered'
-      : registration.skill.compatibilityToolRegistered
-        ? 'UI tools + compatibility skill tool'
-        : 'Some WebMCP tools are unavailable';
+    if (status) status.textContent = 'WebMCP host not detected · browser-agent controls available';
+    dispatchWebMcpReady(registration);
+    return;
   }
+
+  if (status) status.textContent = `WebMCP detected via ${registration.hostSource} · registering Site Tools…`;
+  await registration.ready;
+  document.documentElement.dataset.webmcpState = registration.ok ? 'ready' : 'partial';
+  if (status) {
+    status.textContent = registration.ok
+      ? `WebMCP ready · ${registration.registered.length} Site Tools · ${registration.hostSource}`
+      : `WebMCP partial · ${registration.registered.length}/${registration.expectedTools.length} Site Tools · ${registration.hostSource}`;
+  }
+  dispatchWebMcpReady(registration);
 }
 
 main().catch((error) => {
   console.error(error);
   const status = byId('webmcp-status');
   if (status) status.textContent = `Initialization error: ${error.message}`;
+  document.documentElement.dataset.webmcpState = 'error';
 });
