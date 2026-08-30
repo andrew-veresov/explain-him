@@ -1,10 +1,10 @@
 ---
-title: Explain Him — overview
+title: Explain Him – overview
 status: current
 tags: [explain-him, overview]
 ---
 
-# Explain Him — overview
+# Explain Him – overview
 
 ## Short formula
 
@@ -16,7 +16,7 @@ flowchart LR
     R --> P[Authored HTML page]
     R --> S[Repository-scoped instructions]
     U[User] --> A[Personal agent]
-    P --> W[WebMCP page context + actions]
+    P --> W[WebMCP contract + typed result delivery]
     W --> A
     S --> A
     A --> E[Grounded explanation]
@@ -32,13 +32,13 @@ flowchart LR
 
 ## Required components
 
-1. **Idea repository** — storage, versioning, public address, and access model.
-2. **Authored page** — a visual explanation prepared by the Originator.
-3. **Bootstrap** — `README.md`, `AGENTS.md`, the portable skill, and the manifest.
-4. **Knowledge and resolutions** — deeper context, statuses, provenance, and accepted clarifications.
-5. **WebMCP Site Tools** — structured meaning from the current page plus safe shared focus/personalization actions.
-6. **User's personal agent** — the primary conversational and reasoning interface.
-7. **GitHub Issues** — the confirmed feedback loop for new questions.
+1. **Idea repository** – storage, versioning, public address, and access model.
+2. **Authored page** – a visual explanation prepared by the Originator.
+3. **Bootstrap** – `README.md`, `AGENTS.md`, the portable skill, and the manifest.
+4. **Knowledge and resolutions** – deeper context, statuses, provenance, and accepted clarifications.
+5. **WebMCP Site Tools** – repository/skill/target discovery plus safe typed add/remove/focus operations.
+6. **User's personal agent** – the primary conversational and reasoning interface.
+7. **GitHub Issues** – the confirmed feedback loop for new questions.
 
 A separate hosted Explain Him Pro runtime is not required for this model.
 

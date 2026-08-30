@@ -13,6 +13,7 @@ REQUIRED = [
     'LICENSE', 'README.md', 'AGENTS.md', '00 Home.md', 'index.html', 'explain-him.yaml',
     'WEBMCP_CHALLENGE.md',
     'skills/explain-him/SKILL.md', 'skills/explain-him/skill.yaml',
+    'skills/explain-him-presentation/SKILL.md', 'schemas/explanation-block.v1.schema.json',
     'schemas/presentation-capability.v1.schema.json', 'schemas/presentation-artifact.v1.schema.json',
     'runtime/presentation/registry.mjs', 'runtime/presentation/artifact.mjs',
     'runtime/workspace.mjs', 'runtime/webmcp.mjs', 'assets/app.mjs', 'assets/styles.css',
@@ -28,15 +29,13 @@ FORBIDDEN_CONTENT = [
 ]
 FORBIDDEN_RUNTIME_SNIPPETS = ['innerHTML', 'insertAdjacentHTML', 'eval(', 'new Function']
 PUBLIC_WEBMCP_TOOLS = [
-    'get_explanation_context',
-    'get_personalization_state',
-    'focus_explanation',
-    'add_personal_explanation',
-    'remove_personal_explanation',
-    'undo_personalization',
-    'redo_personalization',
+    'get_explanation_contract',
+    'apply_explanation',
 ]
 OBSOLETE_PUBLIC_TOOLS = {
+    'get_explanation_context', 'get_personalization_state', 'focus_explanation',
+    'add_personal_explanation', 'remove_personal_explanation',
+    'undo_personalization', 'redo_personalization',
     'get_presentation_context', 'get_visible_explanation_state', 'get_local_change_history',
     'focus_explanation_block', 'add_local_presentation', 'remove_local_presentation',
     'add_local_explanation', 'remove_local_explanation', 'undo_last_local_change', 'redo_local_change',
@@ -116,6 +115,13 @@ def main() -> int:
     parser.feed(html)
     if '<html lang="en">' not in html:
         errors.append('index.html: project page language must be English')
+    for expected in [
+        'name="explain-him-repository" content="andrew-veresov/explain-him"',
+        'name="explain-him-skill" content="skills/explain-him/SKILL.md"',
+        'name="explain-him-presentation-skill" content="skills/explain-him-presentation/SKILL.md"'
+    ]:
+        if expected not in html:
+            errors.append(f'index.html: missing machine-readable bootstrap {expected!r}')
     if len(parser.block_ids) != len(set(parser.block_ids)):
         errors.append('index.html: duplicate data-eh-block-id values')
     unknown_slots = sorted(set(parser.slot_ids) - set(parser.block_ids))
@@ -134,7 +140,9 @@ def main() -> int:
         'browser_readable_knowledge_bundle: none', 'webmcp_repository_access: forbidden',
         'consumer_local_capabilities: allowed', 'arbitrary_html: forbidden',
         'state_model: typed-presentation-operation-log', 'confirmation_before_write: true',
-        'api: document.modelContext', 'registration: imperative-top-level-javascript'
+        'api: document.modelContext', 'registration: imperative-top-level-javascript',
+        'purpose: typed-result-delivery-to-shared-page', 'presentation-skill-location',
+        '- focus'
     ]:
         if expected not in manifest:
             errors.append(f'explain-him.yaml: missing invariant {expected!r}')
@@ -147,8 +155,8 @@ def main() -> int:
 
     agents = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
     for expected in [
-        'Do not persist this skill', 'explicit user confirmation', 'Repository-authored content must be English',
-        'Never inject arbitrary HTML or JavaScript', 'Consumer-local capabilities'
+        'Do not persist these skills', 'explicit user confirmation', 'Repository-authored content must be English',
+        'Never inject external generated HTML or JavaScript', 'guided walkthrough'
     ]:
         if expected not in agents:
             errors.append(f'AGENTS.md: missing invariant {expected!r}')
@@ -156,7 +164,7 @@ def main() -> int:
     skill = (ROOT / 'skills/explain-him/SKILL.md').read_text(encoding='utf-8')
     if not skill.startswith('---\nname: explain-him\n'):
         errors.append('SKILL.md: invalid portable frontmatter')
-    for expected in ['Repository-authored artifacts are English', 'Presentation Artifact', 'Archify', 'Never present']:
+    for expected in ['Repository-authored artifacts are English', 'provenance', 'Archify', 'Never present']:
         if expected not in skill:
             errors.append(f'SKILL.md: missing presentation/grounding rule {expected!r}')
 

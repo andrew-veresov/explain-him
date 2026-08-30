@@ -1,8 +1,8 @@
 # Explain Him
 
-**Express your idea once. Explain Him lets each person's AI explain it to them — and use the same live page as a shared explanation surface.**
+**Express your idea once. Explain Him lets each person's AI explain it to them – and use the same live page as a shared explanation surface.**
 
-Explain Him publishes an Originator-authored visual explanation together with a typed WebMCP contract. A user's personal agent can understand the current page, answer at the right depth, focus relevant parts, and add reversible browser-local analogies, examples, summaries, warnings, or comparisons without rewriting the original.
+Explain Him publishes an Originator-authored visual explanation, repository-scoped grounding and presentation skills, and a typed WebMCP contract. A user's personal agent can discover the repository, answer at the right depth, focus relevant parts, and add reversible browser-local callouts, comparisons, workflows, timelines, or diagrams without rewriting the original.
 
 - **Live demo:** <https://andrew-veresov.github.io/explain-him/>
 - **WebMCP Challenge judge guide:** [[WEBMCP_CHALLENGE]]
@@ -13,8 +13,8 @@ Explain Him publishes an Originator-authored visual explanation together with a 
 
 Without WebMCP, a browser agent can read pixels/DOM and click controls, but it has to infer application structure and state. Explain Him gives the agent an explicit contract for two things that matter to the product:
 
-1. **meaning on the current authored page** — stable semantic targets, headings, and concise text;
-2. **the shared local explanation state** — focus, add, remove, undo, and redo actions that change the same page the human is viewing.
+1. **integration discovery** – the public repository, both repository-scoped skills, typed-block schema, authored targets, and local block IDs;
+2. **typed result delivery** – safe add, remove, and focus operations over the same page the human is viewing.
 
 ```text
 Human asks a question
@@ -22,11 +22,11 @@ Human asks a question
         v
 Personal AI agent
         |
-        +---- get_explanation_context ----> authored page meaning
+        +---- get_explanation_contract ---> repository + skills + targets
         |
-        +---- answer in normal chat
+        +---- read page/repository + answer in normal chat
         |
-        +---- focus/add/remove/undo/redo --> browser-local page state
+        +---- apply_explanation ----------> typed add/remove/focus
                                                 |
                                                 v
                                   human sees the same change
@@ -42,27 +42,22 @@ The public surface is deliberately small and user-oriented:
 
 | Tool | Purpose |
 |---|---|
-| `get_explanation_context` | Read structured meaning already present on the current authored page |
-| `get_personalization_state` | Inspect browser-local additions and undo/redo state |
-| `focus_explanation` | Show and focus one authored target |
-| `add_personal_explanation` | Add a safe local analogy/example/summary/warning/comparison |
-| `remove_personal_explanation` | Remove one browser-local addition |
-| `undo_personalization` | Undo the latest local change |
-| `redo_personalization` | Redo a reverted local change |
+| `get_explanation_contract` | Discover the repository, both skills, typed-block schema, authored targets, and local block IDs |
+| `apply_explanation` | Apply already-grounded typed add/remove/focus operations to the browser-local page layer |
 
 There are no duplicate compatibility tools, diagnostic tools, or WebMCP tools for repository search/answer generation. The browser contract models user intentions rather than internal implementation details.
 
-When the host also exposes `document.modelContext.getTools()`, the page verifies the seven expected tools against the host and reports **WebMCP verified**. Otherwise successful `registerTool()` registration reports **WebMCP ready**.
+When the host also exposes `document.modelContext.getTools()`, the page verifies the two expected tools against the host and reports **WebMCP verified**. Otherwise successful `registerTool()` registration reports **WebMCP ready**.
 
 ## Try the human–agent flow
 
 Open the live page in the ChatGPT desktop in-app browser with Site Tools enabled, or a WebMCP-enabled Chrome build, then try:
 
-1. **“Explain this idea in one paragraph, then add a short analogy next to the mechanism.”**
-2. **“Focus the part about grounding.”**
-3. **“Undo my last personalization.”**
+1. **“What should I do as the author of an idea to get my own explanation? Show the sequence on the page.”**
+2. **“Compare the authored and personal layers and add that comparison to the page.”**
+3. **“Show me where grounding is explained.”**
 
-The first prompt exercises structured page understanding plus a visible local mutation; the next two show shared navigation and reversible collaboration.
+The first prompt exercises automatic contract/skill discovery, repository grounding, chat output, typed workflow insertion, and guided focus. The next two exercise another typed representation and focus-only navigation.
 
 See [[WEBMCP_CHALLENGE]] for the exact judge flow, expected tool calls, challenge-period commit provenance, and submission checklist.
 
@@ -73,7 +68,7 @@ See [[WEBMCP_CHALLENGE]] for the exact judge flow, expected tool calls, challeng
 The personal agent owns conversation, reasoning, and grounding. It:
 
 - understands the user's question and desired depth;
-- uses WebMCP current-page context when available;
+- uses WebMCP contract discovery when available;
 - reads repository sources only when deeper evidence is necessary;
 - applies source precedence and statuses;
 - forms the grounded answer and provenance;
@@ -85,8 +80,8 @@ The personal agent owns conversation, reasoning, and grounding. It:
 The page:
 
 - presents Originator-authored visual meaning;
-- exposes structured meaning from that current page;
-- exposes stable targets and browser-local state;
+- exposes the public repository, both skills, stable targets, typed schema, and local block IDs;
+- accepts only already-grounded typed page operations;
 - lets the agent and human share focus and local personalization;
 - persists browser-local changes and supports undo/redo.
 
@@ -145,8 +140,8 @@ Important statuses are `current`, `target`, `hypothesis`, `open`, `demo-only`, a
 
 | Host | Behavior |
 |---|---|
-| ChatGPT desktop in-app browser | Primary Site Tools / challenge path through `document.modelContext` |
-| Chrome with WebMCP enabled | Same imperative tool surface; `getTools()` verification is used when available |
+| ChatGPT desktop in-app browser | Uses the two Site Tools when the host exposes `document.modelContext` |
+| Chrome with WebMCP enabled | Uses the same imperative tool surface; `getTools()` verification is used when available |
 | ChatGPT/Codex Chrome sidebar without Site Tool access | Page reading + accessible controls remain the graceful fallback |
 | Browser without WebMCP | Human controls continue to work over the same local workspace |
 
@@ -175,7 +170,7 @@ python tools/check_public_demo.py
 node --test tests/*.test.mjs
 ```
 
-Checks cover public boundaries, WebMCP host discovery, tool registration/verification, schema quality, semantic page context, visible mutations, workspace behavior, Presentation Artifact safety, and prompt-to-tool eval fixtures.
+Checks cover public boundaries, machine-readable bootstrap, WebMCP host discovery, two-tool registration/verification, typed schemas, workflow insertion, guided focus, workspace behavior, Presentation Artifact safety, and prompt-to-tool eval fixtures.
 
 ## Repository structure
 
@@ -185,6 +180,7 @@ WEBMCP_CHALLENGE.md            challenge judge guide and provenance
 AGENTS.md                      repository-scoped agent instructions
 explain-him.yaml               machine-readable manifest
 skills/explain-him/            portable repository skill
+skills/explain-him-presentation/ typed presentation and walkthrough skill
 knowledge/                     public explanatory sources
 resolutions/                   accepted/superseded decisions
 schemas/                       Presentation Capability / Artifact schemas

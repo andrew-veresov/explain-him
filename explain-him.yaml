@@ -129,16 +129,19 @@ webmcp:
   contract_returns:
     - repository-location
     - grounding-skill-location
+    - presentation-skill-location
     - typed-block-schema-location
     - authored-insertion-targets
     - browser-local-block-ids
   apply_operations:
     - add
     - remove
+    - focus
   allowed_capabilities:
     - integration-contract-read
     - typed-local-block-add
     - typed-local-block-remove
+    - authored-target-focus
   forbidden_capabilities:
     - diagnostics-as-agent-tool
     - knowledge-search
@@ -168,7 +171,7 @@ claims:
     evidence: knowledge/00-overview.md
   - id: originator-authored-page-is-first-class-source
     status: current
-    evidence: resolutions/2026-08-30-webmcp-challenge-surface.md
+    evidence: resolutions/2026-08-30-skill-driven-webmcp.md
   - id: grounding-skill-exists
     status: current
     evidence: skills/explain-him/SKILL.md
@@ -180,7 +183,7 @@ claims:
     evidence: resolutions/2026-08-26-browser-local-workspace.md
   - id: webmcp-is-typed-result-delivery-channel
     status: current
-    evidence: resolutions/2026-08-30-webmcp-challenge-surface.md
+    evidence: resolutions/2026-08-30-skill-driven-webmcp.md
   - id: direct-chatgpt-chrome-sidebar-site-tools
     status: open
     evidence: WEBMCP_CHALLENGE.md

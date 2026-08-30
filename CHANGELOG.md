@@ -1,12 +1,19 @@
 # Changelog
 
-## 0.1.1 — 2026-08-28
+## 0.4.0 – 2026-08-30
+
+- Replaced the seven-operation WebMCP surface with `get_explanation_contract` and `apply_explanation`.
+- Added repository and skill discovery metadata for browser agents.
+- Added safe typed explanation blocks, guided focus, and an Originator workflow scenario.
+- Added deterministic contract, presentation, and AI-eval fixture tests.
+
+## 0.1.1 – 2026-08-28
 
 - Migrated all repository-authored content and demo UI copy to English.
 - Set the manifest language to `en` and added an accepted project-language resolution.
 - Added a deterministic check that rejects Cyrillic text in project text files.
 
-## 0.1.0 — 2026-08-28
+## 0.1.0 – 2026-08-28
 
 - Created the standalone public Explain Him demo/reference repository.
 - Added authored two-panel explanation page and repository-scoped agent bootstrap.

@@ -3,13 +3,15 @@ name: explain-him
 description: Ground an explanation from the Originator-authored page and public repository, then hand a grounded result to the Explain Him presentation skill for typed browser-local embedding.
 ---
 
-# Explain Him — grounding skill
+# Explain Him – grounding skill
 
 ## Purpose
 
 Use the user's existing personal agent to explain the idea represented by this repository. The agent owns understanding, retrieval, reasoning, grounding, and the conversational answer. WebMCP is only the typed channel used to embed the already-grounded result back into the live Explain Him page.
 
 This skill is repository-scoped. Do not persist it as global behavior.
+
+Repository-authored artifacts are English. The personal agent may answer the user in the user's preferred language.
 
 For browser-local presentation, also read `../explain-him-presentation/SKILL.md`.
 
@@ -45,8 +47,8 @@ The personal agent must:
 
 WebMCP has exactly two public capabilities:
 
-- `get_explanation_contract` — returns insertion anchors, current local block IDs, block schema location, repository location, and this skill location;
-- `apply_explanation` — adds or removes safe typed browser-local explanation blocks.
+- `get_explanation_contract` – returns insertion anchors, current local block IDs, block schema location, repository location, and this skill location;
+- `apply_explanation` – adds or removes safe typed browser-local explanation blocks and focuses authored targets for a guided walkthrough.
 
 WebMCP must not:
 
@@ -92,12 +94,12 @@ A lower-priority source must not silently override a higher-priority source.
 
 Preserve status when it materially changes meaning:
 
-- `current` — accepted/current artifact or behavior;
-- `target` — intended future behavior;
-- `hypothesis` — proposition under validation;
-- `open` — unresolved point;
-- `demo-only` — implemented only for demonstration/reference;
-- `deprecated` — superseded behavior.
+- `current` – accepted/current artifact or behavior;
+- `target` – intended future behavior;
+- `hypothesis` – proposition under validation;
+- `open` – unresolved point;
+- `demo-only` – implemented only for demonstration/reference;
+- `deprecated` – superseded behavior.
 
 Never present `target`, `hypothesis`, `open`, or `demo-only` as production fact.
 
@@ -114,6 +116,7 @@ For each user question:
 7. Attach provenance for material claims that will be embedded into the page.
 8. Answer in the normal personal-agent chat first.
 9. If a visual/page-local explanation would help, pass the grounded result to the presentation skill.
+10. When the user benefits from a walkthrough, focus the relevant authored target after applying the grounded block and continue the explanation in chat.
 
 Do not call `apply_explanation` before the meaning is grounded.
 

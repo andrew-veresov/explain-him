@@ -1,11 +1,13 @@
 ---
 title: WebMCP exposes authored page meaning and shared UI actions
-status: accepted
+status: superseded
 date: 2026-08-30
 tags: [explain-him, resolution, webmcp, site-tools]
 ---
 
 # WebMCP exposes authored page meaning and shared UI actions
+
+This decision is superseded by [[2026-08-30-skill-driven-webmcp]].
 
 ## Decision
 
@@ -13,13 +15,13 @@ Explain Him uses the standard imperative WebMCP API from top-level JavaScript th
 
 The public Site Tool surface is intentionally small and maps to user intentions rather than implementation details:
 
-1. `get_explanation_context` — read structured meaning already present on the current authored page;
-2. `get_personalization_state` — inspect browser-local personal explanations;
-3. `focus_explanation` — bring one authored target into focus;
-4. `add_personal_explanation` — add a safe local analogy/example/summary/warning/comparison;
-5. `remove_personal_explanation` — remove one local addition;
-6. `undo_personalization` — undo the latest local change;
-7. `redo_personalization` — redo a reverted local change.
+1. `get_explanation_context` – read structured meaning already present on the current authored page;
+2. `get_personalization_state` – inspect browser-local personal explanations;
+3. `focus_explanation` – bring one authored target into focus;
+4. `add_personal_explanation` – add a safe local analogy/example/summary/warning/comparison;
+5. `remove_personal_explanation` – remove one local addition;
+6. `undo_personalization` – undo the latest local change;
+7. `redo_personalization` – redo a reverted local change.
 
 The current authored page is therefore a shared human-agent surface: the human sees the visual explanation, the agent receives structured page meaning through WebMCP, and both observe the same local UI changes.
 

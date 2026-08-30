@@ -22,7 +22,8 @@ tags: [explain-him, home]
 
 - [[knowledge/06-browser-local-workspace|Browser-local workspace]]
 - [[knowledge/07-presentation-capabilities|Presentation Capabilities]]
-- [[resolutions/2026-08-30-webmcp-challenge-surface|Current WebMCP boundary]]
+- [[resolutions/2026-08-30-skill-driven-webmcp|Current skill-driven WebMCP boundary]]
+- [[resolutions/2026-08-30-webmcp-challenge-surface|Superseded seven-tool WebMCP boundary]]
 - [[resolutions/2026-08-29-presentation-capabilities|Presentation Capability boundary]]
 - [Open the executable page](index.html)
 
@@ -30,5 +31,6 @@ tags: [explain-him, home]
 
 - [[AGENTS|Instructions for agents]]
 - [[skills/explain-him/SKILL|Repository skill]]
+- [[skills/explain-him-presentation/SKILL|Presentation skill]]
 - [[CONTRIBUTING|Contribution rules]]
 - [[SECURITY|Security]]

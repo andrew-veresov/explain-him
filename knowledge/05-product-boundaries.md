@@ -16,6 +16,6 @@ A managed extension may add private storage and private questions, a separate id
 
 ## Boundary principle
 
-A paid capability is justified when it provides privacy, governance, UX quality, collaboration, evaluation, or operational guarantees — not when it artificially blocks the basic ability to understand an idea.
+A paid capability is justified when it provides privacy, governance, UX quality, collaboration, evaluation, or operational guarantees – not when it artificially blocks the basic ability to understand an idea.
 
 Explain Him should remain useful and executable without Explain Him Pro.

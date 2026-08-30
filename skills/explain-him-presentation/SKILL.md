@@ -3,7 +3,7 @@ name: explain-him-presentation
 description: Convert an already-grounded Explain Him answer into safe typed browser-local blocks and embed them through the minimal WebMCP apply_explanation tool.
 ---
 
-# Explain Him — presentation skill
+# Explain Him – presentation skill
 
 ## Purpose
 
@@ -34,12 +34,13 @@ The only write capability is `apply_explanation`.
 
 It accepts an ordered list of operations:
 
-- `add` — add one typed block next to an authored target;
-- `remove` — remove one earlier browser-local block.
+- `add` – add one typed block next to an authored target;
+- `remove` – remove one earlier browser-local block.
+- `focus` – reveal, highlight, and scroll an authored target into view.
 
 Replacement is `remove` + `add` in one `apply_explanation` call.
 
-Do not use WebMCP for retrieval, reasoning, diagnostics, navigation, tool discovery, or GitHub operations.
+Do not use WebMCP for retrieval, reasoning, diagnostics, tool discovery, or GitHub operations. `focus` is limited to guided navigation of authored targets returned by the contract.
 
 ## Supported typed blocks
 
@@ -176,6 +177,34 @@ Use `index.html` when the authored page itself is the source. Do not invent miss
 4. Include provenance.
 5. Call `apply_explanation` once, batching related additions when useful.
 6. Check the returned `applied` entries and local block IDs.
+
+## Guided walkthrough
+
+After adding a grounded block, use `focus` when the user asked to be shown or guided through the result. Keep the chat answer active: state what is focused, explain why it matters, and let the user's next question determine the next focus target.
+
+```json
+{
+  "operations": [
+    {
+      "op": "add",
+      "targetId": "browser-workspace",
+      "block": {
+        "type": "workflow",
+        "title": "From idea to explanation",
+        "steps": [
+          { "title": "Prepare the repository" },
+          { "title": "Publish the authored page and skills" },
+          { "title": "Let the personal agent ground and present" }
+        ],
+        "sources": []
+      }
+    },
+    { "op": "focus", "targetId": "browser-workspace" }
+  ]
+}
+```
+
+Do not force a fixed walkthrough. Focus follows the user's question and can be applied again on later turns.
 
 Example input:
 

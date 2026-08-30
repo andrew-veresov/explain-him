@@ -18,8 +18,8 @@ Repository-authored content must be English, including documentation, UI copy, m
 
 Use two repository-scoped skills:
 
-1. `skills/explain-him/SKILL.md` — understanding, grounding, GitHub retrieval, source precedence, status handling, provenance, and escalation;
-2. `skills/explain-him-presentation/SKILL.md` — typed block selection and embedding grounded results into the live page.
+1. `skills/explain-him/SKILL.md` – understanding, grounding, GitHub retrieval, source precedence, status handling, provenance, and escalation;
+2. `skills/explain-him-presentation/SKILL.md` – typed block selection and embedding grounded results into the live page.
 
 The grounding skill is authoritative for meaning. The presentation skill is authoritative for representation.
 
@@ -33,12 +33,14 @@ When the page is open in a WebMCP-capable browser:
 4. read the presentation skill before embedding a result into the page;
 5. use `apply_explanation` only after the meaning is grounded.
 
+The page also publishes invisible machine-readable repository and skill links in its `<head>`. Use them as bootstrap hints when Site Tool discovery succeeds before repository context is available.
+
 The complete public WebMCP surface is intentionally only:
 
 - `get_explanation_contract`;
 - `apply_explanation`.
 
-Do not look for diagnostics, state, focus, undo/redo, compatibility, retrieval, answer-generation, or skill-registration WebMCP tools.
+Do not look for separate diagnostics, state, focus, undo/redo, compatibility, retrieval, answer-generation, or skill-registration WebMCP tools. Guided focus is an operation inside `apply_explanation`; undo/redo remain human controls.
 
 The page may still expose ordinary accessible controls for humans/browser automation. Those controls are not additional WebMCP capabilities.
 
@@ -74,6 +76,7 @@ A lower-priority source must not silently override a higher-priority source.
 - Mark agent inference separately from source-backed statements.
 - Form and ground the answer before any presentation or WebMCP mutation.
 - Answer in the normal personal-agent conversation first; embedding is secondary.
+- Use guided walkthrough focus only when it helps answer the user's question; never force a fixed tour.
 
 ## Typed page blocks
 
@@ -111,6 +114,7 @@ It may:
 - expose the locations of the repository skills and block schema;
 - add safe typed browser-local explanation blocks;
 - remove previously added browser-local blocks.
+- focus an authored target so the agent can guide the user through grounded page changes.
 
 It must not:
 

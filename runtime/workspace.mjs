@@ -351,7 +351,7 @@ export function renderWorkspace(document, view) {
       const list = make(document, 'ul', 'local-sources');
       for (const ref of artifact.provenance.repositoryRefs) {
         const suffix = [ref.section, ref.status, ref.ref].filter(Boolean).join(' · ');
-        list.append(make(document, 'li', null, suffix ? `${ref.path} — ${suffix}` : ref.path));
+        list.append(make(document, 'li', null, suffix ? `${ref.path} – ${suffix}` : ref.path));
       }
       article.append(list);
     }

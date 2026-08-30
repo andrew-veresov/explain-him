@@ -1,63 +1,72 @@
 [
   {
-    "id": "understand-page",
-    "prompt": "What is this idea about? Explain it briefly.",
-    "expectedTool": "get_explanation_context",
+    "id": "discover-contract-and-skills",
+    "prompt": "What is this idea about?",
+    "expectedTool": "get_explanation_contract",
     "arguments": {},
-    "expectedEffect": "Agent grounds the answer in structured meaning from the current authored page."
+    "expectedEffect": "The agent discovers the public repository, both repository-scoped skills, typed block schema, and authored targets before deeper reasoning."
   },
   {
-    "id": "deepen-target",
-    "prompt": "Explain the grounding section in more detail.",
-    "expectedTool": "get_explanation_context",
-    "arguments": { "targetId": "grounding-contract" },
-    "expectedEffect": "Agent gets a deeper semantic view of one authored target."
-  },
-  {
-    "id": "inspect-personalization",
-    "prompt": "What have you added to this page so far?",
-    "expectedTool": "get_personalization_state",
-    "arguments": {},
-    "expectedEffect": "Agent reports browser-local additions without treating them as authored knowledge."
-  },
-  {
-    "id": "focus-grounding",
-    "prompt": "Show me the part about grounding.",
-    "expectedTool": "focus_explanation",
-    "arguments": { "targetId": "grounding-contract" },
-    "expectedEffect": "The grounding target becomes visible and focused."
-  },
-  {
-    "id": "add-analogy",
-    "prompt": "Add a short analogy next to the mechanism so I can remember it.",
-    "expectedTool": "add_personal_explanation",
+    "id": "originator-workflow",
+    "prompt": "What should I do as the author of an idea to get my own explanation? Show the steps on the page.",
+    "expectedTool": "apply_explanation",
     "arguments": {
-      "targetId": "flow-model",
-      "kind": "analogy",
-      "title": "A score and an arrangement",
-      "body": "The authored page is the score; your agent can add a local arrangement without rewriting the score."
+      "operations": [
+        {
+          "op": "add",
+          "targetId": "browser-workspace",
+          "block": {
+            "type": "workflow",
+            "title": "From idea to explanation",
+            "steps": [
+              { "title": "Prepare the repository" },
+              { "title": "Publish the authored page and skills" },
+              { "title": "Let the personal agent ground and present" }
+            ],
+            "sources": [
+              { "path": "knowledge/01-originator-flow.md", "status": "current" }
+            ]
+          }
+        },
+        { "op": "focus", "targetId": "browser-workspace" }
+      ]
     },
-    "expectedEffect": "A browser-local Personal presentation appears beside the mechanism."
+    "expectedEffect": "A grounded workflow appears beside the adaptive-page target and that authored target is highlighted for a guided chat walkthrough."
   },
   {
-    "id": "remove-local",
-    "prompt": "Remove that personal explanation.",
-    "expectedTool": "remove_personal_explanation",
-    "arguments": { "presentationId": "local-example-id" },
-    "expectedEffect": "Only the selected browser-local presentation is removed."
+    "id": "grounded-comparison",
+    "prompt": "Compare the authored and personal layers, then show the comparison on the page.",
+    "expectedTool": "apply_explanation",
+    "arguments": {
+      "operations": [
+        {
+          "op": "add",
+          "targetId": "browser-workspace",
+          "block": {
+            "type": "comparison",
+            "title": "Authored and personal layers",
+            "columns": [
+              { "title": "Authored", "items": ["Canonical", "Originator-owned"] },
+              { "title": "Personal", "items": ["Browser-local", "Agent-added"] }
+            ],
+            "sources": [
+              { "path": "resolutions/2026-08-26-browser-local-workspace.md", "status": "current" }
+            ]
+          }
+        }
+      ]
+    },
+    "expectedEffect": "A safe typed comparison is added without changing authored HTML."
   },
   {
-    "id": "undo",
-    "prompt": "Undo my last personalization.",
-    "expectedTool": "undo_personalization",
-    "arguments": {},
-    "expectedEffect": "The previous browser-local state is restored."
-  },
-  {
-    "id": "redo",
-    "prompt": "Redo that change.",
-    "expectedTool": "redo_personalization",
-    "arguments": {},
-    "expectedEffect": "The undone browser-local change is restored."
+    "id": "guided-focus-only",
+    "prompt": "Show me where grounding is explained.",
+    "expectedTool": "apply_explanation",
+    "arguments": {
+      "operations": [
+        { "op": "focus", "targetId": "grounding-contract" }
+      ]
+    },
+    "expectedEffect": "The authored grounding target is revealed, highlighted, and scrolled into view while the agent continues in chat."
   }
 ]

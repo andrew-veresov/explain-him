@@ -2,11 +2,11 @@
 tags: [explain-him, webmcp, challenge, judge-guide]
 ---
 
-# Explain Him — WebMCP Challenge guide
+# Explain Him – WebMCP Challenge guide
 
 ## One-sentence pitch
 
-**Explain Him turns an authored idea page into a shared human–agent explanation surface: the agent reads structured page meaning through WebMCP and can focus, personalize, remove, undo, and redo explanations in the same live UI the human sees.**
+**Explain Him turns an authored idea page into a shared human-agent explanation surface: the personal agent discovers repository-scoped skills, grounds an answer from the page and repository, talks in normal chat, and safely adds typed explanations or guided focus to the same live page.**
 
 Live app: <https://andrew-veresov.github.io/explain-him/>
 
@@ -16,14 +16,12 @@ License: Apache-2.0 (`LICENSE`).
 
 ## Why WebMCP is essential
 
-A normal browser agent can inspect visible text and click controls, but it has to infer DOM structure and application state. Explain Him exposes a typed contract for the semantic targets and the browser-local personalization state.
+A generic browser agent can read pixels/DOM and click controls, but it has to infer the integration contract and safe mutation surface. Explain Him exposes two explicit capabilities:
 
-WebMCP therefore provides two capabilities that are central to the product experience:
+1. `get_explanation_contract` discovers the public repository, grounding skill, presentation skill, typed-block schema, authored targets, and current local block IDs.
+2. `apply_explanation` delivers already-grounded typed blocks and guided focus to the same page the human is viewing.
 
-1. **structured understanding of the current authored page** — stable target IDs, headings, and concise authored meaning through `get_explanation_context`;
-2. **shared live explanation state** — the agent safely changes the same page the human is looking at through focus/add/remove/undo/redo tools.
-
-The authored layer remains immutable. Agent additions are browser-local, reversible, and visibly separated from Originator content.
+Grounding and GitHub retrieval remain with the personal agent. The authored layer remains immutable. Agent additions are browser-local, reversible, and visibly separated from Originator content.
 
 ## WebMCP implementation
 
@@ -32,59 +30,51 @@ Explain Him uses the imperative WebMCP API from top-level JavaScript.
 ```text
 document.modelContext
         |
-        +-- registerTool(get_explanation_context)
-        +-- registerTool(get_personalization_state)
-        +-- registerTool(focus_explanation)
-        +-- registerTool(add_personal_explanation)
-        +-- registerTool(remove_personal_explanation)
-        +-- registerTool(undo_personalization)
-        +-- registerTool(redo_personalization)
+        +-- registerTool(get_explanation_contract)
+        +-- registerTool(apply_explanation)
 ```
 
-`navigator.modelContext` exists only as a legacy fallback for older experimental hosts; it is not the challenge path.
+`navigator.modelContext` exists only as a legacy fallback for older experimental hosts. The implementation does not depend on `registerSkill()`, iframe tools, or declarative WebMCP support.
 
-The implementation does not depend on `registerSkill()`, iframe tools, or the declarative WebMCP API.
+The page `<head>` also exposes invisible machine-readable repository and skill links. These are bootstrap hints, not a hidden knowledge bundle.
 
 ## Site Tool surface
 
 | Tool | Read/write | User intent | Verifiable result |
 |---|---|---|---|
-| `get_explanation_context` | read | Understand the current authored page or one target | Returns current-page semantic targets |
-| `get_personalization_state` | read | See what the agent has added | Returns local IDs, targets, titles, undo/redo state |
-| `focus_explanation` | write | Show a specific part of the explanation | Target becomes visible and focused |
-| `add_personal_explanation` | write | Add an analogy/example/summary/warning/comparison | New local presentation appears beside the authored target |
-| `remove_personal_explanation` | write | Remove one local explanation | Local presentation disappears; authored content remains |
-| `undo_personalization` | write | Undo the last local change | Previous browser-local state is restored |
-| `redo_personalization` | write | Redo an undone local change | Reverted local state returns |
+| `get_explanation_contract` | read | Discover how to ground and present this page | Returns repository, both skills, schema, targets, and local IDs |
+| `apply_explanation` | write | Add/remove a grounded typed block or focus an authored target | Typed block appears/disappears or the target becomes visible and focused |
 
-The public surface intentionally avoids compatibility aliases, diagnostics, or duplicate tools. Internal Presentation Capability machinery remains an implementation detail rather than competing with user-intent tools.
+The public surface intentionally avoids compatibility aliases, diagnostics, retrieval tools, and answer-generation tools.
 
 ## Judge flow
 
-Use the live page in the ChatGPT desktop in-app browser with Site Tools enabled, or in a WebMCP-enabled Chrome build.
+Use the live page in ChatGPT Desktop with Site Tools enabled or in a WebMCP-enabled Chrome surface.
 
-### Prompt 1 — understand + personalize
+### Prompt 1 – originator workflow
 
-> Explain this idea in one paragraph, then add a short analogy next to the mechanism.
+> What should I do as the author of an idea to get my own explanation? Show the sequence on the page.
 
 Expected behavior:
 
-1. the agent uses `get_explanation_context`;
-2. it answers in the normal agent conversation;
-3. it calls `add_personal_explanation` for an authored target such as `flow-model`;
-4. the page visibly gains a **Personal presentation** without changing authored content.
+1. The agent calls `get_explanation_contract`.
+2. It loads both repository-scoped skills.
+3. It reads the authored page and the minimum relevant repository sources, such as `knowledge/01-originator-flow.md`.
+4. It answers in normal chat.
+5. It calls `apply_explanation` with a grounded `workflow` block and a `focus` operation.
+6. The page visibly gains a **Personal presentation** beside the relevant authored target and highlights that target.
 
-### Prompt 2 — navigate the shared page
+### Prompt 2 – typed comparison
 
-> Focus the part about grounding.
+> Compare the authored and personal layers and add the comparison to the page.
 
-Expected behavior: `focus_explanation` brings `grounding-contract` into the visible tab and focuses it.
+Expected behavior: the agent grounds the distinction, answers in chat, and adds a typed `comparison` with provenance.
 
-### Prompt 3 — reversible collaboration
+### Prompt 3 – guided focus
 
-> Undo my last personalization.
+> Show me where grounding is explained.
 
-Expected behavior: `undo_personalization` changes the browser-local state and the visible page returns to the previous state.
+Expected behavior: `apply_explanation` with a `focus` operation reveals and highlights `grounding-contract`; the agent explains the focused material in chat.
 
 ## Runtime verification
 
@@ -97,67 +87,52 @@ The page publishes runtime state on the root element after registration:
 - `data-webmcp-registered`
 - `data-webmcp-verified`
 
-When the host implements `document.modelContext.getTools()`, Explain Him verifies the seven expected tools against the host and reports `WebMCP verified`. When `getTools()` is not exposed but all `registerTool()` calls succeed, it reports `WebMCP ready` instead of treating verification as a dependency.
+When the host implements `document.modelContext.getTools()`, Explain Him verifies both tools and reports `WebMCP verified`. When `getTools()` is not exposed but both registrations succeed, it reports `WebMCP ready`.
 
 ## Human fallback
 
-The same workspace API is connected to accessible page controls. The product remains usable when WebMCP is unavailable, but the agent then loses the typed semantic/action contract. This is graceful degradation, not a second implementation of the agent protocol.
+Accessible controls use the same browser-local workspace API. Without Site Tools the agent may still read and operate the page generically, but it does not receive the typed contract. Chat answers remain available even when page presentation fails.
 
 ## Security and trust boundary
 
-WebMCP may read meaning already authored into the current page and manipulate only browser-local personalization.
-
-It does **not**:
+WebMCP does not:
 
 - search or read repository files;
-- generate canonical claims;
-- inject arbitrary HTML or JavaScript;
+- generate or resolve claims;
+- choose source precedence;
+- inject arbitrary HTML, JavaScript, CSS, iframes, or executable URLs;
 - modify Originator-authored blocks;
 - search or create GitHub Issues.
 
-Local rendering uses safe DOM text operations. The richer Presentation Artifact layer validates payloads and keeps external presentation tools outside the trusted authored surface.
+Typed content is rendered with DOM text operations. Repository provenance is supplied by the personal agent after grounding.
 
 ## Challenge-period work and provenance
 
 The Explain Him concept predates the challenge, but the public WebMCP implementation was created during the challenge period.
 
-Evidence in the public repository:
-
-- **August 27, 2026** — public repository created;
-- **August 28, 2026** — first public demo with WebMCP and browser-local workspace: commit [`ea61e373`](https://github.com/andrew-veresov/explain-him/commit/ea61e373e5da16fbf0ed171d583b9503f3825cca);
-- **August 30, 2026** — standard `document.modelContext` Site Tools host fix: merge commit [`4c20e83b`](https://github.com/andrew-veresov/explain-him/commit/4c20e83bc4221c051841ec732b55bc38b9c847a3);
-- **August 30, 2026** — challenge-focused redesign in [PR #7](https://github.com/andrew-veresov/explain-him/pull/7): smaller non-overlapping tool surface, live-page semantic context, host verification, judge flow, and WebMCP eval cases.
-
-This file exists specifically to distinguish pre-existing product ideation from challenge-period WebMCP implementation work.
+- **August 27, 2026** – public repository created.
+- **August 28, 2026** – first public demo with WebMCP and browser-local workspace: commit [`ea61e373`](https://github.com/andrew-veresov/explain-him/commit/ea61e373e5da16fbf0ed171d583b9503f3825cca).
+- **August 30, 2026** – standard `document.modelContext` host support: merge commit [`4c20e83b`](https://github.com/andrew-veresov/explain-him/commit/4c20e83bc4221c051841ec732b55bc38b9c847a3).
+- **August 30, 2026** – challenge-ready current-page tool surface in PR #7.
+- **August 30, 2026** – skill-driven two-tool contract, safe typed blocks, and guided focus.
 
 ## Tests and evals
-
-Run:
 
 ```bash
 python tools/check_public_demo.py
 node --test tests/*.test.mjs
 ```
 
-The WebMCP tests cover:
+The tests cover standard host discovery, complete tool registration, optional host verification, machine-readable bootstrap, both skill locations, safe typed blocks, workflow insertion, guided focus, invalid targets, executable-channel stripping, partial registration failure, and prompt-to-tool eval fixtures.
 
-- standard host discovery;
-- complete tool registration;
-- optional `getTools()` verification;
-- narrow, described schemas;
-- live-page semantic context;
-- visible and verifiable local mutations;
-- partial registration failure;
-- prompt-to-tool eval fixtures in `tests/webmcp-eval-cases.json`.
+The private source repository contains the cross-agent Docker evaluation framework, scripted AI scenarios, LLM judge, and user-emulator runs. Private evaluation material is intentionally not included in this public repository.
 
 ## Submission checklist
-
-The official challenge submission should include all of the following before the deadline:
 
 - working live URL;
 - public source repository;
 - visible open-source license;
-- written explanation of WebMCP leverage and the human–agent journey;
+- written explanation of WebMCP leverage and the human-agent journey;
 - public demo video under three minutes with audio;
 - evidence of challenge-period WebMCP work;
 - participant eligibility confirmation under the official rules.
@@ -166,4 +141,4 @@ Official challenge page: <https://openai.com/webmcp-challenge/>
 
 Official rules: <https://webmcp.devpost.com/rules>
 
-After submitting, preserve the judged repository and live app unchanged during the judging period; use a fork or separate branch for later experimentation if necessary.
+After submitting, preserve the judged repository and live app unchanged during judging; use a fork or separate branch for later experiments.

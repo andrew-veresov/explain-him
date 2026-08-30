@@ -14,6 +14,8 @@ const REPOSITORY = 'andrew-veresov/explain-him';
 const REPOSITORY_URL = `https://github.com/${REPOSITORY}`;
 const SKILL_PATH = 'skills/explain-him/SKILL.md';
 const SKILL_URL = `${REPOSITORY_URL}/blob/main/${SKILL_PATH}`;
+const PRESENTATION_SKILL_PATH = 'skills/explain-him-presentation/SKILL.md';
+const PRESENTATION_SKILL_URL = `${REPOSITORY_URL}/blob/main/${PRESENTATION_SKILL_PATH}`;
 const BLOCK_SCHEMA_PATH = 'schemas/explanation-block.v1.schema.json';
 const BLOCK_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/${BLOCK_SCHEMA_PATH}`;
 const EMPTY_INPUT = Object.freeze({ type: 'object', properties: {}, additionalProperties: false });
@@ -101,11 +103,21 @@ function contractFor(workspace) {
       fullName: REPOSITORY,
       url: REPOSITORY_URL
     },
-    skill: {
-      path: SKILL_PATH,
-      url: SKILL_URL,
-      instruction: 'Read this repository-scoped skill before grounding or presenting an explanation.'
-    },
+    skills: [
+      {
+        id: 'explain-him',
+        responsibility: 'grounding-and-repository-retrieval',
+        path: SKILL_PATH,
+        url: SKILL_URL
+      },
+      {
+        id: 'explain-him-presentation',
+        responsibility: 'typed-page-presentation-and-guided-focus',
+        path: PRESENTATION_SKILL_PATH,
+        url: PRESENTATION_SKILL_URL
+      }
+    ],
+    instruction: 'Load both repository-scoped skills before grounding, presenting, or guiding the user through this explanation.',
     blockSchema: {
       path: BLOCK_SCHEMA_PATH,
       url: BLOCK_SCHEMA_URL,
@@ -113,7 +125,7 @@ function contractFor(workspace) {
     },
     targets: targetDescriptors(workspace),
     localBlocks: localBlockDescriptors(workspace),
-    applyOperations: ['add', 'remove'],
+    applyOperations: ['add', 'remove', 'focus'],
     authoredLayerMutable: false,
     repositoryAccessViaWebMcp: false
   };
@@ -300,6 +312,20 @@ function applySchema(workspace) {
                   description: 'Browser-local block ID returned by get_explanation_contract.'
                 }
               }
+            },
+            {
+              title: 'Focus authored explanation target',
+              type: 'object',
+              required: ['op', 'targetId'],
+              additionalProperties: false,
+              properties: {
+                op: { const: 'focus' },
+                targetId: {
+                  type: 'string',
+                  enum: targetIds,
+                  description: 'Authored target to reveal, highlight, and scroll into view during a guided explanation.'
+                }
+              }
             }
           ]
         }
@@ -399,12 +425,12 @@ function fallbackBody(block) {
     return block.columns.map((column) => `${column.title}: ${column.items.join('; ')}`).join('\n');
   }
   if (block.type === 'workflow') {
-    return block.steps.map((step, index) => `${index + 1}. ${step.title}${step.body ? ` — ${step.body}` : ''}`).join('\n');
+    return block.steps.map((step, index) => `${index + 1}. ${step.title}${step.body ? ` – ${step.body}` : ''}`).join('\n');
   }
   if (block.type === 'timeline') {
     return block.items.map((item) => `${item.label}: ${item.body}`).join('\n');
   }
-  const lines = block.nodes.map((node) => `${node.id}: ${node.label}${node.body ? ` — ${node.body}` : ''}`);
+  const lines = block.nodes.map((node) => `${node.id}: ${node.label}${node.body ? ` – ${node.body}` : ''}`);
   for (const edge of block.edges) lines.push(`${edge.from} -> ${edge.to}${edge.label ? ` (${edge.label})` : ''}`);
   return lines.join('\n');
 }
@@ -457,7 +483,12 @@ function prepareOperations(workspace, input) {
       localIds.delete(blockId);
       return { op: 'remove', blockId };
     }
-    throw new TypeError('operation.op must be add or remove');
+    if (operation?.op === 'focus') {
+      const targetId = stringValue(operation.targetId, 'operation.targetId', 120);
+      if (!targetIds.has(targetId)) throw new RangeError(`Unknown authored target: ${targetId}`);
+      return { op: 'focus', targetId };
+    }
+    throw new TypeError('operation.op must be add, remove, or focus');
   });
 }
 
@@ -469,6 +500,11 @@ async function applyOperations(workspace, input) {
   const plan = prepareOperations(workspace, input);
   const applied = [];
   for (const operation of plan) {
+    if (operation.op === 'focus') {
+      const focused = workspace.focusBlock({ targetId: operation.targetId });
+      applied.push({ op: 'focus', targetId: focused?.targetId || operation.targetId });
+      continue;
+    }
     if (operation.op === 'remove') {
       await workspace.removeLocalPresentation({ presentationId: operation.blockId });
       applied.push({ op: 'remove', blockId: operation.blockId });
@@ -514,13 +550,13 @@ export function createWebMcpTools(workspace) {
   return [
     readOnlyTool(
       'get_explanation_contract',
-      'Call first on an Explain Him page. Returns the repository skill location, typed block schema, authored insertion targets, and existing browser-local blocks. The skill—not WebMCP—defines how to ground answers and retrieve deeper GitHub evidence.',
+      'Call first on an Explain Him page. Returns the repository and both repository-scoped skills, typed block schema, authored targets, and existing browser-local blocks. Skills – not WebMCP – define grounding, repository retrieval, presentation, and guided focus.',
       EMPTY_INPUT,
       async () => contractFor(workspace)
     ),
     mutationTool(
       'apply_explanation',
-      'Embed grounded agent results into the current page as safe typed browser-local blocks, or remove earlier local blocks. Follow the repository skill returned by get_explanation_contract before calling this tool. WebMCP does not retrieve GitHub knowledge or generate the explanation.',
+      'Apply already-grounded results to the page: add safe typed browser-local blocks, remove earlier local blocks, or focus authored targets for a guided walkthrough. Load the skills returned by get_explanation_contract first. WebMCP does not retrieve GitHub knowledge or generate answers.',
       applySchema(workspace),
       async (input) => applyOperations(workspace, input)
     )

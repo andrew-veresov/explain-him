@@ -12,6 +12,6 @@ Accepted clarifications take precedence over conflicting explanatory copy.
 - [[2026-08-26-browser-local-workspace|Browser-local workspace]]
 - [[2026-08-28-project-language|English project language]]
 - [[2026-08-29-presentation-capabilities|Presentation Capability boundary]]
-- [[2026-08-30-webmcp-challenge-surface|WebMCP authored-page context and shared UI boundary]]
+- [[2026-08-30-skill-driven-webmcp|Skill-driven WebMCP typed result delivery]]
 
 Superseded decisions remain in this folder for history and link to their replacement.
