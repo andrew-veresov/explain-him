@@ -175,7 +175,7 @@ claims:
     evidence: knowledge/00-overview.md
   - id: originator-authored-page-is-first-class-source
     status: current
-    evidence: resolutions/2026-08-27-webmcp-skill-ui-runtime.md
+    evidence: resolutions/2026-08-30-webmcp-challenge-surface.md
   - id: repository-scoped-skill-exists
     status: current
     evidence: skills/explain-him/SKILL.md
@@ -190,7 +190,7 @@ claims:
     evidence: knowledge/07-presentation-capabilities.md
   - id: webmcp-exposes-page-context-and-shared-ui
     status: current
-    evidence: resolutions/2026-08-27-webmcp-skill-ui-runtime.md
+    evidence: resolutions/2026-08-30-webmcp-challenge-surface.md
   - id: direct-chatgpt-chrome-sidebar-site-tools
     status: open
     evidence: WEBMCP_CHALLENGE.md
