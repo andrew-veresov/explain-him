@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "How Explain Him works",
+    "quality_profile": "showcase",
+    "viewBox": [1200, 720]
+  },
+  "lanes": [
+    { "id": "consumer", "label": "Consumer" },
+    { "id": "agent", "label": "Personal agent" },
+    { "id": "sources", "label": "Idea sources" },
+    { "id": "presentation", "label": "Presentation layer" },
+    { "id": "feedback", "label": "Knowledge-gap loop", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "understand", "label": "Understand", "fromCol": 0, "toCol": 2 },
+    { "id": "explain", "label": "Explain", "fromCol": 3, "toCol": 4, "variant": "emphasis" },
+    { "id": "present", "label": "Present", "fromCol": 5, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": [
+    "ask",
+    "read-page",
+    "deepen",
+    "ground",
+    "present-capability",
+    "webmcp",
+    "visible"
+  ],
+  "nodes": [
+    {
+      "id": "ask",
+      "lane": "consumer",
+      "col": 0,
+      "type": "external",
+      "label": "Ask",
+      "sublabel": "question + desired depth"
+    },
+    {
+      "id": "read-page",
+      "lane": "sources",
+      "col": 1,
+      "type": "frontend",
+      "label": "Read authored page",
+      "sublabel": "first source"
+    },
+    {
+      "id": "deepen",
+      "lane": "sources",
+      "col": 2,
+      "type": "database",
+      "label": "Deepen from repository",
+      "sublabel": "only when needed"
+    },
+    {
+      "id": "ground",
+      "lane": "agent",
+      "col": 3,
+      "type": "backend",
+      "label": "Ground the answer",
+      "sublabel": "meaning + provenance",
+      "tag": "agent owns reasoning"
+    },
+    {
+      "id": "present-capability",
+      "lane": "presentation",
+      "col": 4,
+      "type": "messagebus",
+      "label": "Presentation Capability",
+      "sublabel": "only when it helps",
+      "tag": "typed artifact"
+    },
+    {
+      "id": "webmcp",
+      "lane": "presentation",
+      "col": 5,
+      "type": "security",
+      "label": "WebMCP UI sync",
+      "sublabel": "visual layer only",
+      "tag": "no reasoning"
+    },
+    {
+      "id": "visible",
+      "lane": "consumer",
+      "col": 5,
+      "type": "frontend",
+      "label": "Personalized explanation",
+      "sublabel": "authored page stays immutable"
+    },
+    {
+      "id": "issues",
+      "lane": "feedback",
+      "col": 2,
+      "type": "database",
+      "label": "Search Issues",
+      "sublabel": "reuse known answers"
+    },
+    {
+      "id": "draft",
+      "lane": "feedback",
+      "col": 3,
+      "type": "backend",
+      "label": "Draft minimized question",
+      "sublabel": "no irrelevant context"
+    },
+    {
+      "id": "confirm",
+      "lane": "feedback",
+      "col": 4,
+      "type": "security",
+      "label": "User confirmation",
+      "sublabel": "required before write"
+    },
+    {
+      "id": "originator",
+      "lane": "feedback",
+      "col": 5,
+      "type": "external",
+      "label": "Return to Originator",
+      "sublabel": "GitHub Issue"
+    }
+  ],
+  "edges": [
+    { "id": "ask-page", "from": "ask", "to": "read-page", "role": "main" },
+    { "id": "page-repo", "from": "read-page", "to": "deepen", "label": "if more context is needed", "role": "main" },
+    { "id": "repo-ground", "from": "deepen", "to": "ground", "label": "evidence", "variant": "emphasis", "role": "main" },
+    { "id": "ground-capability", "from": "ground", "to": "present-capability", "label": "visual helps?", "variant": "emphasis", "role": "main" },
+    { "id": "capability-webmcp", "from": "present-capability", "to": "webmcp", "label": "safe typed result", "role": "main" },
+    { "id": "webmcp-visible", "from": "webmcp", "to": "visible", "label": "sync local view", "variant": "emphasis", "role": "return" },
+    { "id": "gap-issues", "from": "deepen", "to": "issues", "label": "evidence insufficient", "variant": "security", "role": "error" },
+    { "id": "issues-draft", "from": "issues", "to": "draft", "role": "branch" },
+    { "id": "draft-confirm", "from": "draft", "to": "confirm", "role": "branch" },
+    { "id": "confirm-originator", "from": "confirm", "to": "originator", "label": "approved", "variant": "security", "role": "branch" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Ownership",
+      "items": [
+        "The personal agent owns understanding and grounding",
+        "Presentation Capabilities only represent already-grounded meaning"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Trust boundary",
+      "items": [
+        "WebMCP synchronizes the browser-local visual layer only",
+        "The Originator-authored page remains immutable"
+      ]
+    }
+  ]
+}

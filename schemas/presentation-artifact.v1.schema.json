@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://explain-him.dev/schemas/presentation-artifact.v1.schema.json",
+  "title": "Explain Him Presentation Artifact v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "type", "capability", "content", "fallback", "provenance", "authorship"],
+  "properties": {
+    "schemaVersion": {"const": "explain-him-presentation.v1"},
+    "type": {"type": "string", "minLength": 1, "maxLength": 80},
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "trust", "execution"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "maxLength": 120},
+        "version": {"type": ["string", "null"], "maxLength": 80},
+        "trust": {"enum": ["builtin", "originator-approved", "consumer-local"]},
+        "execution": {"enum": ["embedded", "personal-agent", "consumer-local"]}
+      }
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "payload"],
+      "properties": {
+        "schema": {"type": "string", "minLength": 1, "maxLength": 160},
+        "payload": {"type": "object"}
+      }
+    },
+    "fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "body"],
+      "properties": {
+        "title": {"type": "string", "minLength": 1, "maxLength": 160},
+        "body": {"type": "string", "minLength": 1, "maxLength": 5000}
+      }
+    },
+    "provenance": {"type": "object"},
+    "authorship": {"type": "object"}
+  }
+}

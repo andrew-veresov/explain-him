@@ -1,13 +1,9 @@
-schema_version: explain-him-explanation.v1
+schema_version: explain-him-explanation.v2
 id: explain-him-public-demo
-version: 0.1.1
+version: 0.2.0
 title: How Explain Him works
 language: en
 status: public-demo
-
-products:
-  standard: Explain Him
-  pro: Explain Him Pro
 
 scope:
   repository: andrew-veresov/explain-him
@@ -64,21 +60,65 @@ knowledge:
       topic: product-boundaries
     - path: knowledge/06-browser-local-workspace.md
       topic: browser-local-workspace
+    - path: knowledge/07-presentation-capabilities.md
+      topic: presentation-capabilities
 
-visualization:
-  static_entrypoint: index.html
+presentation:
+  authored_entrypoint: index.html
   authored_by: originator
-  layout: two-panel
-  left_panel: adaptive-visual-explanation
-  right_panel: personal-agent-chat-simulation
-  chat_runtime: deterministic-demo-simulation
-  optional_protocol: A2UI
+  policy:
+    authored_layer: immutable
+    consumer_local_capabilities: allowed
+    arbitrary_html: forbidden
+    arbitrary_javascript: forbidden
+    external_html_embedding: forbidden
+  capabilities:
+    - id: explain-him-safe-text
+      provider: explain-him
+      trust: builtin
+      execution: embedded
+      fallback: true
+      accepts:
+        - text
+        - callout
+        - comparison
+        - diagram
+        - architecture-map
+        - workflow
+        - sequence
+        - dataflow
+        - lifecycle
+        - timeline
+        - graph
+        - simulation
+        - data-visualization
+    - id: archify
+      provider: github:tt-a1i/archify
+      trust: originator-approved
+      execution: personal-agent
+      fallback: false
+      accepts:
+        - architecture-map
+        - workflow
+        - sequence
+        - dataflow
+        - lifecycle
+      role: reference-presentation-specialist
+      repository_reasoning: forbidden
+      output_embedding: fallback-only
+  resolution_order:
+    - explicit-consumer-request
+    - originator-recommendation
+    - semantic-match
+    - runtime-availability
+    - safe-fallback
   browser_local_workspace:
     status: demo-only
-    state_model: typed-operation-log
+    schema_version: explain-him-local-workspace.v2
+    state_model: typed-presentation-operation-log
     authored_layer: immutable
-    durable_operations: [add-block, remove-local-block]
-    ephemeral_operations: [focus-block]
+    durable_operations: [add-presentation, remove-presentation]
+    compatibility_operations: [add-block, remove-block]
     persistence: indexeddb-with-memory-fallback
     renderer: safe-dom-text-content
     undo_redo: true
@@ -94,17 +134,23 @@ webmcp:
   allowed_capabilities:
     - skill-delivery
     - visual-context-read
+    - presentation-context-read
     - local-workspace-read
     - visual-focus
+    - local-presentation-add
+    - local-presentation-remove
+    - local-undo-redo
+  compatibility_capabilities:
     - local-block-add
     - local-block-remove
-    - local-undo-redo
   forbidden_capabilities:
     - knowledge-search
     - repository-read
     - repository-search
     - claim-resolution
     - answer-generation
+    - presentation-reasoning
+    - arbitrary-html-injection
     - github-issue-search
     - github-issue-create
 
@@ -131,6 +177,12 @@ claims:
   - id: browser-local-typed-workspace-exists
     status: demo-only
     evidence: resolutions/2026-08-26-browser-local-workspace.md
+  - id: presentation-capability-model
+    status: current
+    evidence: resolutions/2026-08-29-presentation-capabilities.md
+  - id: archify-reference-capability
+    status: demo-only
+    evidence: knowledge/07-presentation-capabilities.md
   - id: webmcp-is-ui-only
     status: current
     evidence: resolutions/2026-08-27-webmcp-skill-ui-runtime.md

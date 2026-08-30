@@ -8,7 +8,7 @@ These instructions apply **only** while explaining the public repository `andrew
 - Do not apply Explain Him terminology to unrelated repositories.
 - Leave this scope when the user switches repository or finishes this explanation.
 - Use **Explain Him** and **Explain Him Pro** as product names.
-- Treat `tests/`, `tools/` and `.github/` as implementation support, not product knowledge.
+- Treat `tests/`, `tools` and `.github/` as implementation support, not product knowledge.
 
 ## Project language
 
@@ -16,7 +16,7 @@ Repository-authored content must be English, including documentation, UI copy, m
 
 ## Browser/WebMCP bootstrap
 
-When the page is opened in a WebMCP-capable browser, prefer the Explain Him skill delivered by the page. The descriptor contains workflow instructions, source-navigation context and related UI tools; it contains no browser-readable knowledge bundle.
+When the page is opened in a WebMCP-capable browser, prefer the Explain Him skill delivered by the page. The descriptor contains workflow instructions, source-navigation context, Presentation Capability descriptors, and related UI tools; it contains no browser-readable knowledge bundle.
 
 If native `registerSkill()` is unavailable, the page may expose the same descriptor through read-only compatibility tool `get_explain_him_skill`. For non-WebMCP operation, use `skills/explain-him/SKILL.md`.
 
@@ -28,7 +28,7 @@ If native `registerSkill()` is unavailable, the page may expose the same descrip
 4. Check `resolutions/` for accepted clarifications that override older explanatory copy.
 5. Use `README.md` and `00 Home.md` for navigation and summary.
 
-Do not use browser-local blocks as canonical evidence.
+Do not use browser-local presentations as canonical evidence.
 
 ## Source precedence
 
@@ -50,19 +50,43 @@ A lower-priority source must not silently override a higher-priority source.
 - Do not present `target`, `hypothesis`, `open` or `demo-only` as implemented production behavior.
 - Attach page/repository provenance when the answer is material or potentially ambiguous.
 - Mark agent inference separately from source-backed statements.
-- Form the answer before performing any WebMCP UI mutation.
+- Form and ground the answer before any Presentation Capability or WebMCP UI mutation.
+
+## Presentation Capability boundary
+
+Use a Presentation Capability only when a specialized visual or interactive representation materially improves understanding or the Consumer explicitly asks for one.
+
+Resolution order:
+
+1. explicit Consumer request when policy and availability allow it;
+2. Originator recommendation;
+3. semantic match;
+4. runtime availability;
+5. safe fallback.
+
+The personal agent owns meaning and grounding. A Presentation Capability receives only an already-grounded typed Presentation Artifact and must not become a second repository-reasoning path.
+
+- Preserve provenance in the artifact.
+- Never pass unrestricted repository context to a presentation tool merely because that tool can inspect a repository.
+- Never treat rendered output as new evidence.
+- Never inject arbitrary HTML or JavaScript into the Explain Him page.
+- Consumer-local capabilities may be used outside the trusted surface, but their output is not canonical.
+- If a capability fails, keep the normal chat answer and use a safe fallback when useful.
+
+Archify is the reference external technical presenter. When available, use it only after forming the grounded semantic artifact; run it personal-agent side and do not inject its standalone HTML into the page.
 
 ## WebMCP boundary
 
-Explain Him WebMCP is **not** a retrieval or answer-generation layer.
+Explain Him WebMCP is **not** a retrieval, reasoning, or answer-generation layer.
 
 WebMCP may:
 
 - deliver the Explain Him skill/context;
-- report stable visual target IDs and browser-local workspace state;
+- report stable visual target IDs, Presentation Capability descriptors, and browser-local workspace state;
 - focus an authored visual block;
-- add a browser-local explanation already formed by the personal agent;
-- remove local blocks;
+- add an already-grounded typed browser-local Presentation Artifact;
+- remove local presentations;
+- support compatibility wrappers for old local explanation blocks;
 - undo/redo local changes.
 
 WebMCP must not:
@@ -70,6 +94,8 @@ WebMCP must not:
 - search/read repository knowledge;
 - provide a browser-side knowledge index or bundle;
 - resolve claims or generate answers;
+- perform presentation reasoning;
+- inject arbitrary HTML/JavaScript;
 - search or create GitHub Issues;
 - modify Originator-authored blocks.
 

@@ -11,7 +11,10 @@ CYRILLIC_RE = re.compile(r'[\u0400-\u04FF]')
 REQUIRED = [
     'LICENSE', 'README.md', 'AGENTS.md', '00 Home.md', 'index.html', 'explain-him.yaml',
     'skills/explain-him/SKILL.md', 'skills/explain-him/skill.yaml',
+    'schemas/presentation-capability.v1.schema.json', 'schemas/presentation-artifact.v1.schema.json',
+    'runtime/presentation/registry.mjs', 'runtime/presentation/artifact.mjs',
     'runtime/workspace.mjs', 'runtime/webmcp.mjs', 'assets/app.mjs', 'assets/styles.css',
+    'knowledge/07-presentation-capabilities.md', 'resolutions/2026-08-29-presentation-capabilities.md',
     'question-template.md', '.github/ISSUE_TEMPLATE/explain-him-question.md',
     '.obsidian/app.json', '.obsidian/core-plugins.json'
 ]
@@ -21,11 +24,14 @@ FORBIDDEN_CONTENT = [
 ]
 FORBIDDEN_RUNTIME_SNIPPETS = ['innerHTML', 'insertAdjacentHTML', 'eval(', 'new Function']
 ALLOWED_TOOLS = {
-    'get_explanation_context', 'get_visible_explanation_state', 'get_local_change_history',
-    'focus_explanation_block', 'add_local_explanation', 'remove_local_explanation',
-    'undo_last_local_change', 'redo_local_change'
+    'get_explanation_context', 'get_presentation_context', 'get_visible_explanation_state', 'get_local_change_history',
+    'focus_explanation_block', 'add_local_presentation', 'remove_local_presentation',
+    'add_local_explanation', 'remove_local_explanation', 'undo_last_local_change', 'redo_local_change'
 }
-FORBIDDEN_TOOL_NAMES = {'search_knowledge', 'read_repository', 'search_repository', 'resolve_answer', 'search_issues', 'create_issue'}
+FORBIDDEN_TOOL_NAMES = {
+    'search_knowledge', 'read_repository', 'search_repository', 'resolve_answer',
+    'resolve_presentation', 'search_issues', 'create_issue'
+}
 
 
 class PageParser(HTMLParser):
@@ -112,21 +118,29 @@ def main() -> int:
     for expected in [
         'repository: andrew-veresov/explain-him', 'root: .', 'language: en',
         'browser_readable_knowledge_bundle: none', 'webmcp_repository_access: forbidden',
-        'confirmation_before_write: true'
+        'consumer_local_capabilities: allowed', 'arbitrary_html: forbidden',
+        'state_model: typed-presentation-operation-log', 'confirmation_before_write: true'
     ]:
         if expected not in manifest:
             errors.append(f'explain-him.yaml: missing invariant {expected!r}')
+    for stale in ['layout: two-panel', 'right_panel:', 'chat_runtime:']:
+        if stale in manifest:
+            errors.append(f'explain-him.yaml: stale embedded-chat marker {stale!r}')
 
     agents = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
-    for expected in ['Do not persist this skill', 'explicit user confirmation', 'Repository-authored content must be English']:
+    for expected in [
+        'Do not persist this skill', 'explicit user confirmation', 'Repository-authored content must be English',
+        'Never inject arbitrary HTML or JavaScript', 'Consumer-local capabilities'
+    ]:
         if expected not in agents:
             errors.append(f'AGENTS.md: missing invariant {expected!r}')
 
     skill = (ROOT / 'skills/explain-him/SKILL.md').read_text(encoding='utf-8')
     if not skill.startswith('---\nname: explain-him\n'):
         errors.append('SKILL.md: invalid portable frontmatter')
-    if 'Repository-authored artifacts are English' not in skill:
-        errors.append('SKILL.md: missing English project-language rule')
+    for expected in ['Repository-authored artifacts are English', 'Presentation Artifact', 'Archify', 'Never present']:
+        if expected not in skill:
+            errors.append(f'SKILL.md: missing presentation/grounding rule {expected!r}')
 
     webmcp = (ROOT / 'runtime/webmcp.mjs').read_text(encoding='utf-8')
     for name in ALLOWED_TOOLS:
@@ -135,6 +149,11 @@ def main() -> int:
     for name in FORBIDDEN_TOOL_NAMES:
         if re.search(rf"register(?:Tool)?[^\n]*['\"]{re.escape(name)}['\"]", webmcp):
             errors.append(f'runtime/webmcp.mjs: forbidden registered tool {name}')
+
+    artifact = (ROOT / 'runtime/presentation/artifact.mjs').read_text(encoding='utf-8')
+    for expected in ['DANGEROUS_KEYS', 'content.payload', 'explain-him-presentation.v1']:
+        if expected not in artifact:
+            errors.append(f'runtime/presentation/artifact.mjs: missing validation invariant {expected!r}')
 
     question = (ROOT / 'question-template.md').read_text(encoding='utf-8')
     if 'explicitly approved publication' not in question:

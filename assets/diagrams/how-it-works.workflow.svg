@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">How Explain Him works</title>
+  <desc id="desc">Workflow showing a consumer asking a personal agent, the agent reading the authored page and repository evidence, grounding the answer, optionally using a Presentation Capability, and using WebMCP only to synchronize the browser-local visual layer. A separate knowledge-gap lane returns unresolved questions to the Originator after user confirmation.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#66758a"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#3167d8"/>
+    </marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#1f2a3d" flood-opacity="0.10"/>
+    </filter>
+    <style>
+      .bg{fill:#f6f7f9}.panel{fill:#fff;stroke:#dce1e8;stroke-width:1.4}.lane{fill:#fbfcfe;stroke:#e3e7ed;stroke-width:1}.lane-ex{fill:#fff9f5;stroke:#f1d7c5}.phase{font:700 12px Inter,Segoe UI,sans-serif;letter-spacing:.08em;fill:#647083}.lane-label{font:700 13px Inter,Segoe UI,sans-serif;fill:#4a596e}.node{fill:#fff;stroke:#cfd7e3;stroke-width:1.4;rx:14;filter:url(#shadow)}.node-blue{stroke:#9db5ea}.node-green{stroke:#a5d6c1}.node-amber{stroke:#e1bf7d}.node-rose{stroke:#e4a7a7}.label{font:700 15px Inter,Segoe UI,sans-serif;fill:#18202b}.sub{font:12px Inter,Segoe UI,sans-serif;fill:#647083}.tag{font:700 10px Inter,Segoe UI,sans-serif;fill:#3167d8}.edge{fill:none;stroke:#66758a;stroke-width:2;marker-end:url(#arrow)}.edge-main{fill:none;stroke:#3167d8;stroke-width:2.5;marker-end:url(#arrowBlue)}.edge-ex{fill:none;stroke:#b66a3c;stroke-dasharray:6 5;marker-end:url(#arrow)}.edge-label{font:11px Inter,Segoe UI,sans-serif;fill:#647083}.badge{font:700 10px Inter,Segoe UI,sans-serif;letter-spacing:.08em;fill:#3167d8}.caption{font:700 14px Inter,Segoe UI,sans-serif;fill:#18202b}.caption-sub{font:12px Inter,Segoe UI,sans-serif;fill:#647083}
+    </style>
+  </defs>
+
+  <rect class="bg" width="1200" height="720" rx="20"/>
+  <rect class="panel" x="18" y="18" width="1164" height="684" rx="18"/>
+
+  <text class="badge" x="42" y="48">ARCHIFY WORKFLOW · SHOWCASE</text>
+  <text class="phase" x="330" y="48">UNDERSTAND</text>
+  <text class="phase" x="690" y="48">EXPLAIN</text>
+  <text class="phase" x="1000" y="48">PRESENT</text>
+
+  <rect class="lane" x="42" y="70" width="1116" height="86" rx="12"/>
+  <rect class="lane" x="42" y="164" width="1116" height="100" rx="12"/>
+  <rect class="lane" x="42" y="272" width="1116" height="100" rx="12"/>
+  <rect class="lane" x="42" y="380" width="1116" height="100" rx="12"/>
+  <rect class="lane-ex" x="42" y="488" width="1116" height="116" rx="12"/>
+
+  <text class="lane-label" x="58" y="93">Consumer</text>
+  <text class="lane-label" x="58" y="187">Personal agent</text>
+  <text class="lane-label" x="58" y="295">Idea sources</text>
+  <text class="lane-label" x="58" y="403">Presentation layer</text>
+  <text class="lane-label" x="58" y="511">Knowledge-gap loop</text>
+
+  <!-- main workflow nodes -->
+  <rect class="node node-green" x="118" y="94" width="142" height="48" rx="14"/>
+  <text class="label" x="189" y="116" text-anchor="middle">Ask</text>
+  <text class="sub" x="189" y="132" text-anchor="middle">question + depth</text>
+
+  <rect class="node node-blue" x="278" y="297" width="168" height="56" rx="14"/>
+  <text class="label" x="362" y="319" text-anchor="middle">Read authored page</text>
+  <text class="sub" x="362" y="337" text-anchor="middle">first source</text>
+
+  <rect class="node" x="468" y="297" width="176" height="56" rx="14"/>
+  <text class="label" x="556" y="319" text-anchor="middle">Deepen from repo</text>
+  <text class="sub" x="556" y="337" text-anchor="middle">only when needed</text>
+
+  <rect class="node node-blue" x="660" y="188" width="176" height="62" rx="14"/>
+  <text class="label" x="748" y="211" text-anchor="middle">Ground the answer</text>
+  <text class="sub" x="748" y="229" text-anchor="middle">meaning + provenance</text>
+  <text class="tag" x="748" y="244" text-anchor="middle">AGENT OWNS REASONING</text>
+
+  <rect class="node node-blue" x="846" y="402" width="180" height="62" rx="14"/>
+  <text class="label" x="936" y="425" text-anchor="middle">Presentation Capability</text>
+  <text class="sub" x="936" y="443" text-anchor="middle">when a visual helps</text>
+  <text class="tag" x="936" y="458" text-anchor="middle">TYPED ARTIFACT</text>
+
+  <rect class="node node-amber" x="1038" y="402" width="104" height="62" rx="14"/>
+  <text class="label" x="1090" y="424" text-anchor="middle">WebMCP</text>
+  <text class="sub" x="1090" y="442" text-anchor="middle">UI sync only</text>
+  <text class="tag" x="1090" y="457" text-anchor="middle">NO REASONING</text>
+
+  <rect class="node node-green" x="984" y="94" width="158" height="48" rx="14"/>
+  <text class="label" x="1063" y="116" text-anchor="middle">Personalized view</text>
+  <text class="sub" x="1063" y="132" text-anchor="middle">authored page intact</text>
+
+  <!-- main path -->
+  <path class="edge-main" d="M260 118 H302 V297"/>
+  <path class="edge-main" d="M446 325 H468"/>
+  <path class="edge-main" d="M644 325 H676 V250"/>
+  <path class="edge-main" d="M836 219 H858 V402"/>
+  <path class="edge-main" d="M1026 433 H1038"/>
+  <path class="edge-main" d="M1090 402 V154 H1063 V142"/>
+
+  <text class="edge-label" x="277" y="210">read page first</text>
+  <text class="edge-label" x="466" y="285">if more context is needed</text>
+  <text class="edge-label" x="655" y="281">evidence</text>
+  <text class="edge-label" x="844" y="310">visual helps?</text>
+  <text class="edge-label" x="1028" y="422">safe typed result</text>
+  <text class="edge-label" x="1100" y="273" transform="rotate(-90 1100 273)">sync browser-local view</text>
+
+  <!-- knowledge-gap loop -->
+  <rect class="node" x="432" y="526" width="150" height="56" rx="14"/>
+  <text class="label" x="507" y="548" text-anchor="middle">Search Issues</text>
+  <text class="sub" x="507" y="566" text-anchor="middle">known answers first</text>
+
+  <rect class="node" x="604" y="526" width="174" height="56" rx="14"/>
+  <text class="label" x="691" y="548" text-anchor="middle">Draft question</text>
+  <text class="sub" x="691" y="566" text-anchor="middle">minimize context</text>
+
+  <rect class="node node-amber" x="800" y="526" width="158" height="56" rx="14"/>
+  <text class="label" x="879" y="548" text-anchor="middle">User confirmation</text>
+  <text class="sub" x="879" y="566" text-anchor="middle">before write</text>
+
+  <rect class="node node-rose" x="980" y="526" width="162" height="56" rx="14"/>
+  <text class="label" x="1061" y="548" text-anchor="middle">Return to Originator</text>
+  <text class="sub" x="1061" y="566" text-anchor="middle">GitHub Issue</text>
+
+  <path class="edge-ex" d="M556 353 V504 H507 V526"/>
+  <path class="edge" d="M582 554 H604"/>
+  <path class="edge" d="M778 554 H800"/>
+  <path class="edge-ex" d="M958 554 H980"/>
+  <text class="edge-label" x="565" y="499">evidence insufficient</text>
+  <text class="edge-label" x="962" y="544">approved</text>
+
+  <!-- invariants -->
+  <rect x="58" y="628" width="528" height="52" rx="13" fill="#eef4ff" stroke="#c9d8f6"/>
+  <circle cx="82" cy="654" r="8" fill="#3167d8"/>
+  <text class="caption" x="100" y="650">Meaning stays with the personal agent.</text>
+  <text class="caption-sub" x="100" y="668">Presentation Capabilities represent already-grounded meaning; they do not become evidence.</text>
+
+  <rect x="604" y="628" width="538" height="52" rx="13" fill="#eef9f4" stroke="#c4e3d5"/>
+  <circle cx="628" cy="654" r="8" fill="#147a50"/>
+  <text class="caption" x="646" y="650">The Originator-authored page remains immutable.</text>
+  <text class="caption-sub" x="646" y="668">WebMCP changes only the browser-local presentation layer.</text>
+</svg>

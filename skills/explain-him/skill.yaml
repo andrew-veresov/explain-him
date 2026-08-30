@@ -1,6 +1,6 @@
-schema_version: explain-him-skill.v1
+schema_version: explain-him-skill.v2
 id: explain-him
-version: 0.1.1
+version: 0.2.0
 entrypoint: SKILL.md
 scope:
   repository: andrew-veresov/explain-him
@@ -12,7 +12,8 @@ capabilities:
   - deepen-from-repository
   - status-aware-grounding
   - issue-draft
-  - browser-local-visual-adaptation
+  - presentation-capability-selection
+  - browser-local-presentation-adaptation
 requires_personal_agent_tools:
   - page-read
   - repository-read
@@ -20,13 +21,25 @@ optional_personal_agent_tools:
   - repository-search
   - github-issues-read
   - github-issues-write-with-confirmation
+presentation:
+  artifact_schema: explain-him-presentation.v1
+  capability_resolution: consumer-request-originator-recommendation-semantic-match-availability-fallback
+  arbitrary_html: forbidden
+  arbitrary_javascript: forbidden
+  reference_capabilities:
+    - id: archify
+      trust: originator-approved
+      execution: personal-agent
 webmcp:
   role: skill-delivery-and-ui-only
   related_tools:
     - get_explanation_context
+    - get_presentation_context
     - get_visible_explanation_state
     - get_local_change_history
     - focus_explanation_block
+    - add_local_presentation
+    - remove_local_presentation
     - add_local_explanation
     - remove_local_explanation
     - undo_last_local_change
@@ -35,4 +48,6 @@ forbidden_webmcp_capabilities:
   - knowledge-search
   - repository-read
   - answer-generation
+  - presentation-reasoning
+  - arbitrary-html-injection
   - github-issues
