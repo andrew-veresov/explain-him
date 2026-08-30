@@ -45,7 +45,7 @@ function refreshWebMcpCopy() {
   const heading = card?.querySelector?.('h3');
   const copy = card?.querySelector?.('p');
   if (heading) heading.textContent = 'WebMCP Site Tools';
-  if (copy) copy.textContent = 'Authored-page context, personalization state, focus, add/remove, undo/redo.';
+  if (copy) copy.textContent = 'Two tools only: discover the explanation contract, then apply safe typed blocks. Skills own grounding and GitHub retrieval.';
 }
 
 function installWebMcpDemoCard() {
@@ -57,13 +57,13 @@ function installWebMcpDemoCard() {
   const card = make('section', undefined, 'browser-agent-note');
   card.id = 'webmcp-demo-card';
   card.dataset.webmcpDemo = 'challenge';
-  const heading = make('strong', 'Try the WebMCP human–agent flow');
-  const copy = make('p', 'In a WebMCP-capable browser, ask your agent to use the page itself as a shared explanation surface.');
+  const heading = make('strong', 'Try the skill-driven WebMCP flow');
+  const copy = make('p', 'The agent grounds the answer from the page/repository, then WebMCP embeds only the typed result into this shared surface.');
   const prompts = make('ol');
   for (const prompt of [
-    'Explain this idea in one paragraph, then add a short analogy next to the mechanism.',
-    'Focus the part about grounding.',
-    'Undo my last personalization.'
+    'Explain this idea, then add a short workflow showing how the explanation is produced.',
+    'Compare the authored layer with the personal layer and add that comparison to the page.',
+    'Replace the last local block with a simple concept diagram.'
   ]) {
     prompts.append(make('li', prompt));
   }

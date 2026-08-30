@@ -1,29 +1,33 @@
 export const EXPLAIN_HIM_WEBMCP_TOOLS = Object.freeze([
-  'get_explanation_context',
-  'get_personalization_state',
-  'focus_explanation',
-  'add_personal_explanation',
-  'remove_personal_explanation',
-  'undo_personalization',
-  'redo_personalization'
+  'get_explanation_contract',
+  'apply_explanation'
 ]);
 
-// Kept as an export alias for code that treats these as UI tools.
+// Compatibility export for tests/code that groups the public WebMCP surface as UI tools.
 export const EXPLAIN_HIM_UI_TOOLS = EXPLAIN_HIM_WEBMCP_TOOLS;
 
+export const EXPLANATION_BLOCK_TYPES = Object.freeze([
+  'callout', 'comparison', 'workflow', 'timeline', 'diagram'
+]);
+
+const REPOSITORY = 'andrew-veresov/explain-him';
+const REPOSITORY_URL = `https://github.com/${REPOSITORY}`;
+const SKILL_PATH = 'skills/explain-him/SKILL.md';
+const SKILL_URL = `${REPOSITORY_URL}/blob/main/${SKILL_PATH}`;
+const BLOCK_SCHEMA_PATH = 'schemas/explanation-block.v1.schema.json';
+const BLOCK_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/${BLOCK_SCHEMA_PATH}`;
 const EMPTY_INPUT = Object.freeze({ type: 'object', properties: {}, additionalProperties: false });
-const PERSONAL_EXPLANATION_KINDS = Object.freeze(['example', 'analogy', 'summary', 'warning', 'comparison']);
 
 function toolTitle(name) {
   return name.split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
 }
 
-function readOnlyTool(name, description, inputSchema, execute, annotations = {}) {
+function readOnlyTool(name, description, inputSchema, execute) {
   return {
     name,
     title: toolTitle(name),
     description,
-    annotations: { readOnlyHint: true, ...annotations },
+    annotations: { readOnlyHint: true },
     inputSchema,
     execute
   };
@@ -40,108 +44,456 @@ function mutationTool(name, description, inputSchema, execute) {
   };
 }
 
-function normalizeText(value, maxLength = 180) {
-  const text = String(value || '').replace(/\s+/g, ' ').trim();
-  if (text.length <= maxLength) return text;
-  return `${text.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+function clone(value) {
+  return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 }
 
-function authoredTargetFromNode(node, detailed = false) {
-  const heading = node.querySelector?.('h1,h2,h3,h4,[data-eh-title]')?.textContent
-    || node.querySelector?.('strong')?.textContent
-    || node.dataset?.ehBlockId
-    || 'Explanation section';
-  return {
+function stringValue(value, field, maxLength = 500) {
+  if (typeof value !== 'string' || !value.trim()) throw new TypeError(`${field} must be a non-empty string`);
+  const normalized = value.trim();
+  if (normalized.length > maxLength) throw new RangeError(`${field} exceeds ${maxLength} characters`);
+  return normalized;
+}
+
+function optionalString(value, maxLength = 500) {
+  if (value === undefined || value === null || value === '') return null;
+  if (typeof value !== 'string') throw new TypeError('Optional text field must be a string');
+  return value.trim().slice(0, maxLength) || null;
+}
+
+function nodeTitle(node) {
+  return String(
+    node.querySelector?.('h1,h2,h3,h4,[data-eh-title]')?.textContent
+      || node.querySelector?.('strong')?.textContent
+      || node.dataset?.ehBlockId
+      || 'Explanation target'
+  ).replace(/\s+/g, ' ').trim().slice(0, 120);
+}
+
+function targetDescriptors(workspace) {
+  const document = workspace.document;
+  if (!document?.querySelectorAll) {
+    return (workspace.getContext?.().authoredTargetIds || []).map((id) => ({ id, title: id }));
+  }
+  return [...document.querySelectorAll('[data-eh-block-id]')].map((node) => ({
     id: node.dataset.ehBlockId,
-    title: normalizeText(heading, 100),
-    text: normalizeText(node.textContent, detailed ? 700 : 120)
+    title: nodeTitle(node)
+  }));
+}
+
+function localBlockDescriptors(workspace) {
+  const presentations = workspace.getVisibleState?.().presentations || [];
+  return presentations.slice(-30).map((presentation) => ({
+    id: presentation.id,
+    targetId: presentation.targetId,
+    type: presentation.artifact?.type || null,
+    title: presentation.artifact?.fallback?.title || 'Personal explanation'
+  }));
+}
+
+function contractFor(workspace) {
+  const base = workspace.getContext?.() || {};
+  return {
+    schemaVersion: 'explain-him-webmcp-contract.v1',
+    explanationId: base.explanationId || null,
+    baseRevision: base.baseRevision || null,
+    repository: {
+      fullName: REPOSITORY,
+      url: REPOSITORY_URL
+    },
+    skill: {
+      path: SKILL_PATH,
+      url: SKILL_URL,
+      instruction: 'Read this repository-scoped skill before grounding or presenting an explanation.'
+    },
+    blockSchema: {
+      path: BLOCK_SCHEMA_PATH,
+      url: BLOCK_SCHEMA_URL,
+      types: [...EXPLANATION_BLOCK_TYPES]
+    },
+    targets: targetDescriptors(workspace),
+    localBlocks: localBlockDescriptors(workspace),
+    applyOperations: ['add', 'remove'],
+    authoredLayerMutable: false,
+    repositoryAccessViaWebMcp: false
   };
 }
 
-function getAuthoredPageContext(workspace, input = {}) {
-  const base = typeof workspace.getContext === 'function' ? workspace.getContext() : {};
-  const document = workspace.document;
-  const targetId = typeof input.targetId === 'string' && input.targetId.trim() ? input.targetId.trim() : null;
+function sourceSchema() {
+  return {
+    type: 'object',
+    required: ['path'],
+    additionalProperties: false,
+    properties: {
+      repository: { type: 'string', maxLength: 200, description: 'Repository full name. Defaults to andrew-veresov/explain-him.' },
+      path: { type: 'string', maxLength: 500, description: 'Repository path supporting this explanation block.' },
+      ref: { type: 'string', maxLength: 160, description: 'Optional branch, tag, or commit reference.' },
+      section: { type: 'string', maxLength: 300, description: 'Optional heading or section within the source.' },
+      status: { type: 'string', maxLength: 40, description: 'Optional claim status such as current, target, hypothesis, open, or demo-only.' }
+    }
+  };
+}
 
-  if (!document?.querySelectorAll) {
+function blockSchema() {
+  const sources = {
+    type: 'array',
+    maxItems: 20,
+    description: 'Repository provenance collected by the personal agent while grounding this block.',
+    items: sourceSchema()
+  };
+  return {
+    oneOf: [
+      {
+        title: 'Callout',
+        type: 'object',
+        required: ['type', 'title', 'body'],
+        additionalProperties: false,
+        properties: {
+          type: { const: 'callout' },
+          title: { type: 'string', maxLength: 160 },
+          body: { type: 'string', maxLength: 5000 },
+          tone: { type: 'string', enum: ['neutral', 'example', 'warning', 'insight'] },
+          sources
+        }
+      },
+      {
+        title: 'Comparison',
+        type: 'object',
+        required: ['type', 'title', 'columns'],
+        additionalProperties: false,
+        properties: {
+          type: { const: 'comparison' },
+          title: { type: 'string', maxLength: 160 },
+          columns: {
+            type: 'array', minItems: 2, maxItems: 4,
+            items: {
+              type: 'object', required: ['title', 'items'], additionalProperties: false,
+              properties: {
+                title: { type: 'string', maxLength: 120 },
+                items: { type: 'array', minItems: 1, maxItems: 10, items: { type: 'string', maxLength: 500 } }
+              }
+            }
+          },
+          sources
+        }
+      },
+      {
+        title: 'Workflow',
+        type: 'object',
+        required: ['type', 'title', 'steps'],
+        additionalProperties: false,
+        properties: {
+          type: { const: 'workflow' },
+          title: { type: 'string', maxLength: 160 },
+          steps: {
+            type: 'array', minItems: 2, maxItems: 12,
+            items: {
+              type: 'object', required: ['title'], additionalProperties: false,
+              properties: {
+                title: { type: 'string', maxLength: 120 },
+                body: { type: 'string', maxLength: 800 }
+              }
+            }
+          },
+          sources
+        }
+      },
+      {
+        title: 'Timeline',
+        type: 'object',
+        required: ['type', 'title', 'items'],
+        additionalProperties: false,
+        properties: {
+          type: { const: 'timeline' },
+          title: { type: 'string', maxLength: 160 },
+          items: {
+            type: 'array', minItems: 2, maxItems: 16,
+            items: {
+              type: 'object', required: ['label', 'body'], additionalProperties: false,
+              properties: {
+                label: { type: 'string', maxLength: 100 },
+                body: { type: 'string', maxLength: 800 }
+              }
+            }
+          },
+          sources
+        }
+      },
+      {
+        title: 'Diagram',
+        type: 'object',
+        required: ['type', 'title', 'variant', 'nodes'],
+        additionalProperties: false,
+        properties: {
+          type: { const: 'diagram' },
+          title: { type: 'string', maxLength: 160 },
+          variant: { type: 'string', enum: ['concept', 'architecture', 'sequence', 'flow'] },
+          nodes: {
+            type: 'array', minItems: 2, maxItems: 16,
+            items: {
+              type: 'object', required: ['id', 'label'], additionalProperties: false,
+              properties: {
+                id: { type: 'string', maxLength: 80 },
+                label: { type: 'string', maxLength: 140 },
+                body: { type: 'string', maxLength: 600 }
+              }
+            }
+          },
+          edges: {
+            type: 'array', maxItems: 30,
+            items: {
+              type: 'object', required: ['from', 'to'], additionalProperties: false,
+              properties: {
+                from: { type: 'string', maxLength: 80 },
+                to: { type: 'string', maxLength: 80 },
+                label: { type: 'string', maxLength: 120 }
+              }
+            }
+          },
+          sources
+        }
+      }
+    ]
+  };
+}
+
+function applySchema(workspace) {
+  const targetIds = targetDescriptors(workspace).map((target) => target.id);
+  return {
+    type: 'object',
+    required: ['operations'],
+    additionalProperties: false,
+    properties: {
+      operations: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 8,
+        description: 'Typed explanation changes to apply to the browser-local layer in order.',
+        items: {
+          oneOf: [
+            {
+              title: 'Add typed explanation block',
+              type: 'object',
+              required: ['op', 'targetId', 'block'],
+              additionalProperties: false,
+              properties: {
+                op: { const: 'add' },
+                targetId: {
+                  type: 'string',
+                  enum: targetIds,
+                  description: 'Authored target where the grounded explanation block should appear.'
+                },
+                block: blockSchema()
+              }
+            },
+            {
+              title: 'Remove browser-local explanation block',
+              type: 'object',
+              required: ['op', 'blockId'],
+              additionalProperties: false,
+              properties: {
+                op: { const: 'remove' },
+                blockId: {
+                  type: 'string',
+                  pattern: '^local-',
+                  maxLength: 120,
+                  description: 'Browser-local block ID returned by get_explanation_contract.'
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  };
+}
+
+function normalizeSources(value) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 20).map((source) => ({
+    repository: optionalString(source?.repository, 200) || REPOSITORY,
+    path: stringValue(source?.path, 'sources.path', 500),
+    ref: optionalString(source?.ref, 160),
+    section: optionalString(source?.section, 300),
+    status: optionalString(source?.status, 40)
+  }));
+}
+
+function validateBlock(block) {
+  if (!block || typeof block !== 'object') throw new TypeError('block must be an object');
+  const type = stringValue(block.type, 'block.type', 40);
+  if (!EXPLANATION_BLOCK_TYPES.includes(type)) throw new TypeError(`Unsupported explanation block type: ${type}`);
+  const title = stringValue(block.title, 'block.title', 160);
+  const sources = normalizeSources(block.sources);
+
+  if (type === 'callout') {
+    return { type, title, body: stringValue(block.body, 'block.body', 5000), tone: block.tone || 'neutral', sources };
+  }
+
+  if (type === 'comparison') {
+    if (!Array.isArray(block.columns) || block.columns.length < 2 || block.columns.length > 4) {
+      throw new TypeError('comparison.columns must contain 2 to 4 columns');
+    }
     return {
-      schemaVersion: 'explain-him-page-context.v1',
-      explanationId: base.explanationId || null,
-      baseRevision: base.baseRevision || null,
-      source: 'current-authored-page',
-      availableTargetIds: [...(base.authoredTargetIds || [])],
-      targets: []
+      type, title, sources,
+      columns: block.columns.map((column) => ({
+        title: stringValue(column?.title, 'comparison.columns.title', 120),
+        items: (column?.items || []).map((item) => stringValue(item, 'comparison.columns.items', 500))
+      }))
     };
   }
 
-  const allNodes = [...document.querySelectorAll('[data-eh-block-id]')];
-  if (targetId && !allNodes.some((node) => node.dataset.ehBlockId === targetId)) {
-    throw new RangeError(`Unknown authored target: ${targetId}`);
+  if (type === 'workflow') {
+    if (!Array.isArray(block.steps) || block.steps.length < 2 || block.steps.length > 12) {
+      throw new TypeError('workflow.steps must contain 2 to 12 steps');
+    }
+    return {
+      type, title, sources,
+      steps: block.steps.map((step) => ({
+        title: stringValue(step?.title, 'workflow.steps.title', 120),
+        body: optionalString(step?.body, 800)
+      }))
+    };
   }
-  const selected = targetId
-    ? allNodes.filter((node) => node.dataset.ehBlockId === targetId)
-    : allNodes.slice(0, 8);
 
+  if (type === 'timeline') {
+    if (!Array.isArray(block.items) || block.items.length < 2 || block.items.length > 16) {
+      throw new TypeError('timeline.items must contain 2 to 16 items');
+    }
+    return {
+      type, title, sources,
+      items: block.items.map((item) => ({
+        label: stringValue(item?.label, 'timeline.items.label', 100),
+        body: stringValue(item?.body, 'timeline.items.body', 800)
+      }))
+    };
+  }
+
+  if (!Array.isArray(block.nodes) || block.nodes.length < 2 || block.nodes.length > 16) {
+    throw new TypeError('diagram.nodes must contain 2 to 16 nodes');
+  }
+  const nodes = block.nodes.map((node) => ({
+    id: stringValue(node?.id, 'diagram.nodes.id', 80),
+    label: stringValue(node?.label, 'diagram.nodes.label', 140),
+    body: optionalString(node?.body, 600)
+  }));
+  const nodeIds = new Set(nodes.map((node) => node.id));
+  if (nodeIds.size !== nodes.length) throw new TypeError('diagram node IDs must be unique');
+  const edges = Array.isArray(block.edges) ? block.edges.map((edge) => {
+    const from = stringValue(edge?.from, 'diagram.edges.from', 80);
+    const to = stringValue(edge?.to, 'diagram.edges.to', 80);
+    if (!nodeIds.has(from) || !nodeIds.has(to)) throw new TypeError('diagram edges must reference existing node IDs');
+    return { from, to, label: optionalString(edge?.label, 120) };
+  }) : [];
   return {
-    schemaVersion: 'explain-him-page-context.v1',
-    explanationId: base.explanationId || null,
-    baseRevision: base.baseRevision || null,
-    pageTitle: normalizeText(document.title || 'Explain Him', 120),
-    source: 'current-authored-page',
-    repository: 'andrew-veresov/explain-him',
-    targetCount: allNodes.length,
-    availableTargetIds: allNodes.map((node) => node.dataset.ehBlockId),
-    targets: selected.map((node) => authoredTargetFromNode(node, Boolean(targetId)))
+    type, title, sources,
+    variant: ['concept', 'architecture', 'sequence', 'flow'].includes(block.variant) ? block.variant : 'concept',
+    nodes,
+    edges
   };
 }
 
-function summarizePersonalization(workspace) {
-  const view = typeof workspace.getVisibleState === 'function' ? workspace.getVisibleState() : {};
-  const presentations = Array.isArray(view.presentations) ? view.presentations : [];
+function fallbackBody(block) {
+  if (block.type === 'callout') return block.body;
+  if (block.type === 'comparison') {
+    return block.columns.map((column) => `${column.title}: ${column.items.join('; ')}`).join('\n');
+  }
+  if (block.type === 'workflow') {
+    return block.steps.map((step, index) => `${index + 1}. ${step.title}${step.body ? ` — ${step.body}` : ''}`).join('\n');
+  }
+  if (block.type === 'timeline') {
+    return block.items.map((item) => `${item.label}: ${item.body}`).join('\n');
+  }
+  const lines = block.nodes.map((node) => `${node.id}: ${node.label}${node.body ? ` — ${node.body}` : ''}`);
+  for (const edge of block.edges) lines.push(`${edge.from} -> ${edge.to}${edge.label ? ` (${edge.label})` : ''}`);
+  return lines.join('\n');
+}
+
+function artifactFor(block, targetId) {
+  const normalized = validateBlock(block);
+  const { sources, ...payload } = normalized;
   return {
-    schemaVersion: 'explain-him-personalization-state.v1',
-    count: presentations.length,
-    canUndo: Boolean(view.canUndo),
-    canRedo: Boolean(view.canRedo),
-    presentations: presentations.slice(-20).map((item) => ({
-      id: item.id,
-      targetId: item.targetId,
-      type: item.artifact?.type || null,
-      title: normalizeText(item.artifact?.fallback?.title || 'Personal explanation', 120)
-    }))
+    type: normalized.type,
+    capability: {
+      id: 'explain-him-safe-block',
+      trust: 'builtin',
+      execution: 'embedded'
+    },
+    content: {
+      schema: `explain-him.block.${normalized.type}.v1`,
+      payload
+    },
+    fallback: {
+      title: normalized.title,
+      body: fallbackBody(normalized)
+    },
+    provenance: {
+      sourceBlockIds: [targetId],
+      repositoryRefs: sources
+    },
+    authorship: {
+      meaning: 'personal-agent',
+      presentation: 'explain-him-safe-block',
+      requestedBy: 'agent'
+    }
   };
 }
 
-function escapeAttributeValue(value) {
-  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
-function revealTarget(document, targetId) {
-  if (!document?.querySelector) return;
-  const target = document.querySelector(`[data-eh-block-id="${escapeAttributeValue(targetId)}"]`);
-  if (!target) return;
-  const panel = target.closest?.('[data-section-panel]');
-  const section = panel?.dataset?.sectionPanel;
-  if (section && panel.hidden) {
-    const tab = [...document.querySelectorAll('[data-section]')].find((item) => item.dataset.section === section);
-    tab?.click?.();
+function prepareOperations(workspace, input) {
+  if (!Array.isArray(input?.operations) || input.operations.length < 1 || input.operations.length > 8) {
+    throw new TypeError('operations must contain 1 to 8 items');
   }
+  const targetIds = new Set(targetDescriptors(workspace).map((target) => target.id));
+  const localIds = new Set(localBlockDescriptors(workspace).map((block) => block.id));
+  return input.operations.map((operation) => {
+    if (operation?.op === 'add') {
+      const targetId = stringValue(operation.targetId, 'operation.targetId', 120);
+      if (!targetIds.has(targetId)) throw new RangeError(`Unknown authored target: ${targetId}`);
+      return { op: 'add', targetId, artifact: artifactFor(operation.block, targetId) };
+    }
+    if (operation?.op === 'remove') {
+      const blockId = stringValue(operation.blockId, 'operation.blockId', 120);
+      if (!blockId.startsWith('local-') || !localIds.has(blockId)) throw new RangeError(`Unknown local explanation block: ${blockId}`);
+      localIds.delete(blockId);
+      return { op: 'remove', blockId };
+    }
+    throw new TypeError('operation.op must be add or remove');
+  });
 }
 
-function stateAfterMutation(workspace, extra = {}) {
-  const state = summarizePersonalization(workspace);
+function createdBlock(beforeIds, workspace) {
+  return (workspace.getVisibleState?.().presentations || []).find((item) => !beforeIds.has(item.id)) || null;
+}
+
+async function applyOperations(workspace, input) {
+  const plan = prepareOperations(workspace, input);
+  const applied = [];
+  for (const operation of plan) {
+    if (operation.op === 'remove') {
+      await workspace.removeLocalPresentation({ presentationId: operation.blockId });
+      applied.push({ op: 'remove', blockId: operation.blockId });
+      continue;
+    }
+    const beforeIds = new Set((workspace.getVisibleState?.().presentations || []).map((item) => item.id));
+    await workspace.addLocalPresentation({
+      targetId: operation.targetId,
+      artifact: clone(operation.artifact),
+      actor: { kind: 'agent', channel: 'webmcp' }
+    });
+    const created = createdBlock(beforeIds, workspace);
+    applied.push({
+      op: 'add',
+      blockId: created?.id || null,
+      targetId: operation.targetId,
+      type: operation.artifact.type,
+      title: operation.artifact.fallback.title
+    });
+  }
   return {
     ok: true,
-    ...extra,
-    personalizationCount: state.count,
-    canUndo: state.canUndo,
-    canRedo: state.canRedo
+    applied,
+    localBlocks: localBlockDescriptors(workspace)
   };
-}
-
-function findCreatedPresentation(beforeIds, workspace) {
-  const view = workspace.getVisibleState?.() || {};
-  return (view.presentations || []).find((item) => !beforeIds.has(item.id)) || null;
 }
 
 export function resolveWebMcpHost(environment = globalThis) {
@@ -150,7 +502,6 @@ export function resolveWebMcpHost(environment = globalThis) {
     return { modelContext: standardHost, source: 'document.modelContext', standard: true };
   }
 
-  // Legacy fallback for older experimental hosts. The challenge path uses document.modelContext.
   const legacyHost = environment?.navigator?.modelContext;
   if (legacyHost && typeof legacyHost.registerTool === 'function') {
     return { modelContext: legacyHost, source: 'navigator.modelContext', standard: false };
@@ -160,141 +511,18 @@ export function resolveWebMcpHost(environment = globalThis) {
 }
 
 export function createWebMcpTools(workspace) {
-  const targetSchema = {
-    type: 'object',
-    required: ['targetId'],
-    additionalProperties: false,
-    properties: {
-      targetId: {
-        type: 'string',
-        maxLength: 120,
-        description: 'Authored explanation target ID returned by get_explanation_context.'
-      }
-    }
-  };
-
   return [
     readOnlyTool(
-      'get_explanation_context',
-      'Read structured meaning from the current authored Explain Him page. Use before explaining the idea or choosing where to focus or personalize. This reads the live page, not repository knowledge.',
-      {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          targetId: {
-            type: 'string',
-            maxLength: 120,
-            description: 'Optional target ID for a deeper view of one authored explanation block.'
-          }
-        }
-      },
-      async (input = {}) => getAuthoredPageContext(workspace, input)
-    ),
-    readOnlyTool(
-      'get_personalization_state',
-      'Inspect the browser-local personal explanations and whether undo or redo is available. Use when the user asks what the agent changed on this page.',
+      'get_explanation_contract',
+      'Call first on an Explain Him page. Returns the repository skill location, typed block schema, authored insertion targets, and existing browser-local blocks. The skill—not WebMCP—defines how to ground answers and retrieve deeper GitHub evidence.',
       EMPTY_INPUT,
-      async () => summarizePersonalization(workspace),
-      { untrustedContentHint: true }
+      async () => contractFor(workspace)
     ),
     mutationTool(
-      'focus_explanation',
-      'Bring one authored explanation block into view and visually focus it. Use when the user asks to show, point to, or concentrate on a specific part of the explanation.',
-      targetSchema,
-      async ({ targetId }) => {
-        revealTarget(workspace.document, targetId);
-        const result = workspace.focusBlock({ targetId });
-        return { ok: true, focusedTargetId: result?.targetId || targetId };
-      }
-    ),
-    mutationTool(
-      'add_personal_explanation',
-      'Add a safe browser-local explanation next to an authored block without modifying the Originator content. Use for a user-requested analogy, example, summary, warning, or comparison.',
-      {
-        type: 'object',
-        required: ['targetId', 'kind', 'title', 'body'],
-        additionalProperties: false,
-        properties: {
-          targetId: {
-            type: 'string',
-            maxLength: 120,
-            description: 'Authored target ID returned by get_explanation_context.'
-          },
-          kind: {
-            type: 'string',
-            enum: PERSONAL_EXPLANATION_KINDS,
-            description: 'Presentation form that best matches the user request.'
-          },
-          title: {
-            type: 'string',
-            maxLength: 120,
-            description: 'Short heading for the personal explanation.'
-          },
-          body: {
-            type: 'string',
-            maxLength: 2000,
-            description: 'Grounded plain-text explanation to add beside the target.'
-          }
-        }
-      },
-      async (input) => {
-        revealTarget(workspace.document, input.targetId);
-        const beforeIds = new Set((workspace.getVisibleState?.().presentations || []).map((item) => item.id));
-        await workspace.addLocalBlock({
-          targetId: input.targetId,
-          kind: input.kind,
-          title: input.title,
-          body: input.body,
-          actor: { kind: 'agent', channel: 'webmcp' },
-          provenance: { sourceBlockIds: [input.targetId], repositoryRefs: [] }
-        });
-        const created = findCreatedPresentation(beforeIds, workspace);
-        return stateAfterMutation(workspace, {
-          presentationId: created?.id || null,
-          targetId: input.targetId,
-          kind: input.kind,
-          title: normalizeText(input.title, 120)
-        });
-      }
-    ),
-    mutationTool(
-      'remove_personal_explanation',
-      'Remove one browser-local personal explanation while leaving authored content untouched. Use when the user asks to remove a specific local explanation.',
-      {
-        type: 'object',
-        required: ['presentationId'],
-        additionalProperties: false,
-        properties: {
-          presentationId: {
-            type: 'string',
-            pattern: '^local-',
-            maxLength: 120,
-            description: 'Local presentation ID returned by get_personalization_state.'
-          }
-        }
-      },
-      async ({ presentationId }) => {
-        await workspace.removeLocalPresentation({ presentationId });
-        return stateAfterMutation(workspace, { removedPresentationId: presentationId });
-      }
-    ),
-    mutationTool(
-      'undo_personalization',
-      'Undo the most recent browser-local personalization change. Use when the user says undo, revert that change, or go back one personalization step.',
-      EMPTY_INPUT,
-      async () => {
-        await workspace.undo();
-        return stateAfterMutation(workspace, { action: 'undo' });
-      }
-    ),
-    mutationTool(
-      'redo_personalization',
-      'Redo the next browser-local personalization change after an undo. Use when the user asks to redo or restore the reverted personalization.',
-      EMPTY_INPUT,
-      async () => {
-        await workspace.redo();
-        return stateAfterMutation(workspace, { action: 'redo' });
-      }
+      'apply_explanation',
+      'Embed grounded agent results into the current page as safe typed browser-local blocks, or remove earlier local blocks. Follow the repository skill returned by get_explanation_contract before calling this tool. WebMCP does not retrieve GitHub knowledge or generate the explanation.',
+      applySchema(workspace),
+      async (input) => applyOperations(workspace, input)
     )
   ];
 }
