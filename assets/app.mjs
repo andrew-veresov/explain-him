@@ -39,6 +39,15 @@ function make(tag, text, className = '') {
   return node;
 }
 
+function refreshWebMcpCopy() {
+  const status = byId('webmcp-status');
+  const card = status?.closest?.('.contract-card');
+  const heading = card?.querySelector?.('h3');
+  const copy = card?.querySelector?.('p');
+  if (heading) heading.textContent = 'WebMCP Site Tools';
+  if (copy) copy.textContent = 'Authored-page context, personalization state, focus, add/remove, undo/redo.';
+}
+
 function installWebMcpDemoCard() {
   if (byId('webmcp-demo-card')) return;
   const anchor = document.querySelector('[data-eh-local-slot="flow-model"]')
@@ -97,6 +106,7 @@ function dispatchWebMcpReady(registration) {
 }
 
 async function main() {
+  refreshWebMcpCopy();
   installWebMcpDemoCard();
 
   for (const tab of document.querySelectorAll('[data-section]')) {
