@@ -223,6 +223,102 @@ function make(document, tag, className, text) {
   return element;
 }
 
+function renderCallout(document, article, payload, fallback) {
+  const body = make(document, 'p', 'typed-callout-body', payload?.body || fallback.body);
+  if (payload?.tone) body.dataset.tone = payload.tone;
+  article.append(body);
+}
+
+function renderComparison(document, article, payload, fallback) {
+  if (!Array.isArray(payload?.columns) || payload.columns.length < 2) {
+    article.append(make(document, 'p', 'local-body', fallback.body));
+    return;
+  }
+  const grid = make(document, 'div', 'typed-comparison-grid');
+  for (const column of payload.columns) {
+    const card = make(document, 'section', 'typed-comparison-column');
+    card.append(make(document, 'h4', null, column.title));
+    const list = make(document, 'ul');
+    for (const item of column.items || []) list.append(make(document, 'li', null, item));
+    card.append(list);
+    grid.append(card);
+  }
+  article.append(grid);
+}
+
+function renderWorkflow(document, article, payload, fallback) {
+  if (!Array.isArray(payload?.steps) || payload.steps.length < 2) {
+    article.append(make(document, 'p', 'local-body', fallback.body));
+    return;
+  }
+  const list = make(document, 'ol', 'typed-workflow');
+  for (const step of payload.steps) {
+    const item = make(document, 'li', 'typed-workflow-step');
+    item.append(make(document, 'strong', null, step.title));
+    if (step.body) item.append(make(document, 'p', null, step.body));
+    list.append(item);
+  }
+  article.append(list);
+}
+
+function renderTimeline(document, article, payload, fallback) {
+  if (!Array.isArray(payload?.items) || payload.items.length < 2) {
+    article.append(make(document, 'p', 'local-body', fallback.body));
+    return;
+  }
+  const list = make(document, 'ol', 'typed-timeline');
+  for (const entry of payload.items) {
+    const item = make(document, 'li', 'typed-timeline-item');
+    item.append(make(document, 'strong', 'typed-timeline-label', entry.label));
+    item.append(make(document, 'p', null, entry.body));
+    list.append(item);
+  }
+  article.append(list);
+}
+
+function renderDiagram(document, article, payload, fallback) {
+  if (!Array.isArray(payload?.nodes) || payload.nodes.length < 2) {
+    article.append(make(document, 'p', 'local-body', fallback.body));
+    return;
+  }
+  const diagram = make(document, 'div', 'typed-diagram');
+  diagram.dataset.variant = payload.variant || 'concept';
+  const nodes = make(document, 'div', 'typed-diagram-nodes');
+  for (const node of payload.nodes) {
+    const card = make(document, 'article', 'typed-diagram-node');
+    card.dataset.nodeId = node.id;
+    card.append(make(document, 'strong', null, node.label));
+    if (node.body) card.append(make(document, 'small', null, node.body));
+    nodes.append(card);
+  }
+  diagram.append(nodes);
+  if (Array.isArray(payload.edges) && payload.edges.length) {
+    const edges = make(document, 'ul', 'typed-diagram-edges');
+    for (const edge of payload.edges) {
+      const text = `${edge.from} → ${edge.to}${edge.label ? ` · ${edge.label}` : ''}`;
+      edges.append(make(document, 'li', null, text));
+    }
+    diagram.append(edges);
+  }
+  article.append(diagram);
+}
+
+function renderArtifactContent(document, article, artifact) {
+  const payload = artifact.content?.payload || {};
+  const typed = artifact.capability?.id === 'explain-him-safe-block'
+    && String(artifact.content?.schema || '').startsWith('explain-him.block.');
+  if (!typed) {
+    article.append(make(document, 'p', 'local-body', artifact.fallback.body));
+    return;
+  }
+  if (artifact.type === 'callout') return renderCallout(document, article, payload, artifact.fallback);
+  if (artifact.type === 'comparison') return renderComparison(document, article, payload, artifact.fallback);
+  if (artifact.type === 'workflow') return renderWorkflow(document, article, payload, artifact.fallback);
+  if (artifact.type === 'timeline') return renderTimeline(document, article, payload, artifact.fallback);
+  if (artifact.type === 'diagram') return renderDiagram(document, article, payload, artifact.fallback);
+  article.append(make(document, 'p', 'local-body', artifact.fallback.body));
+}
+
 export function renderWorkspace(document, view) {
   const slots = new Map();
   for (const slot of document.querySelectorAll('[data-eh-local-slot]')) {
@@ -235,6 +331,7 @@ export function renderWorkspace(document, view) {
     const article = make(document, 'article', `local-explanation local-${artifact.type}`);
     article.dataset.ehLocalBlockId = presentation.id;
     article.dataset.ehLocalPresentationId = presentation.id;
+    article.dataset.ehTypedBlock = artifact.capability?.id === 'explain-him-safe-block' ? artifact.type : 'fallback';
     const header = make(document, 'header', 'local-explanation-header');
     const heading = make(document, 'div');
     heading.append(make(document, 'span', 'local-label', 'Personal presentation'));
@@ -242,7 +339,8 @@ export function renderWorkspace(document, view) {
     const remove = make(document, 'button', 'local-remove', 'Remove');
     remove.type = 'button'; remove.dataset.ehRemoveLocal = presentation.id;
     header.append(heading, remove);
-    article.append(header, make(document, 'p', 'local-body', artifact.fallback.body));
+    article.append(header);
+    renderArtifactContent(document, article, artifact);
     const meta = make(document, 'div', 'local-meta');
     meta.append(make(document, 'span', null, artifact.type));
     meta.append(make(document, 'span', null, artifact.capability.id));
