@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://andrew-veresov.github.io/explain-him/schemas/explanation-block.v1.schema.json",
+  "title": "Explain Him typed explanation block",
+  "description": "Safe structured blocks that a personal agent may embed into the browser-local explanation layer through WebMCP. Arbitrary HTML and JavaScript are not allowed.",
+  "oneOf": [
+    {
+      "title": "Callout",
+      "type": "object",
+      "required": ["type", "title", "body"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "callout" },
+        "title": { "type": "string", "maxLength": 160 },
+        "body": { "type": "string", "maxLength": 5000 },
+        "tone": { "type": "string", "enum": ["neutral", "example", "warning", "insight"] },
+        "sources": { "$ref": "#/$defs/sources" }
+      }
+    },
+    {
+      "title": "Comparison",
+      "type": "object",
+      "required": ["type", "title", "columns"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "comparison" },
+        "title": { "type": "string", "maxLength": 160 },
+        "columns": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "required": ["title", "items"],
+            "additionalProperties": false,
+            "properties": {
+              "title": { "type": "string", "maxLength": 120 },
+              "items": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 10,
+                "items": { "type": "string", "maxLength": 500 }
+              }
+            }
+          }
+        },
+        "sources": { "$ref": "#/$defs/sources" }
+      }
+    },
+    {
+      "title": "Workflow",
+      "type": "object",
+      "required": ["type", "title", "steps"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "workflow" },
+        "title": { "type": "string", "maxLength": 160 },
+        "steps": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "required": ["title"],
+            "additionalProperties": false,
+            "properties": {
+              "title": { "type": "string", "maxLength": 120 },
+              "body": { "type": "string", "maxLength": 800 }
+            }
+          }
+        },
+        "sources": { "$ref": "#/$defs/sources" }
+      }
+    },
+    {
+      "title": "Timeline",
+      "type": "object",
+      "required": ["type", "title", "items"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "timeline" },
+        "title": { "type": "string", "maxLength": 160 },
+        "items": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "required": ["label", "body"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string", "maxLength": 100 },
+              "body": { "type": "string", "maxLength": 800 }
+            }
+          }
+        },
+        "sources": { "$ref": "#/$defs/sources" }
+      }
+    },
+    {
+      "title": "Diagram",
+      "type": "object",
+      "required": ["type", "title", "variant", "nodes"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "diagram" },
+        "title": { "type": "string", "maxLength": 160 },
+        "variant": { "type": "string", "enum": ["concept", "architecture", "sequence", "flow"] },
+        "nodes": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "required": ["id", "label"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "maxLength": 80 },
+              "label": { "type": "string", "maxLength": 140 },
+              "body": { "type": "string", "maxLength": 600 }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "required": ["from", "to"],
+            "additionalProperties": false,
+            "properties": {
+              "from": { "type": "string", "maxLength": 80 },
+              "to": { "type": "string", "maxLength": 80 },
+              "label": { "type": "string", "maxLength": 120 }
+            }
+          }
+        },
+        "sources": { "$ref": "#/$defs/sources" }
+      }
+    }
+  ],
+  "$defs": {
+    "sources": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "additionalProperties": false,
+        "properties": {
+          "repository": { "type": "string", "maxLength": 200 },
+          "path": { "type": "string", "maxLength": 500 },
+          "ref": { "type": "string", "maxLength": 160 },
+          "section": { "type": "string", "maxLength": 300 },
+          "status": { "type": "string", "maxLength": 40 }
+        }
+      }
+    }
+  }
+}
