@@ -94,27 +94,77 @@ def main() -> int:
                         flow = page.evaluate("""async () => {
                           const tools = await document.modelContext.getTools();
                           const byName = new Map(tools.map((tool) => [tool.name, tool]));
-                          const execute = (name, args) => document.modelContext.executeTool(byName.get(name), JSON.stringify(args));
+                          const normalizeResult = (raw, name) => {
+                            let value = raw;
+                            if (typeof raw === 'string') {
+                              try { value = JSON.parse(raw); }
+                              catch { throw new TypeError(`${name} returned malformed JSON`); }
+                            }
+                            if (!value || typeof value !== 'object' || Array.isArray(value) || typeof value === 'string') {
+                              throw new TypeError(`${name} returned a non-object or double-encoded result`);
+                            }
+                            return value;
+                          };
+                          const requireArray = (value, name) => {
+                            if (!Array.isArray(value)) throw new TypeError(`${name} must be an array`);
+                            return value;
+                          };
+                          const requireRevision = (value, name) => {
+                            if (!Number.isInteger(value) || value < 0) throw new TypeError(`${name} must be a non-negative integer`);
+                            return value;
+                          };
+                          const requireId = (value, name) => {
+                            if (typeof value !== 'string' || !value.startsWith('local-')) throw new TypeError(`${name} must be a local block ID`);
+                            return value;
+                          };
+                          const requireOk = (value, name) => {
+                            if (value.ok !== true) throw new TypeError(`${name} did not report ok`);
+                            return value;
+                          };
+                          const execute = async (name, args) => {
+                            const descriptor = byName.get(name);
+                            if (!descriptor || typeof descriptor !== 'object') throw new TypeError(`${name} descriptor is missing`);
+                            return normalizeResult(await document.modelContext.executeTool(descriptor, JSON.stringify(args)), name);
+                          };
                           const contract = await execute('get_explanation_contract', {});
+                          if (contract.schemaVersion !== 'explain-him-webmcp-contract.v2') throw new TypeError('unexpected contract schema');
+                          const contractRevision = requireRevision(contract.workspaceRevision, 'contract.workspaceRevision');
+                          const targets = requireArray(contract.targets, 'contract.targets');
+                          if (!targets.some((target) => target?.id === 'workflow-diagram')) throw new TypeError('contract does not expose workflow-diagram');
                           const block = (term) => ({
                             type: 'diagram', title: `Native ${term}`, variant: 'flow',
                             nodes: [{ id: term.toLowerCase(), label: term }, { id: 'agent', label: 'Personal agent' }],
                             edges: [{ from: term.toLowerCase(), to: 'agent', label: 'asks' }], sources: []
                           });
-                          const first = await execute('apply_explanation', {
-                            requestId: 'native-chrome-user-consumer', expectedWorkspaceRevision: contract.workspaceRevision,
+                          const first = requireOk(await execute('apply_explanation', {
+                            requestId: 'native-chrome-user-consumer', expectedWorkspaceRevision: contractRevision,
                             operations: [{ op: 'replace', targetId: 'workflow-diagram', block: block('User') }]
-                          });
-                          const id = first.localBlocks[0]?.id;
-                          const second = await execute('apply_explanation', {
-                            requestId: 'native-chrome-user-consumer-update', expectedWorkspaceRevision: first.workspaceRevision,
+                          }), 'replace');
+                          const firstRevision = requireRevision(first.workspaceRevision, 'replace.workspaceRevision');
+                          if (firstRevision <= contractRevision) throw new TypeError('replace did not advance workspace revision');
+                          const firstBlocks = requireArray(first.localBlocks, 'replace.localBlocks');
+                          const firstApplied = requireArray(first.applied, 'replace.applied');
+                          const id = requireId(firstBlocks[0]?.id, 'replace.localBlocks[0].id');
+                          if (firstApplied[0]?.op !== 'replace' || firstApplied[0]?.blockId !== id) throw new TypeError('replace result does not preserve the local block ID');
+                          const second = requireOk(await execute('apply_explanation', {
+                            requestId: 'native-chrome-user-consumer-update', expectedWorkspaceRevision: firstRevision,
                             operations: [{ op: 'update', blockId: id, block: block('Consumer') }]
-                          });
-                          const third = await execute('apply_explanation', {
-                            requestId: 'native-chrome-user-consumer-remove', expectedWorkspaceRevision: second.workspaceRevision,
+                          }), 'update');
+                          const secondRevision = requireRevision(second.workspaceRevision, 'update.workspaceRevision');
+                          if (secondRevision <= firstRevision) throw new TypeError('update did not advance workspace revision');
+                          const secondBlocks = requireArray(second.localBlocks, 'update.localBlocks');
+                          const secondApplied = requireArray(second.applied, 'update.applied');
+                          if (requireId(secondBlocks[0]?.id, 'update.localBlocks[0].id') !== id || secondApplied[0]?.op !== 'update' || secondApplied[0]?.blockId !== id) throw new TypeError('update result does not preserve the local block ID');
+                          const third = requireOk(await execute('apply_explanation', {
+                            requestId: 'native-chrome-user-consumer-remove', expectedWorkspaceRevision: secondRevision,
                             operations: [{ op: 'remove', blockId: id }]
-                          });
-                          return { schema_version: contract.schemaVersion, local_id_preserved: id === first.applied[0]?.blockId && id === second.applied[0]?.blockId, local_blocks_after_remove: third.localBlocks.length };
+                          }), 'remove');
+                          const thirdRevision = requireRevision(third.workspaceRevision, 'remove.workspaceRevision');
+                          if (thirdRevision <= secondRevision) throw new TypeError('remove did not advance workspace revision');
+                          const finalBlocks = requireArray(third.localBlocks, 'remove.localBlocks');
+                          const thirdApplied = requireArray(third.applied, 'remove.applied');
+                          if (thirdApplied[0]?.op !== 'remove' || thirdApplied[0]?.blockId !== id || finalBlocks.length !== 0) throw new TypeError('remove result did not empty the local block list');
+                          return { schema_version: contract.schemaVersion, local_id_preserved: true, local_blocks_after_remove: finalBlocks.length };
                         }""")
                     except Error:
                         return emit("FAILED", "native host rejected the expected contract sequence", chrome_version=version)
