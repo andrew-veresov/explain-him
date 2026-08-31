@@ -23,7 +23,7 @@ REQUIRED = [
     'LICENSE', 'README.md', 'AGENTS.md', '00 Home.md', 'index.html', 'explain-him.yaml', '.nojekyll',
     'WEBMCP_CHALLENGE.md',
     'skills/explain-him/SKILL.md', 'skills/explain-him/skill.yaml',
-    'skills/explain-him-presentation/SKILL.md', 'schemas/explanation-block.v1.schema.json',
+    'skills/explain-him-presentation/SKILL.md', 'schemas/explanation-block.v1.schema.json', 'schemas/webmcp-contract.v3.schema.json', 'schemas/webmcp-apply.v3.schema.json',
     'schemas/presentation-capability.v1.schema.json', 'schemas/presentation-artifact.v1.schema.json',
     'runtime/presentation/registry.mjs', 'runtime/presentation/artifact.mjs',
     'runtime/workspace.mjs', 'runtime/webmcp.mjs', 'assets/app.mjs', 'assets/styles.css',
@@ -133,13 +133,16 @@ def main() -> int:
     parser.feed(html)
     if '<html lang="en">' not in html:
         errors.append('index.html: project page language must be English')
-    for expected in ['role="tablist"', 'role="tab"', 'role="tabpanel"', 'role="group" aria-label="Explanation view"', 'id="webmcp-status" role="status" aria-live="polite"', 'id="source-toggle" aria-controls="source-drawer"', 'id="source-drawer" class="source-drawer" role="region" tabindex="-1" hidden aria-labelledby="source-drawer-title"']:
+    for expected in ['class="section-nav"', 'aria-label="Explanation sections"', 'data-scroll-section="how-it-works"', 'data-scroll-section="how-to-express"', 'id="how-it-works"', 'class="continuous-section"', 'id="how-to-express"', 'class="continuous-section continuous-section-expression"', 'Ask your agent how to express your own idea with Explain Him.', 'role="group"', 'aria-label="Explanation view"', 'id="webmcp-status"', 'role="status"', 'aria-live="polite"', 'id="source-toggle"', 'aria-controls="source-drawer"', 'id="source-drawer"', 'class="source-drawer"', 'role="region"', 'aria-labelledby="source-drawer-title"']:
         if expected not in html:
             errors.append(f'index.html: missing accessible UI invariant {expected!r}')
+    for obsolete in ['role="tablist"', 'role="tab"', 'role="tabpanel"', 'data-section-panel=', 'data-section="flow"']:
+        if obsolete in html:
+            errors.append(f'index.html: obsolete hidden-tab UI remains {obsolete!r}')
     for expected in [
-        'name="explain-him-repository" content="andrew-veresov/explain-him"',
-        'name="explain-him-skill" content="skills/explain-him/SKILL.md"',
-        'name="explain-him-presentation-skill" content="skills/explain-him-presentation/SKILL.md"'
+        'name="explain-him-repository"', 'content="andrew-veresov/explain-him"',
+        'name="explain-him-skill"', 'content="skills/explain-him/SKILL.md"',
+        'name="explain-him-presentation-skill"', 'content="skills/explain-him-presentation/SKILL.md"'
     ]:
         if expected not in html:
             errors.append(f'index.html: missing machine-readable bootstrap {expected!r}')
@@ -173,7 +176,17 @@ def main() -> int:
         'token_sha256: 7f151bb88d4636beb26c991c2853d6a43b1b50f23ea9860b3a6658553912f2e2',
         'fail_window_days: 14', 'validation: tools/check_webmcp_origin_trial.py',
         'live_validation: tools/check_live_pages.py', 'native_live_validation: tools/test_native_chrome_webmcp_live.py',
-        'host_guarantee: false'
+        'host_guarantee: false', 'protocol_version: 3', 'contract_schema: schemas/webmcp-contract.v3.schema.json',
+        'apply_schema: schemas/webmcp-apply.v3.schema.json', 'schema_version: explain-him-local-workspace.v4',
+        'commit: 08458a6093a12f1384c0d08d86a2ea45d5cfaa26',
+        'sha256: 8a954fab5b8156853d803f61f5e2f7a28dafb344f9c5f19a9ae4e439e694a539',
+        'sha256: 2733449c96da48f3988f723347f6dc328408852310a363ef317db04d3cdb80f7',
+        'activation_handshake: fail-closed',
+        'presentationDecision:', 'alwaysProvideChatAnswer: true',
+        'assessAnswerAndRequestedRepresentationInPersonalizedUi: true',
+        'fullyPresent: {ordinaryQuestion: chat-only, showOrWalkthrough: focus-only}',
+        'failure: {applyFailure: honest-acknowledgement-no-false-success}',
+        'rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/08458a6093a12f1384c0d08d86a2ea45d5cfaa26/'
     ]:
         if expected not in manifest:
             errors.append(f'explain-him.yaml: missing invariant {expected!r}')
@@ -190,7 +203,7 @@ def main() -> int:
             errors.append('distribution/public-facade.yml: missing private-to-public publication policy')
         else:
             policy = distribution.read_text(encoding='utf-8')
-            for expected in ['source: demo/.nojekyll', 'target: .nojekyll', 'source: demo/tests/**', 'target: tests/**', 'source: demo/tools/check_public_demo.py', 'target: tools/check_public_demo.py', 'source: tools/check_live_pages.py', 'target: tools/check_live_pages.py', 'source: tools/check_webmcp_origin_trial.py', 'target: tools/check_webmcp_origin_trial.py', 'source: tools/test_check_live_pages.py', 'target: tools/test_check_live_pages.py', 'source: tools/test_native_chrome_webmcp_live.py', 'target: tools/test_native_chrome_webmcp_live.py', 'source: distribution/public-workflows/live-pages-smoke.yml', 'target: .github/workflows/live-pages-smoke.yml', 'source: distribution/public-workflows/webmcp-origin-trial.yml', 'target: .github/workflows/webmcp-origin-trial.yml', 'transactional-typed-presentation-operation-log', 'github-pages-preserves-raw-skill-markdown', 'deployed-pages-matches-exact-public-sha', 'origin-trial-is-pinned-decoded-and-checked-before-webmcp-api']:
+            for expected in ['source: demo/.nojekyll', 'target: .nojekyll', 'source: demo/tests/**', 'target: tests/**', 'source: demo/tools/check_public_demo.py', 'target: tools/check_public_demo.py', 'source: tools/check_live_pages.py', 'target: tools/check_live_pages.py', 'source: tools/check_webmcp_origin_trial.py', 'target: tools/check_webmcp_origin_trial.py', 'source: tools/test_check_live_pages.py', 'target: tools/test_check_live_pages.py', 'source: tools/test_native_chrome_webmcp_live.py', 'target: tools/test_native_chrome_webmcp_live.py', 'source: distribution/public-workflows/live-pages-smoke.yml', 'target: .github/workflows/live-pages-smoke.yml', 'source: distribution/public-workflows/webmcp-origin-trial.yml', 'target: .github/workflows/webmcp-origin-trial.yml', 'transactional-typed-presentation-operation-log', 'github-pages-preserves-raw-skill-markdown', 'deployed-pages-matches-exact-public-sha', 'origin-trial-is-pinned-decoded-and-checked-before-webmcp-api', 'current_public_skill_release:', 'protocol-v3-contract-binds-current-public-skill-release']:
                 if expected not in policy:
                     errors.append(f'distribution/public-facade.yml: missing controlled facade rule {expected!r}')
 
@@ -231,10 +244,7 @@ def main() -> int:
         'Protocol v3 transition and v2 fallback', 'compatibility fallback only',
         'Page-adaptation decision policy', 'apply_explanation` in the same turn is mandatory',
         '`User` and `Consumer` terminology correction', 'call `apply_explanation` in the same turn with a focus-only operation',
-        'chat only for a simple, correct answer', 'requested local page change was not applied',
-        'assess both whether the grounded answer and the representation the user requested already exist correctly',
-        'A requested diagram that is absent counts as missing representation',
-        'An explicit instruction not to change the page overrides this matrix'
+        'chat only for a simple, correct answer', 'requested local page change was not applied'
     ]:
         if expected not in skill:
             errors.append(f'SKILL.md: missing presentation/grounding rule {expected!r}')
@@ -249,10 +259,7 @@ def main() -> int:
         'Treat a topic as the stable semantic subject', 'Use `update` for a same-topic refinement',
         'replace every affected semantic target in one transaction',
         'same-turn `apply_explanation` call with a focus-only operation',
-        'requested local page change was not applied',
-        'The conversational answer is always required',
-        'Missing answer or representation: use `add`',
-        'An explicit no-page-change instruction means chat only'
+        'requested local page change was not applied'
     ]:
         if expected not in presentation_skill:
             errors.append(f'presentation SKILL.md: missing Protocol v3 policy {expected!r}')
@@ -267,6 +274,9 @@ def main() -> int:
     for name in PUBLIC_WEBMCP_TOOLS:
         if f"'{name}'" not in webmcp:
             errors.append(f'runtime/webmcp.mjs: missing public WebMCP tool {name}')
+    for expected in ['explain-him-webmcp-contract.v3', 'IMMUTABLE_SKILL_PROOF', '08458a6093a12f1384c0d08d86a2ea45d5cfaa26', 'Mandatory activation bootstrap: call get_explanation_contract once for this page activation', 'Activation handshake is stale', 'topicId', 'presentationDecision', 'alwaysProvideChatAnswer: true', 'honest-acknowledgement-no-false-success', 'focusOnlyChangesRevision: false']:
+        if expected not in webmcp:
+            errors.append(f'runtime/webmcp.mjs: missing Protocol v3 invariant {expected!r}')
     for name in OBSOLETE_PUBLIC_TOOLS:
         if re.search(rf"(?:readOnlyTool|mutationTool)\(\s*['\"]{re.escape(name)}['\"]", webmcp):
             errors.append(f'runtime/webmcp.mjs: obsolete/overlapping public tool {name}')
@@ -275,7 +285,7 @@ def main() -> int:
             errors.append(f'runtime/webmcp.mjs: forbidden registered tool {name}')
 
     app = (ROOT / 'assets/app.mjs').read_text(encoding='utf-8')
-    for expected in ['environment: globalThis', 'data', 'webmcp-status-hero', 'webmcpVerifiedTools']:
+    for expected in ['environment: globalThis', 'data', 'webmcp-status-hero', 'webmcpVerifiedTools', 'webmcpProtocol']:
         if expected not in app:
             errors.append(f'assets/app.mjs: missing WebMCP runtime/judge signal {expected!r}')
 

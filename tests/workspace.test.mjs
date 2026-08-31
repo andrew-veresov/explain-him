@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   LEGACY_WORKSPACE_SCHEMA_VERSION,
+  OLDER_WORKSPACE_SCHEMA_VERSION,
   PREVIOUS_WORKSPACE_SCHEMA_VERSION,
   WORKSPACE_SCHEMA_VERSION,
   appendTransaction,
@@ -49,12 +50,15 @@ test('original mode retains local changes without rendering them', () => {
   assert.equal(view.presentations.length, 1);
 });
 
-test('v1 and v2 workspace data migrates into v3 transactions', () => {
+test('v1, v2, and v3 workspace data migrates into v4 topic-aware transactions', () => {
   const v1 = migrateWorkspaceState({ schemaVersion: LEGACY_WORKSPACE_SCHEMA_VERSION, explanationId: 'demo', baseRevision: 'r1', cursor: 1, operations: [{ type: 'add-block', block: { id: 'local-old', targetId: 'workflow-diagram', kind: 'summary', title: 'Old', body: 'Body' } }] });
-  const v2 = migrateWorkspaceState({ schemaVersion: PREVIOUS_WORKSPACE_SCHEMA_VERSION, explanationId: 'demo', baseRevision: 'r1', cursor: 1, operations: [block('local-v2')] });
+  const v2 = migrateWorkspaceState({ schemaVersion: OLDER_WORKSPACE_SCHEMA_VERSION, explanationId: 'demo', baseRevision: 'r1', cursor: 1, operations: [block('local-v2')] });
+  const v3 = migrateWorkspaceState({ schemaVersion: PREVIOUS_WORKSPACE_SCHEMA_VERSION, explanationId: 'demo', baseRevision: 'r1', cursor: 1, revision: 1, viewMode: 'personalized', transactions: [{ id: 'local-v3', requestId: null, requestFingerprint: null, result: null, actor: { kind: 'agent', channel: 'test' }, createdAt: '2026-01-01T00:00:00Z', operations: [block('local-v3-block')] }] });
   assert.equal(v1.schemaVersion, WORKSPACE_SCHEMA_VERSION);
   assert.equal(v2.schemaVersion, WORKSPACE_SCHEMA_VERSION);
+  assert.equal(v3.schemaVersion, WORKSPACE_SCHEMA_VERSION);
   assert.equal(v1.transactions[0].operations[0].type, 'add-presentation');
+  assert.equal(v3.transactions[0].operations[0].presentation.topicId, null);
 });
 
 test('only local blocks can be removed and orphaning remains explicit', () => {

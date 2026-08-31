@@ -30,6 +30,8 @@ class BrowserE2E(unittest.TestCase):
         page.goto(self.base_url, wait_until="domcontentloaded"); return page, errors
     def diagram(self, term: str) -> dict:
         return {"type":"diagram","title":f"{term} workflow","variant":"flow","nodes":[{"id":term.lower(),"label":term},{"id":"agent","label":"Personal agent"}],"edges":[{"from":term.lower(),"to":"agent","label":"asks"}],"sources":[{"path":"resolutions/2026-08-30-user-consumer-terminology.md","status":"current"}]}
+    def request(self, contract: dict, request_id: str, revision: int, operations: list[dict]) -> dict:
+        return {"requestId": request_id, "expectedWorkspaceRevision": revision, "explanationId": contract["explanationId"], "topicId": "terminology:user-consumer", "operations": operations, "handshake": {"contractId": contract["contractId"], "activationId": contract["activation"]["id"], "nonce": contract["activation"]["nonce"], "baseRevision": contract["baseRevision"], "skillProof": contract["skillProof"]}}
     def contrast(self, page: Page, foreground: str, background: str) -> float:
         return page.evaluate(r"""([foreground, background]) => {
           const rgba = (value) => { const values = value.match(/\d+(?:\.\d+)?/g).map(Number); return [values[0] / 255, values[1] / 255, values[2] / 255, values.length > 3 ? values[3] : 1]; };
@@ -43,17 +45,17 @@ class BrowserE2E(unittest.TestCase):
         page, errors = self.page(True); page.wait_for_function("document.documentElement.dataset.webmcpState === 'verified'")
         self.assertEqual(sorted(page.evaluate("() => Object.keys(window.__tools)")), ["apply_explanation", "get_explanation_contract"])
         contract = page.evaluate("() => window.__tools.get_explanation_contract.execute({})")
-        self.assertEqual(contract["schemaVersion"], "explain-him-webmcp-contract.v2")
+        self.assertEqual(contract["schemaVersion"], "explain-him-webmcp-contract.v3")
         self.assertTrue(contract["repository"]["url"].startswith("https://github.com/")); self.assertEqual(len(contract["skills"]), 2)
-        page.evaluate("() => window.__tools.apply_explanation.execute({operations:[{op:'focus',targetId:'flow-model'}]})")
+        page.evaluate("args => window.__tools.apply_explanation.execute(args)", self.request(contract, "p0-focus", contract["workspaceRevision"], [{"op":"focus","targetId":"flow-model"}]))
         self.assertTrue(page.locator('[data-eh-block-id="flow-model"]').evaluate("node => node.classList.contains('is-focused')"))
         authored = page.locator('[data-eh-block-id="workflow-diagram"]'); authored_before = authored.inner_text()
-        result = page.evaluate("""block => window.__tools.apply_explanation.execute({requestId:'p0-user-consumer',expectedWorkspaceRevision:0,operations:[{op:'replace',targetId:'workflow-diagram',block},{op:'focus',targetId:'workflow-diagram'}]})""", self.diagram("User"))
+        result = page.evaluate("args => window.__tools.apply_explanation.execute(args)", self.request(contract, "p0-user-consumer", contract["workspaceRevision"], [{"op":"replace","targetId":"workflow-diagram","block":self.diagram("User")},{"op":"focus","targetId":"workflow-diagram"}]))
         local_id = result["localBlocks"][0]["id"]
         self.assertFalse(authored.is_visible())
         page.get_by_role("heading", name="User workflow").wait_for(state="visible")
         local = page.locator('[data-eh-local-slot="workflow-diagram"]'); self.assertIn("User", local.inner_text()); self.assertNotIn("Consumer", local.inner_text()); self.assertTrue(local.locator('.is-focused').is_visible()); self.assertEqual(page.locator('.is-focused').count(), 1)
-        updated = page.evaluate("""args => window.__tools.apply_explanation.execute({expectedWorkspaceRevision:args.revision,operations:[{op:'update',blockId:args.id,block:args.block}]})""", {"revision":result["workspaceRevision"],"id":local_id,"block":self.diagram("Consumer")})
+        updated = page.evaluate("args => window.__tools.apply_explanation.execute(args)", self.request(contract, "p0-user-consumer-update", result["workspaceRevision"], [{"op":"update","blockId":local_id,"block":self.diagram("Consumer")}]))
         self.assertEqual(updated["localBlocks"][0]["id"], local_id)
         self.assertIn("Consumer", local.inner_text()); self.assertNotIn("User", local.inner_text())
         menu = page.locator("summary.menu-toggle"); menu.focus(); page.keyboard.press("Enter"); page.get_by_role("group", name="Explanation view").wait_for(state="visible")
@@ -61,33 +63,35 @@ class BrowserE2E(unittest.TestCase):
         page.get_by_role("button", name="Personalized", exact=True).click(); page.get_by_role("heading", name="Consumer workflow").wait_for(state="visible")
         page.get_by_role("button", name="History", exact=True).click(); self.assertEqual(page.evaluate("() => document.activeElement.id"), "history-close"); page.get_by_role("button", name="Close", exact=True).click(); self.assertEqual(page.evaluate("() => document.activeElement.id"), "workspace-history-open")
         page.reload(wait_until="domcontentloaded"); self.assertTrue(page.get_by_role("heading", name="Consumer workflow").is_visible())
-        page.evaluate("""args => window.__tools.get_explanation_contract.execute({}).then(() => window.__tools.apply_explanation.execute({expectedWorkspaceRevision:args.revision,operations:[{op:'remove',blockId:args.id}]}))""", {"revision":updated["workspaceRevision"],"id":local_id})
+        contract_after_reload = page.evaluate("() => window.__tools.get_explanation_contract.execute({})")
+        page.evaluate("args => window.__tools.apply_explanation.execute(args)", self.request(contract_after_reload, "p0-user-consumer-remove", updated["workspaceRevision"], [{"op":"remove","blockId":local_id}]))
         authored.wait_for(state="visible"); self.assertEqual(authored.inner_text(), authored_before)
         self.assertEqual(errors, [])
     def test_hostless_chrome_fallback_is_honest_and_accessible(self) -> None:
         page, errors = self.page(False); status = page.locator("#webmcp-status-hero").inner_text(); self.assertIn("WebMCP host not detected", status); self.assertIn("no Site Tools mutation was performed", status)
-        page.get_by_role("tab", name="Adaptation", exact=True).click(); page.get_by_role("textbox", name="Title").fill("Fallback E2E"); page.get_by_role("textbox", name="Explanation").fill("Accessible local fallback.")
+        page.get_by_role("textbox", name="Title").fill("Fallback E2E"); page.get_by_role("textbox", name="Explanation").fill("Accessible local fallback.")
         page.get_by_role("button", name="Add", exact=True).click(); page.get_by_role("heading", name="Fallback E2E").wait_for(state="visible")
         self.assertEqual(errors, [])
 
-    def test_tabs_status_contrast_and_reduced_motion(self) -> None:
+    def test_continuous_navigation_status_contrast_and_reduced_motion(self) -> None:
         page, errors = self.page(False)
-        tabs = page.get_by_role("tab"); self.assertEqual(tabs.count(), 4)
-        self.assertEqual(page.get_by_role("tablist", name="Explanation sections").count(), 1)
-        flow = page.get_by_role("tab", name="Mechanism"); flow.focus(); page.keyboard.press("ArrowRight")
-        roles = page.get_by_role("tab", name="Roles"); self.assertEqual(page.evaluate("() => document.activeElement.id"), "tab-roles"); self.assertEqual(roles.get_attribute("aria-selected"), "true")
-        self.assertTrue(page.get_by_role("tabpanel", name="Roles").is_visible()); page.keyboard.press("End"); self.assertEqual(page.evaluate("() => document.activeElement.id"), "tab-grounding")
+        section_links = page.locator("[data-scroll-section]"); self.assertEqual(section_links.count(), 2)
+        self.assertEqual(page.locator(".explanation-scroll > section[data-continuous-section]").count(), 2)
+        self.assertEqual(page.locator('[role="tablist"], [role="tab"], [role="tabpanel"], [data-section-panel]').count(), 0)
+        express = page.get_by_role("link", name="How to express your idea", exact=True); express.click()
+        self.assertEqual(page.evaluate("() => document.activeElement.id"), "how-to-express"); self.assertEqual(express.get_attribute("aria-current"), "location")
+        works = page.get_by_role("link", name="How it works", exact=True); self.assertIsNone(works.get_attribute("aria-current")); works.click(); self.assertEqual(page.evaluate("() => document.activeElement.id"), "how-it-works")
+        self.assertTrue(page.get_by_role("heading", name="Ask your agent how to express your own idea with Explain Him.").is_visible())
         status = page.locator("#webmcp-status"); self.assertEqual(status.get_attribute("role"), "status"); self.assertEqual(status.get_attribute("aria-live"), "polite"); self.assertIsNone(page.locator("#webmcp-status-hero").get_attribute("role"))
         body_colors = page.locator("body").evaluate("node => { const style = getComputedStyle(node); return [style.color, style.backgroundColor]; }")
         current_colors = page.locator(".status-current").evaluate("node => { const style = getComputedStyle(node); return [style.color, style.backgroundColor]; }")
-        button_colors = page.locator(".primary-action").evaluate("node => { const style = getComputedStyle(node); return [style.color, style.backgroundColor]; }")
+        button_colors = page.locator(".primary-action").first.evaluate("node => { const style = getComputedStyle(node); return [style.color, style.backgroundColor]; }")
         self.assertGreaterEqual(self.contrast(page, *body_colors), 4.5); self.assertGreaterEqual(self.contrast(page, *current_colors), 4.5); self.assertGreaterEqual(self.contrast(page, *button_colors), 4.5)
-        flow.focus(); focus_color = flow.evaluate("node => getComputedStyle(node).outlineColor"); self.assertGreaterEqual(self.contrast(page, focus_color, "rgb(248, 249, 251)"), 3)
-        page.get_by_role("tab", name="Adaptation", exact=True).click()
+        works.focus(); focus_color = works.evaluate("node => getComputedStyle(node).outlineColor"); self.assertGreaterEqual(self.contrast(page, focus_color, "rgb(248, 249, 251)"), 3)
         for selector in ["#agent-title", "#agent-target", "summary.menu-toggle"]:
             colors = page.locator(selector).evaluate("node => { const style=getComputedStyle(node); return [style.borderTopColor, style.backgroundColor]; }")
             self.assertGreaterEqual(self.contrast(page, *colors), 3, selector)
-        primary_colors = page.locator(".primary-action").evaluate("node => { const style=getComputedStyle(node); return [style.color, style.backgroundColor]; }")
+        primary_colors = page.locator(".primary-action").first.evaluate("node => { const style=getComputedStyle(node); return [style.color, style.backgroundColor]; }")
         self.assertGreaterEqual(self.contrast(page, *primary_colors), 4.5, ".primary-action text")
         page.locator("#agent-title").focus(); input_focus = page.locator("#agent-title").evaluate("node => getComputedStyle(node).outlineColor")
         self.assertGreaterEqual(self.contrast(page, input_focus, "rgb(255, 255, 255)"), 3)
@@ -102,7 +106,7 @@ class BrowserE2E(unittest.TestCase):
         drawer_close = page.locator("#source-close").evaluate("node => { const style=getComputedStyle(node); return [style.borderTopColor, style.backgroundColor]; }")
         self.assertGreaterEqual(self.contrast(page, *drawer_close), 3); page.keyboard.press("Escape"); self.assertTrue(drawer.is_hidden()); self.assertEqual(page.evaluate("() => document.activeElement.id"), "source-toggle")
         self.assertLessEqual(float(page.locator("#workspace-undo").evaluate("node => getComputedStyle(node).opacity")), .5)
-        page.emulate_media(reduced_motion="reduce"); duration = page.locator(".explanation-section").first.evaluate("node => getComputedStyle(node).animationDuration"); self.assertLessEqual(float(duration.removesuffix("ms")) / 1000 if duration.endswith("ms") else float(duration.removesuffix("s")), .00001)
+        page.emulate_media(reduced_motion="reduce"); duration = page.locator(".continuous-section").first.evaluate("node => getComputedStyle(node).animationDuration"); self.assertLessEqual(float(duration.removesuffix("ms")) / 1000 if duration.endswith("ms") else float(duration.removesuffix("s")), .00001)
         self.assertEqual(errors, [])
 
 if __name__ == "__main__": unittest.main()

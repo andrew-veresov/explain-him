@@ -23,20 +23,22 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_PAGE = PROJECT_ROOT / 'demo' / 'index.html'
 if not CANONICAL_PAGE.is_file():
     CANONICAL_PAGE = PROJECT_ROOT / 'index.html'
-CANONICAL_TRIAL_META = __import__('re').search(r'<meta http-equiv="origin-trial" content="[^"]+">', CANONICAL_PAGE.read_text(encoding='utf-8')).group(0)
+CANONICAL_TRIAL_META = __import__('re').search(r'<meta\s+http-equiv="origin-trial"\s+content="[^"]+"\s*/?>', CANONICAL_PAGE.read_text(encoding='utf-8')).group(0)
 CANONICAL_TRIAL_TOKEN = CANONICAL_TRIAL_META.split('content="', 1)[1].removesuffix('">')
 
 
 class LivePagesSmokeTest(unittest.TestCase):
     def materialize(self, root: Path, extra_root: str = '') -> None:
         content = {
-            'index.html': f'<head>{CANONICAL_TRIAL_META}</head><meta name="explain-him-repository" content="andrew-veresov/explain-him"><meta name="explain-him-skill" content="skills/explain-him/SKILL.md"><meta name="explain-him-presentation-skill" content="skills/explain-him-presentation/SKILL.md"><section data-eh-block-id="workflow-diagram"></section><script src="assets/app.mjs"></script>' + extra_root,
-            'assets/app.mjs': "import '../runtime/workspace.mjs'; registerWebMcpTools();",
+            'index.html': f'<head>{CANONICAL_TRIAL_META}</head><meta name="explain-him-repository" content="andrew-veresov/explain-him"><meta name="explain-him-skill" content="skills/explain-him/SKILL.md"><meta name="explain-him-presentation-skill" content="skills/explain-him-presentation/SKILL.md"><nav><a data-scroll-section="how-it-works">How it works</a><a data-scroll-section="how-to-express">How to express your idea</a></nav><section data-eh-block-id="workflow-diagram"></section><aside>Ask your agent how to express your own idea with Explain Him.</aside><script src="assets/app.mjs"></script>' + extra_root,
+            'assets/app.mjs': "import '../runtime/workspace.mjs'; registerWebMcpTools(); webmcpProtocol",
             'assets/styles.css': 'body { color: #111; }',
-            'runtime/workspace.mjs': 'explain-him-local-workspace.v3',
-            'runtime/webmcp.mjs': "explain-him-webmcp-contract.v2 get_explanation_contract apply_explanation andrew-veresov/explain-him skills/explain-him/SKILL.md skills/explain-him-presentation/SKILL.md name: 'get_explanation_contract' name: 'apply_explanation' workflow-diagram",
+            'runtime/workspace.mjs': 'explain-him-local-workspace.v4',
+            'runtime/webmcp.mjs': "explain-him-webmcp-contract.v3 get_explanation_contract apply_explanation IMMUTABLE_SKILL_PROOF 08458a6093a12f1384c0d08d86a2ea45d5cfaa26 name: 'get_explanation_contract' name: 'apply_explanation' workflow-diagram",
             'explain-him.yaml': 'repository: andrew-veresov/explain-him\nentrypoint: skills/explain-him/SKILL.md\nentrypoint: skills/explain-him-presentation/SKILL.md\nstate_model: transactional-typed-presentation-operation-log\n- get_explanation_contract\n- apply_explanation\n',
             'schemas/explanation-block.v1.schema.json': '{}',
+            'schemas/webmcp-contract.v3.schema.json': '{}',
+            'schemas/webmcp-apply.v3.schema.json': '{}',
             'resolutions/2026-08-30-user-consumer-terminology.md': 'Status: accepted\n`User` and `Consumer` refer to the same participant\n`User` is the preferred term\n',
             'skills/explain-him/SKILL.md': '---\nname: explain-him\n---\n',
             'skills/explain-him-presentation/SKILL.md': '---\nname: explain-him-presentation\n---\n',

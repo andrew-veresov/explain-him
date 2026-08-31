@@ -28,12 +28,12 @@ ORIGIN_TRIAL_SPEC.loader.exec_module(origin_trial)
 DEFAULT_URL = "https://andrew-veresov.github.io/explain-him/"
 DEFAULT_REPOSITORY = "andrew-veresov/explain-him"
 SKILLS = ("skills/explain-him/SKILL.md", "skills/explain-him-presentation/SKILL.md")
-REQUIRED = ("", "assets/app.mjs", "assets/styles.css", "runtime/workspace.mjs", "runtime/webmcp.mjs", "explain-him.yaml", "schemas/explanation-block.v1.schema.json", "resolutions/2026-08-30-user-consumer-terminology.md", *SKILLS)
+REQUIRED = ("", "assets/app.mjs", "assets/styles.css", "runtime/workspace.mjs", "runtime/webmcp.mjs", "explain-him.yaml", "schemas/explanation-block.v1.schema.json", "schemas/webmcp-contract.v3.schema.json", "schemas/webmcp-apply.v3.schema.json", "resolutions/2026-08-30-user-consumer-terminology.md", *SKILLS)
 MARKERS = {
-    "index.html": (b"andrew-veresov/explain-him", b"skills/explain-him/SKILL.md", b"skills/explain-him-presentation/SKILL.md", b"data-eh-block-id=\"workflow-diagram\"", b"http-equiv=\"origin-trial\""),
-    "assets/app.mjs": (b"registerWebMcpTools",),
-    "runtime/webmcp.mjs": (b"explain-him-webmcp-contract.v2", b"get_explanation_contract", b"apply_explanation", b"andrew-veresov/explain-him", b"skills/explain-him/SKILL.md", b"skills/explain-him-presentation/SKILL.md"),
-    "runtime/workspace.mjs": (b"explain-him-local-workspace.v3",),
+    "index.html": (b"andrew-veresov/explain-him", b"skills/explain-him/SKILL.md", b"skills/explain-him-presentation/SKILL.md", b"data-eh-block-id=\"workflow-diagram\"", b"data-scroll-section=\"how-it-works\"", b"data-scroll-section=\"how-to-express\"", b"Ask your agent how to express your own idea with Explain Him.", b"http-equiv=\"origin-trial\""),
+    "assets/app.mjs": (b"registerWebMcpTools", b"webmcpProtocol"),
+    "runtime/webmcp.mjs": (b"explain-him-webmcp-contract.v3", b"get_explanation_contract", b"apply_explanation", b"IMMUTABLE_SKILL_PROOF", b"08458a6093a12f1384c0d08d86a2ea45d5cfaa26"),
+    "runtime/workspace.mjs": (b"explain-him-local-workspace.v4",),
     "explain-him.yaml": (b"repository: andrew-veresov/explain-him", b"entrypoint: skills/explain-him/SKILL.md", b"entrypoint: skills/explain-him-presentation/SKILL.md", b"state_model: transactional-typed-presentation-operation-log", b"- get_explanation_contract", b"- apply_explanation"),
     "resolutions/2026-08-30-user-consumer-terminology.md": (b"Status: accepted", b"`User` and `Consumer` refer to the same participant", b"`User` is the preferred term"),
     "skills/explain-him/SKILL.md": (b"name: explain-him",),

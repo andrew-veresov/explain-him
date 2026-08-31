@@ -127,8 +127,9 @@ def main() -> int:
                             return normalizeResult(await document.modelContext.executeTool(descriptor, JSON.stringify(args)), name);
                           };
                           const contract = await execute('get_explanation_contract', {});
-                          if (contract.schemaVersion !== 'explain-him-webmcp-contract.v2') throw new TypeError('unexpected contract schema');
+                          if (contract.schemaVersion !== 'explain-him-webmcp-contract.v3' || contract.protocolVersion !== 3) throw new TypeError('unexpected contract schema');
                           const contractRevision = requireRevision(contract.workspaceRevision, 'contract.workspaceRevision');
+                          if (!Array.isArray(contract.skillProof) || contract.skillProof.length !== 2 || !contract.contractId || !contract.activation?.id || !contract.activation?.nonce) throw new TypeError('contract is missing the v3 activation proof');
                           const targets = requireArray(contract.targets, 'contract.targets');
                           if (!targets.some((target) => target?.id === 'workflow-diagram')) throw new TypeError('contract does not expose workflow-diagram');
                           const block = (term) => ({
@@ -136,29 +137,21 @@ def main() -> int:
                             nodes: [{ id: term.toLowerCase(), label: term }, { id: 'agent', label: 'Personal agent' }],
                             edges: [{ from: term.toLowerCase(), to: 'agent', label: 'asks' }], sources: []
                           });
-                          const first = requireOk(await execute('apply_explanation', {
-                            requestId: 'native-chrome-user-consumer', expectedWorkspaceRevision: contractRevision,
-                            operations: [{ op: 'replace', targetId: 'workflow-diagram', block: block('User') }]
-                          }), 'replace');
+                          const request = (requestId, expectedWorkspaceRevision, operations) => ({ requestId, expectedWorkspaceRevision, explanationId: contract.explanationId, topicId: 'terminology:user-consumer', operations, handshake: { contractId: contract.contractId, activationId: contract.activation.id, nonce: contract.activation.nonce, baseRevision: contract.baseRevision, skillProof: contract.skillProof } });
+                          const first = requireOk(await execute('apply_explanation', request('native-chrome-user-consumer', contractRevision, [{ op: 'replace', targetId: 'workflow-diagram', block: block('User') }])), 'replace');
                           const firstRevision = requireRevision(first.workspaceRevision, 'replace.workspaceRevision');
                           if (firstRevision <= contractRevision) throw new TypeError('replace did not advance workspace revision');
                           const firstBlocks = requireArray(first.localBlocks, 'replace.localBlocks');
                           const firstApplied = requireArray(first.applied, 'replace.applied');
                           const id = requireId(firstBlocks[0]?.id, 'replace.localBlocks[0].id');
                           if (firstApplied[0]?.op !== 'replace' || firstApplied[0]?.blockId !== id) throw new TypeError('replace result does not preserve the local block ID');
-                          const second = requireOk(await execute('apply_explanation', {
-                            requestId: 'native-chrome-user-consumer-update', expectedWorkspaceRevision: firstRevision,
-                            operations: [{ op: 'update', blockId: id, block: block('Consumer') }]
-                          }), 'update');
+                          const second = requireOk(await execute('apply_explanation', request('native-chrome-user-consumer-update', firstRevision, [{ op: 'update', blockId: id, block: block('Consumer') }])), 'update');
                           const secondRevision = requireRevision(second.workspaceRevision, 'update.workspaceRevision');
                           if (secondRevision <= firstRevision) throw new TypeError('update did not advance workspace revision');
                           const secondBlocks = requireArray(second.localBlocks, 'update.localBlocks');
                           const secondApplied = requireArray(second.applied, 'update.applied');
                           if (requireId(secondBlocks[0]?.id, 'update.localBlocks[0].id') !== id || secondApplied[0]?.op !== 'update' || secondApplied[0]?.blockId !== id) throw new TypeError('update result does not preserve the local block ID');
-                          const third = requireOk(await execute('apply_explanation', {
-                            requestId: 'native-chrome-user-consumer-remove', expectedWorkspaceRevision: secondRevision,
-                            operations: [{ op: 'remove', blockId: id }]
-                          }), 'remove');
+                          const third = requireOk(await execute('apply_explanation', request('native-chrome-user-consumer-remove', secondRevision, [{ op: 'remove', blockId: id }])), 'remove');
                           const thirdRevision = requireRevision(third.workspaceRevision, 'remove.workspaceRevision');
                           if (thirdRevision <= secondRevision) throw new TypeError('remove did not advance workspace revision');
                           const finalBlocks = requireArray(third.localBlocks, 'remove.localBlocks');
@@ -167,8 +160,18 @@ def main() -> int:
                           return { schema_version: contract.schemaVersion, local_id_preserved: true, local_blocks_after_remove: finalBlocks.length };
                         }""")
                     except Error:
+                        deployed_schema = page.evaluate("""async () => {
+                          const tools = await document.modelContext.getTools();
+                          const descriptor = tools.find((tool) => tool?.name === 'get_explanation_contract');
+                          if (!descriptor) return null;
+                          const raw = await document.modelContext.executeTool(descriptor, JSON.stringify({}));
+                          const value = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                          return value && typeof value === 'object' && !Array.isArray(value) ? value.schemaVersion || null : null;
+                        }""")
+                        if deployed_schema != "explain-him-webmcp-contract.v3":
+                            return emit("BLOCKED", "live page has not deployed Protocol v3", chrome_version=version, deployed_schema=deployed_schema)
                         return emit("FAILED", "native host rejected the expected contract sequence", chrome_version=version)
-                    if flow["schema_version"] != "explain-him-webmcp-contract.v2" or not flow["local_id_preserved"] or flow["local_blocks_after_remove"] != 0:
+                    if flow["schema_version"] != "explain-him-webmcp-contract.v3" or not flow["local_id_preserved"] or flow["local_blocks_after_remove"] != 0:
                         return emit("FAILED", "native replace-update-remove flow violated the WebMCP contract", chrome_version=version, flow=flow)
                     return emit("PASS", "native Chrome executed the live WebMCP contract", chrome_version=version, cdp=cdp_evidence, tool_names=names)
                 finally:

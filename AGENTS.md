@@ -9,6 +9,7 @@ These instructions apply **only** while explaining the public repository `andrew
 - Leave this scope when the user switches repository or finishes this explanation.
 - Use **Explain Him** and **Explain Him Pro** as product names.
 - Treat `tests/`, `tools/` and `.github/` as implementation support, not product knowledge.
+- Exclude any `evaluation/` material from normal explanation. Read it only when the user explicitly asks to run or review tests.
 
 ## Project language
 
@@ -27,11 +28,15 @@ The grounding skill is authoritative for meaning. The presentation skill is auth
 
 When the page is open in a WebMCP-capable browser:
 
-1. call `get_explanation_contract` once;
-2. read the grounding skill returned by the contract;
+1. call `get_explanation_contract` to establish a Protocol v3 activation;
+2. verify the returned immutable raw skill URLs, commit, SHA-256 proofs, and load order before reading the grounding skill;
 3. follow that skill to answer the question and retrieve deeper GitHub evidence when required;
 4. read the presentation skill before embedding a result into the page;
-5. use `apply_explanation` only after the meaning is grounded.
+5. analyse whether the current UI already fully and correctly contains the answer, then always provide the chat answer; do not duplicate a correct UI result, and use focus only for an explicit show or walkthrough request;
+6. when the UI answer is missing, partial, or inconsistent, use a grounded same-turn `apply_explanation` add, replace, or update; restore uses remove or the Originator view;
+7. use `apply_explanation` only after the meaning is grounded and with top-level requestId, expectedWorkspaceRevision, explanationId, topicId, operations, plus nested `handshake` containing contractId, activationId, nonce, baseRevision, and ordered three-field skillProof. If apply fails, say so honestly rather than claiming a page change.
+
+The activation nonce is opaque and session-scoped. It may be reused only for an idempotent retry or ordered local-operation chain in the same activation. Never display or persist it in user-facing output.
 
 The page also publishes invisible machine-readable repository and skill links in its `<head>`. Use them as bootstrap hints when Site Tool discovery succeeds before repository context is available.
 

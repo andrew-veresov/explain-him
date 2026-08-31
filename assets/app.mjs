@@ -1,25 +1,47 @@
 import { createExplanationWorkspace } from '../runtime/workspace.mjs';
 import { registerWebMcpTools } from '../runtime/webmcp.mjs';
 
-const sectionLabels = {
-  flow: 'Mechanism', roles: 'Roles', workspace: 'Adaptive page', grounding: 'Knowledge control'
-};
-
 function byId(id) { return document.getElementById(id); }
 
-function activateSection(name) {
-  for (const tab of document.querySelectorAll('[data-section]')) {
-    const active = tab.dataset.section === name;
-    tab.classList.toggle('is-active', active);
-    tab.setAttribute('aria-selected', String(active));
-    tab.tabIndex = active ? 0 : -1;
+function installContinuousNavigation() {
+  const links = [...document.querySelectorAll('[data-scroll-section]')];
+  const sections = links.map((link) => byId(link.dataset.scrollSection)).filter(Boolean);
+  if (!links.length || !sections.length) return;
+
+  const setActive = (id) => {
+    for (const link of links) {
+      const active = link.dataset.scrollSection === id;
+      link.classList.toggle('is-active', active);
+      if (active) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    }
+    const activeLink = links.find((link) => link.dataset.scrollSection === id);
+    if (activeLink && byId('current-focus')) byId('current-focus').textContent = activeLink.textContent.trim();
+  };
+
+  for (const link of links) {
+    link.addEventListener('click', (event) => {
+      const section = byId(link.dataset.scrollSection);
+      if (!section) return;
+      event.preventDefault();
+      setActive(section.id);
+      section.focus({ preventScroll: true });
+      section.scrollIntoView({ behavior: globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+      globalThis.history?.replaceState?.(null, '', `#${section.id}`);
+    });
   }
-  for (const panel of document.querySelectorAll('[data-section-panel]')) {
-    const active = panel.dataset.sectionPanel === name;
-    panel.hidden = !active;
-    panel.classList.toggle('is-active', active);
+
+  if (typeof globalThis.IntersectionObserver === 'function') {
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting).sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+      if (visible) setActive(visible.target.id);
+    }, { rootMargin: '-18% 0px -62% 0px', threshold: [0.1, 0.45, 0.75] });
+    for (const section of sections) observer.observe(section);
   }
-  if (byId('current-focus')) byId('current-focus').textContent = sectionLabels[name] || name;
+
+  const fromHash = globalThis.location?.hash.slice(1);
+  if (sections.some((section) => section.id === fromHash)) setActive(fromHash);
+  else setActive(sections[0].id);
 }
 
 function downloadJson(text) {
@@ -87,6 +109,7 @@ function publishWebMcpStatus(registration) {
   document.documentElement.dataset.webmcpState = registration.supported ? 'detected' : 'unavailable';
   document.documentElement.dataset.webmcpHost = registration.hostSource || 'none';
   document.documentElement.dataset.webmcpApi = 'document.modelContext';
+  document.documentElement.dataset.webmcpProtocol = '3';
   document.documentElement.dataset.webmcpTools = registration.expectedTools.join(',');
 }
 
@@ -108,23 +131,7 @@ async function main() {
   refreshWebMcpCopy();
   installWebMcpDemoCard();
 
-  const sectionTabs = [...document.querySelectorAll('[data-section]')];
-  for (const tab of sectionTabs) {
-    tab.addEventListener('click', () => activateSection(tab.dataset.section));
-    tab.addEventListener('keydown', (event) => {
-      const current = sectionTabs.indexOf(tab);
-      const delta = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
-      const next = event.key === 'Home' ? 0 : event.key === 'End' ? sectionTabs.length - 1 : delta ? (current + delta + sectionTabs.length) % sectionTabs.length : null;
-      if (next === null) return;
-      event.preventDefault();
-      const selected = sectionTabs[next];
-      activateSection(selected.dataset.section);
-      selected.focus();
-    });
-  }
-  for (const button of document.querySelectorAll('[data-open-section]')) {
-    button.addEventListener('click', () => activateSection(button.dataset.openSection));
-  }
+  installContinuousNavigation();
 
   const sourceToggle = byId('source-toggle');
   let sourceOpener = null;
