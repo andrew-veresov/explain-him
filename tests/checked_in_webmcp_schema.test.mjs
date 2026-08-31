@@ -29,6 +29,8 @@ function validate(root, schema, value) {
   if (Array.isArray(value)) {
     if (schema.minItems !== undefined && value.length < schema.minItems) return false;
     if (schema.maxItems !== undefined && value.length > schema.maxItems) return false;
+    if (Array.isArray(schema.prefixItems) && schema.prefixItems.some((entry, index) => index >= value.length || !validate(root, entry, value[index]))) return false;
+    if (schema.items === false && value.length > (schema.prefixItems || []).length) return false;
     if (schema.items && !value.every((item) => validate(root, schema.items, item))) return false;
   }
   if (typeof value === 'string') {
@@ -51,6 +53,12 @@ test('checked-in strict schemas accept production descriptor values and reject u
   assert.equal((await tools.get('apply_explanation').execute(input)).ok, true);
   assert.equal(validate(contractSchema, contractSchema, { ...contract, unknown: true }), false);
   assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, unknown: true } }), false);
+  assert.equal(validate(contractSchema, contractSchema, { ...contract, repository: { ...contract.repository, skillsCommit: '0'.repeat(40) } }), false);
+  assert.equal(validate(contractSchema, contractSchema, { ...contract, skills: [{ ...contract.skills[0], sha256: '0'.repeat(64) }, contract.skills[1]] }), false);
+  assert.equal(validate(contractSchema, contractSchema, { ...contract, skillProof: [contract.skillProof[1], contract.skillProof[0]] }), false);
+  assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, revision: 'A2' } }), false);
+  assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, decisionPrecedence: [...contract.agentPolicy.decisionPrecedence].reverse() } }), false);
+  assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, terminologyConsistency: { ...contract.agentPolicy.terminologyConsistency, distinctRoles: 'normalize' } } }), false);
   assert.equal(validate(applySchema, applySchema, { ...input, unknown: true }), false);
   assert.equal(validate(applySchema, applySchema, { ...input, operations: [{ ...input.operations[0], unknown: true }] }), false);
   assert.equal(validate(applySchema, applySchema, { ...input, operations: [{ ...input.operations[0], block: { ...input.operations[0].block, unknown: true } }] }), false);

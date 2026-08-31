@@ -141,11 +141,22 @@ webmcp:
     host_guarantee: false
   purpose: typed-result-delivery-to-shared-page
   agent_policy:
+    revision: A3
     bootstrap: required-before-retrieval-reasoning-focus-or-apply
     immutable_skill_publication: required
     activation_handshake: fail-closed
     topic_identity: topicId-plus-authored-target-plus-local-block-id
     focus_only_changes_workspace_revision: false
+    decisionPrecedence: [explicitNoPageChange, restore, terminologyConsistency, answerPresence]
+    terminologyConsistency:
+      equivalentLabels: [User, Consumer]
+      equivalenceNoteDoesNotMakeMixedLabelsConsistent: true
+      questionTriggersSameTurnNormalization: true
+      defaultTerm: User
+      distinctRoles: never-normalize
+      firstCorrection: {topicId: terminology:user-consumer, targetId: workflow-diagram, operation: replace}
+      sameTopicFollowUp: {operation: update, reuseLocalBlockId: true}
+      restore: {operation: remove}
     presentationDecision:
       alwaysProvideChatAnswer: true
       assessAnswerAndRequestedRepresentationInPersonalizedUi: true
@@ -158,15 +169,15 @@ webmcp:
     failure: {applyFailure: honest-acknowledgement-no-false-success}
   immutable_skill_publication:
     repository: andrew-veresov/explain-him
-    commit: 08458a6093a12f1384c0d08d86a2ea45d5cfaa26
+    commit: 00c89a7c4ef2133189399ba820f92addacdf9b57
     load_order: [explain-him, explain-him-presentation]
     skills:
       - id: explain-him
-        sha256: 8a954fab5b8156853d803f61f5e2f7a28dafb344f9c5f19a9ae4e439e694a539
-        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/08458a6093a12f1384c0d08d86a2ea45d5cfaa26/skills/explain-him/SKILL.md
+        sha256: 5269da73500bdeab7dd1397525d1abed4477ad35ca0ae7a3db72cbeb5e706a1e
+        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/00c89a7c4ef2133189399ba820f92addacdf9b57/skills/explain-him/SKILL.md
       - id: explain-him-presentation
-        sha256: 2733449c96da48f3988f723347f6dc328408852310a363ef317db04d3cdb80f7
-        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/08458a6093a12f1384c0d08d86a2ea45d5cfaa26/skills/explain-him-presentation/SKILL.md
+        sha256: 620966939aa4df93d452ee04754375f6a6ac4dcccd4d50f0234574b5abda8902
+        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/00c89a7c4ef2133189399ba820f92addacdf9b57/skills/explain-him-presentation/SKILL.md
   tools:
     - get_explanation_contract
     - apply_explanation
