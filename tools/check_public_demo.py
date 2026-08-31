@@ -224,9 +224,32 @@ def main() -> int:
     skill = (ROOT / 'skills/explain-him/SKILL.md').read_text(encoding='utf-8')
     if not skill.startswith('---\nname: explain-him\n'):
         errors.append('SKILL.md: invalid portable frontmatter')
-    for expected in ['Repository-authored artifacts are English', 'provenance', 'Archify', 'Never present']:
+    for expected in [
+        'Repository-authored artifacts are English', 'provenance', 'Archify', 'Never present',
+        'Mandatory activation bootstrap', 'make one initial `get_explanation_contract` call for this activation',
+        'Additional contract calls are allowed only for a confirmed stale-workspace or session-conflict refresh',
+        'Protocol v3 transition and v2 fallback', 'compatibility fallback only',
+        'Page-adaptation decision policy', 'apply_explanation` in the same turn is mandatory',
+        '`User` and `Consumer` terminology correction', 'call `apply_explanation` in the same turn with a focus-only operation',
+        'chat only for a simple, correct answer', 'requested local page change was not applied'
+    ]:
         if expected not in skill:
             errors.append(f'SKILL.md: missing presentation/grounding rule {expected!r}')
+
+    presentation_skill = (ROOT / 'skills/explain-him-presentation/SKILL.md').read_text(encoding='utf-8')
+    if not presentation_skill.startswith('---\nname: explain-him-presentation\n'):
+        errors.append('presentation SKILL.md: invalid portable frontmatter')
+    for expected in [
+        'Mandatory activation bootstrap', 'reuse the initial `get_explanation_contract` result for this activation',
+        'confirmed stale-workspace or session-conflict refresh',
+        'temporary compatibility fallback', 'Same-turn decision and topic reuse',
+        'Treat a topic as the stable semantic subject', 'Use `update` for a same-topic refinement',
+        'replace every affected semantic target in one transaction',
+        'same-turn `apply_explanation` call with a focus-only operation',
+        'requested local page change was not applied'
+    ]:
+        if expected not in presentation_skill:
+            errors.append(f'presentation SKILL.md: missing Protocol v3 policy {expected!r}')
 
     webmcp = (ROOT / 'runtime/webmcp.mjs').read_text(encoding='utf-8')
     if 'environment?.document?.modelContext' not in webmcp or "source: 'document.modelContext'" not in webmcp:

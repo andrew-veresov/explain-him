@@ -15,17 +15,32 @@ Repository-authored artifacts are English. The personal agent may answer the use
 
 For browser-local presentation, also read `../explain-him-presentation/SKILL.md`.
 
-## Runtime bootstrap
+## Mandatory activation bootstrap
 
-When the current page exposes WebMCP:
+On every Explain Him skill activation, bootstrap the current page before retrieval, reasoning, focus, or a possible local mutation:
 
-1. call `get_explanation_contract` once;
-2. confirm the repository is `andrew-veresov/explain-him`;
-3. use the returned authored target IDs only as insertion anchors, not as knowledge;
-4. follow this grounding skill for retrieval and reasoning;
-5. follow `skills/explain-him-presentation/SKILL.md` for typed block selection and `apply_explanation`.
+1. when a Site Tools host is available, make one initial `get_explanation_contract` call for this activation;
+2. confirm the repository is `andrew-veresov/explain-him`, the two expected tools are available, and the returned target and local-block lists are usable;
+3. retain the returned workspace revision, authored target IDs, and local block IDs as the session-local page state;
+4. use authored target IDs only as insertion anchors, never as knowledge;
+5. load this grounding skill, then `skills/explain-him-presentation/SKILL.md`, and only then reason about a page adaptation.
+
+Do not defer this bootstrap until after answering when Site Tools are available. Additional contract calls are allowed only for a confirmed stale-workspace or session-conflict refresh, or for an explicitly new page session.
 
 `get_explanation_contract` is a page contract, not a knowledge-search API. Do not expect WebMCP to answer questions or read GitHub.
+
+## Protocol v3 transition and v2 fallback
+
+Protocol v3 is the intended activation protocol. It will bind the bootstrap to an activation nonce and to immutable, independently verifiable published skill artifacts before an agent can mutate the local page. Until the runtime exposes that handshake, the present `explain-him-webmcp-contract.v2` response is a compatibility fallback only.
+
+With the v2 fallback:
+
+- still call and validate the contract first;
+- load the repository-scoped skill paths returned by that contract and follow their current content;
+- use the returned revision and local IDs for safe application;
+- do not invent a nonce, immutable artifact digest, protocol-v3 field, or claim that the v3 handshake ran.
+
+If the Site Tools host is absent, record that the bootstrap was unavailable, use the chat-only fallback below, and never claim a page mutation.
 
 ## Responsibility split
 
@@ -107,16 +122,16 @@ Never present `target`, `hypothesis`, `open`, or `demo-only` as production fact.
 
 For each user question:
 
-1. Read the current page section(s) that appear relevant.
-2. Determine whether the page is enough for a useful answer.
-3. If not, retrieve the minimum relevant GitHub sources using the precedence above.
-4. Separate sourced statements from agent inference.
-5. Preserve important statuses.
-6. Form the answer in the user's preferred language.
-7. Attach provenance for material claims that will be embedded into the page.
-8. Answer in the normal personal-agent chat first.
-9. If the question exposes a visible ambiguity, terminology inconsistency, confusing text, diagram, structure, or the user asks to see the result on the page, page adaptation is required when a Site Tool is available. Pass the grounded result to the presentation skill.
-10. When the user benefits from a walkthrough, focus the relevant authored target after applying the grounded block and continue the explanation in chat.
+1. Complete the mandatory activation bootstrap when Site Tools are available.
+2. Read the current page section(s) that appear relevant.
+3. Determine whether the page is enough for a useful answer.
+4. If not, retrieve the minimum relevant GitHub sources using the precedence above.
+5. Separate sourced statements from agent inference.
+6. Preserve important statuses.
+7. Form the answer in the user's preferred language.
+8. Attach provenance for material claims that will be embedded into the page.
+9. Apply the decision policy below. When a local change is mandatory and Site Tools are available, call `apply_explanation` in the same turn before acknowledging the result in chat.
+10. Continue the conversational answer and, where appropriate, a guided focus after the transaction result is known.
 
 Do not call `apply_explanation` before the meaning is grounded.
 
@@ -136,17 +151,22 @@ Do not fabricate refs or sections. Omit unknown optional fields.
 
 A page-authored statement may use `index.html` as the source path.
 
-## Presentation decision
+## Page-adaptation decision policy
 
-Use browser-local presentation when one or more are true:
+When Site Tools are available, `apply_explanation` in the same turn is mandatory for:
 
-- the user explicitly asks to show/add/visualize something on the page;
-- the answer benefits from comparison, flow, timeline, concept map, architecture, or a highlighted insight;
-- the user is exploring the idea iteratively and persistent local context will reduce repetition.
+- an explicit request to edit, add, show, replace, remove, normalize, or restore the page UI;
+- a visible ambiguity, inconsistency, or correction that affects what the user can see, including the `User` and `Consumer` terminology correction;
+- a refinement of the same already-personalized topic;
+- a request to return to the Originator's version.
 
-Do not embed every conversational answer. The page should remain selective and useful. A correction to what the user can currently see is the exception: deliver that correction to the personalized layer when Site Tools are available.
+For a visible `User`/`Consumer` inconsistency, explain that both name one role, prefer `User` in user-facing local material, and replace every affected visible semantic target in the Personalized view. Keep the canonical authored material unchanged.
 
-Then read and follow `skills/explain-him-presentation/SKILL.md`.
+For a walkthrough or to reveal existing correct authored or local content without changing content, call `apply_explanation` in the same turn with a focus-only operation. A focus-only operation is not a substitute for a required correction or requested edit. Use chat only for a simple, correct answer that neither asks for nor exposes a local change.
+
+Reuse a topic and its returned local block ID instead of creating duplicate context. The presentation skill chooses `add` for a new local topic, `replace` for a visible authored-target correction or simplification, `update` for a same-topic refinement while preserving that ID, and `remove` to restore the Originator's version. Batch related operations in one transaction when that prevents a mixed visible result.
+
+Do not embed every conversational answer. The page should remain selective and useful. Then read and follow `skills/explain-him-presentation/SKILL.md`.
 
 ## External Presentation Capabilities
 
@@ -170,7 +190,7 @@ WebMCP is never the GitHub Issue gateway.
 ## Failure behavior
 
 - If GitHub retrieval is unavailable and the page is insufficient, say the deeper answer cannot be grounded.
-- If presentation fails, keep the conversational answer; presentation failure must not destroy the answer.
+- If `apply_explanation` fails, keep the conversational answer and plainly say that the requested local page change was not applied. Do not acknowledge the edit, correction, refinement, or restore as complete.
 - In Chrome sidebar, treat missing WebMCP as a chat-only fallback: answer normally and never claim the page changed. Explain that the full Site Tools flow requires a supported ChatGPT Desktop built-in browser surface.
 - If WebMCP is unavailable for another reason, answer normally and use accessible page controls or an agent-side presentation fallback if helpful.
 - Never present local personalization or external presentation output as Originator-authored knowledge.

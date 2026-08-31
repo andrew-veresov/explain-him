@@ -11,15 +11,18 @@ Take meaning that has already been grounded by the personal agent and represent 
 
 This skill never retrieves facts, resolves claims, or changes Originator-authored content. It only chooses a representation for meaning that is already known.
 
-## Prerequisite
+## Mandatory activation bootstrap
 
 Before using this skill:
 
 1. follow `skills/explain-him/SKILL.md`;
-2. ground the answer from the authored page and, when needed, GitHub;
-3. preserve repository provenance and status;
-4. answer the user in the normal agent conversation;
-5. call `get_explanation_contract` if you have not already done so in this page session.
+2. complete its mandatory activation bootstrap before grounding, focus, or mutation;
+3. reuse the initial `get_explanation_contract` result for this activation; request another contract only for a confirmed stale-workspace or session-conflict refresh, or for an explicitly new page session;
+4. ground the answer from the authored page and, when needed, GitHub;
+5. preserve repository provenance and status;
+6. retain the contract workspace revision, authored target IDs, and local block IDs until the transaction completes.
+
+The current runtime returns `explain-him-webmcp-contract.v2`. It is a temporary compatibility fallback: it has no Protocol v3 activation nonce or immutable skill-artifact pin. Validate and use the v2 contract, but never claim that the v3 handshake ran. If the contract was unavailable, this skill cannot mutate or focus the page.
 
 The contract tells you:
 
@@ -153,6 +156,20 @@ Use this order:
 
 Do not create a diagram just because diagrams are possible.
 
+## Same-turn decision and topic reuse
+
+When the grounding skill identifies an explicit UI edit, a visible ambiguity, inconsistency, correction, same-topic refinement, or restore request, execute the selected `apply_explanation` transaction in the same turn. Do this before telling the user that the visible result changed.
+
+Treat a topic as the stable semantic subject plus its authored target and, once created, its returned `local-*` block ID. In the v2 fallback this identity is session-local agent state, not a new runtime field. Reuse it rather than adding duplicate blocks.
+
+- Use `add` for a new local topic beside an authored target.
+- Use `replace` for a visible authored-target correction or a user-local simplification.
+- Use `update` for a same-topic refinement and preserve the returned local ID.
+- Use `remove` for an explicit restore of the Originator's version.
+- For a walkthrough or existing correct content with no content change, call `apply_explanation` in the same turn with a focus-only operation. Do not use it instead of a required edit or correction.
+
+For a visible `User`/`Consumer` inconsistency, replace every affected semantic target in one transaction so Personalized view does not present a mixed terminology. The preferred user-facing local term is `User`; the authored source remains immutable.
+
 ## Provenance
 
 Every repository-grounded block should carry `sources` from the grounding skill.
@@ -178,11 +195,11 @@ Use `index.html` when the authored page itself is the source. Do not invent miss
 3. Keep it concise; the conversational answer remains primary.
 4. Include provenance.
 5. Call `apply_explanation` once, batching related additions when useful.
-6. Check the returned `applied` entries and local block IDs.
+6. Check that the returned result is `ok`, has the expected workspace revision, and includes the expected `applied` entries and local block IDs.
 
 ## Guided walkthrough
 
-After adding a grounded block, use `focus` when the user asked to be shown or guided through the result. Keep the chat answer active: state what is focused, explain why it matters, and let the user's next question determine the next focus target.
+After adding a grounded block, include `focus` in the same `apply_explanation` transaction when the user asked to be shown or guided through the result. When no content change is needed, a walkthrough still requires a same-turn `apply_explanation` call with a focus-only operation. Keep the chat answer active: state what is focused, explain why it matters, and let the user's next question determine the next focus target.
 
 ```json
 {
@@ -244,7 +261,7 @@ Remove:
 }
 ```
 
-Use `replace` when a visible authored target needs a user-local correction or simplification. Use `update` for a later refinement of that same local result so its ID stays stable. Use `remove` when the user asks to restore the author version.
+Use `replace` when a visible authored target needs a user-local correction or simplification. Use `update` for a later refinement of that same local result so its ID stays stable. Use `remove` when the user asks to restore the author version. Use the latest returned workspace revision as `expectedWorkspaceRevision` and only IDs returned by the contract or a successful prior result.
 
 ```json
 {
@@ -274,4 +291,4 @@ If the personal agent uses Archify or another external presenter to help design 
 
 ## Failure behavior
 
-If `apply_explanation` fails, keep the conversational answer and report only that the page embedding failed. Do not re-ground or invent different facts to make the renderer succeed.
+If `apply_explanation` fails, keep the conversational answer and plainly say that the requested local page change was not applied. Do not re-ground or invent different facts to make the renderer succeed, and do not claim that an edit, correction, refinement, or restore completed.
