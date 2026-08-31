@@ -1,0 +1,46 @@
+name: WebMCP Origin Trial
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'explain-him.yaml'
+      - 'tools/check_webmcp_origin_trial.py'
+      - '.github/workflows/webmcp-origin-trial.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'explain-him.yaml'
+      - 'tools/check_webmcp_origin_trial.py'
+      - '.github/workflows/webmcp-origin-trial.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate pinned Origin Trial metadata
+        run: python tools/check_webmcp_origin_trial.py --html index.html
+
+  live:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate live Origin Trial metadata
+        run: python tools/check_webmcp_origin_trial.py --url https://andrew-veresov.github.io/explain-him/

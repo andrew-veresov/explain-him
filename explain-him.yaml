@@ -123,6 +123,19 @@ webmcp:
   api: document.modelContext
   registration: imperative-top-level-javascript
   declarative_api_required: false
+  origin_trial:
+    status: experimental
+    feature: WebMCP
+    canonical_origin: https://andrew-veresov.github.io:443
+    is_subdomain: true
+    third_party: false
+    expiry_unix: 1794873600
+    token_sha256: 7f151bb88d4636beb26c991c2853d6a43b1b50f23ea9860b3a6658553912f2e2
+    fail_window_days: 14
+    validation: tools/check_webmcp_origin_trial.py
+    live_validation: tools/check_live_pages.py
+    native_live_validation: tools/test_native_chrome_webmcp_live.py
+    host_guarantee: false
   purpose: typed-result-delivery-to-shared-page
   tools:
     - get_explanation_contract

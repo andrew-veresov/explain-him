@@ -99,9 +99,9 @@ def resolve_wikilink(source: Path, raw: str) -> bool:
 def main() -> int:
     errors: list[str] = []
 
-    deployment_required = ['tools/check_live_pages.py', '.github/workflows/live-pages-smoke.yml']
+    deployment_required = ['tools/check_live_pages.py', 'tools/check_webmcp_origin_trial.py', '.github/workflows/live-pages-smoke.yml', '.github/workflows/webmcp-origin-trial.yml']
     if PRIVATE_DEMO:
-        deployment_required = ['../tools/check_live_pages.py', '../distribution/public-workflows/live-pages-smoke.yml']
+        deployment_required = ['../tools/check_live_pages.py', '../tools/check_webmcp_origin_trial.py', '../distribution/public-workflows/live-pages-smoke.yml', '../distribution/public-workflows/webmcp-origin-trial.yml']
     for item in [*REQUIRED, *deployment_required]:
         if not (ROOT / item).is_file():
             errors.append(f'Missing required file: {item}')
@@ -168,7 +168,12 @@ def main() -> int:
         'state_model: transactional-typed-presentation-operation-log', 'confirmation_before_write: true',
         'api: document.modelContext', 'registration: imperative-top-level-javascript',
         'purpose: typed-result-delivery-to-shared-page', 'presentation-skill-location',
-        '- focus'
+        '- focus', 'feature: WebMCP', 'canonical_origin: https://andrew-veresov.github.io:443',
+        'is_subdomain: true', 'third_party: false', 'expiry_unix: 1794873600',
+        'token_sha256: 7f151bb88d4636beb26c991c2853d6a43b1b50f23ea9860b3a6658553912f2e2',
+        'fail_window_days: 14', 'validation: tools/check_webmcp_origin_trial.py',
+        'live_validation: tools/check_live_pages.py', 'native_live_validation: tools/test_native_chrome_webmcp_live.py',
+        'host_guarantee: false'
     ]:
         if expected not in manifest:
             errors.append(f'explain-him.yaml: missing invariant {expected!r}')
@@ -185,7 +190,7 @@ def main() -> int:
             errors.append('distribution/public-facade.yml: missing private-to-public publication policy')
         else:
             policy = distribution.read_text(encoding='utf-8')
-            for expected in ['source: demo/.nojekyll', 'target: .nojekyll', 'source: demo/tests/**', 'target: tests/**', 'source: demo/tools/check_public_demo.py', 'target: tools/check_public_demo.py', 'source: tools/check_live_pages.py', 'target: tools/check_live_pages.py', 'source: distribution/public-workflows/live-pages-smoke.yml', 'target: .github/workflows/live-pages-smoke.yml', 'transactional-typed-presentation-operation-log', 'github-pages-preserves-raw-skill-markdown', 'deployed-pages-matches-exact-public-sha']:
+            for expected in ['source: demo/.nojekyll', 'target: .nojekyll', 'source: demo/tests/**', 'target: tests/**', 'source: demo/tools/check_public_demo.py', 'target: tools/check_public_demo.py', 'source: tools/check_live_pages.py', 'target: tools/check_live_pages.py', 'source: tools/check_webmcp_origin_trial.py', 'target: tools/check_webmcp_origin_trial.py', 'source: tools/test_check_live_pages.py', 'target: tools/test_check_live_pages.py', 'source: tools/test_native_chrome_webmcp_live.py', 'target: tools/test_native_chrome_webmcp_live.py', 'source: distribution/public-workflows/live-pages-smoke.yml', 'target: .github/workflows/live-pages-smoke.yml', 'source: distribution/public-workflows/webmcp-origin-trial.yml', 'target: .github/workflows/webmcp-origin-trial.yml', 'transactional-typed-presentation-operation-log', 'github-pages-preserves-raw-skill-markdown', 'deployed-pages-matches-exact-public-sha', 'origin-trial-is-pinned-decoded-and-checked-before-webmcp-api']:
                 if expected not in policy:
                     errors.append(f'distribution/public-facade.yml: missing controlled facade rule {expected!r}')
 
@@ -199,6 +204,14 @@ def main() -> int:
     for unsafe in ['echo "sha=${{', '--expected-sha "${{', 'candidate="${{']:
         if unsafe in live_workflow:
             errors.append(f'.github/workflows/live-pages-smoke.yml: unsafe direct shell interpolation {unsafe!r}')
+
+    origin_trial_workflow = ROOT / '.github' / 'workflows' / 'webmcp-origin-trial.yml'
+    if PRIVATE_DEMO:
+        origin_trial_workflow = ROOT.parent / 'distribution' / 'public-workflows' / 'webmcp-origin-trial.yml'
+    origin_trial_text = origin_trial_workflow.read_text(encoding='utf-8')
+    for expected in ["schedule:", "cron: '17 6 * * 1'", 'tools/check_webmcp_origin_trial.py --html index.html', 'tools/check_webmcp_origin_trial.py --url https://andrew-veresov.github.io/explain-him/']:
+        if expected not in origin_trial_text:
+            errors.append(f'.github/workflows/webmcp-origin-trial.yml: missing expiry gate invariant {expected!r}')
 
     agents = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
     for expected in [

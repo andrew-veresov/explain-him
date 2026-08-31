@@ -6,6 +6,7 @@ import argparse
 from dataclasses import dataclass
 from hashlib import sha256
 from html.parser import HTMLParser
+import importlib.util
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -17,12 +18,19 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urljoin, urlparse, urlunparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
+
+ORIGIN_TRIAL_SPEC = importlib.util.spec_from_file_location("explain_him_origin_trial", Path(__file__).with_name("check_webmcp_origin_trial.py"))
+assert ORIGIN_TRIAL_SPEC and ORIGIN_TRIAL_SPEC.loader
+origin_trial = importlib.util.module_from_spec(ORIGIN_TRIAL_SPEC)
+sys.modules[ORIGIN_TRIAL_SPEC.name] = origin_trial
+ORIGIN_TRIAL_SPEC.loader.exec_module(origin_trial)
+
 DEFAULT_URL = "https://andrew-veresov.github.io/explain-him/"
 DEFAULT_REPOSITORY = "andrew-veresov/explain-him"
 SKILLS = ("skills/explain-him/SKILL.md", "skills/explain-him-presentation/SKILL.md")
 REQUIRED = ("", "assets/app.mjs", "assets/styles.css", "runtime/workspace.mjs", "runtime/webmcp.mjs", "explain-him.yaml", "schemas/explanation-block.v1.schema.json", "resolutions/2026-08-30-user-consumer-terminology.md", *SKILLS)
 MARKERS = {
-    "index.html": (b"andrew-veresov/explain-him", b"skills/explain-him/SKILL.md", b"skills/explain-him-presentation/SKILL.md", b"data-eh-block-id=\"workflow-diagram\""),
+    "index.html": (b"andrew-veresov/explain-him", b"skills/explain-him/SKILL.md", b"skills/explain-him-presentation/SKILL.md", b"data-eh-block-id=\"workflow-diagram\"", b"http-equiv=\"origin-trial\""),
     "assets/app.mjs": (b"registerWebMcpTools",),
     "runtime/webmcp.mjs": (b"explain-him-webmcp-contract.v2", b"get_explanation_contract", b"apply_explanation", b"andrew-veresov/explain-him", b"skills/explain-him/SKILL.md", b"skills/explain-him-presentation/SKILL.md"),
     "runtime/workspace.mjs": (b"explain-him-local-workspace.v3",),
@@ -177,6 +185,7 @@ def snapshot(root: Path, base: str, expected_sha: str, timeout: float, attempt: 
     errors: list[str] = []
     resources: dict[str, dict[str, Any]] = {}
     edges: list[dict[str, str]] = []
+    origin_trial_evidence: dict[str, Any] | None = None
     pending: list[tuple[str, str | None, str | None]] = [(safe_url(base, item) or base, None, None) for item in REQUIRED]
     seen: set[str] = set()
     while pending:
@@ -191,6 +200,14 @@ def snapshot(root: Path, base: str, expected_sha: str, timeout: float, attempt: 
             key = resource_key(base, url)
             marker_results = [{"marker": marker.decode("ascii"), "present": marker in result.body} for marker in MARKERS.get(key, ())]
             record = {"status": result.status, "final_url": result.final_url, "content_type": result.content_type, "bytes": len(result.body), "cache_bust": cache_bust, "live_sha256": sha256(result.body).hexdigest(), "local_sha256": sha256(local_bytes).hexdigest(), "local_exists": local.is_file(), "hash_match": result.body == local_bytes, "markers": marker_results}
+            if key == "index.html":
+                try:
+                    origin_trial_evidence = origin_trial.validate_html(result.body.decode("utf-8", errors="strict"), int(time.time()))
+                    record["origin_trial"] = origin_trial_evidence
+                except (UnicodeDecodeError, ValueError) as exc:
+                    origin_trial_evidence = {"status": "invalid", "error": str(exc)}
+                    record["origin_trial"] = origin_trial_evidence
+                    errors.append(f"index.html: WebMCP Origin Trial: {exc}")
             if key == "runtime/webmcp.mjs":
                 tool_names = re.findall(r"name:\s*'([^']+)'", result.body.decode("utf-8", errors="strict"))
                 record["tool_names"] = tool_names; record["exact_tool_names"] = tool_names == ["get_explanation_contract", "apply_explanation"]
@@ -216,7 +233,7 @@ def snapshot(root: Path, base: str, expected_sha: str, timeout: float, attempt: 
             if result.status != 404 or query_normalized(result.final_url) != query_normalized(url): errors.append(f"{url}: expected strict direct HTTP 404 without redirect")
         except (RuntimeError, ValueError) as exc:
             errors.append(str(exc))
-    return {"attempt": attempt, "resources": resources, "edges": edges, "errors": errors}
+    return {"attempt": attempt, "resources": resources, "edges": edges, "origin_trial": origin_trial_evidence, "errors": errors}
 
 
 def smoke(root: Path, base: str, expected_sha: str, repository: str, token: str, timeout: float, retries: int, require_provenance: bool = True) -> dict[str, Any]:
@@ -225,7 +242,7 @@ def smoke(root: Path, base: str, expected_sha: str, repository: str, token: str,
     chosen: dict[str, Any] | None = None
     for attempt in range(1, retries + 1):
         current = snapshot(root, base, expected_sha, timeout, attempt)
-        histories.append({"attempt": attempt, "resource_count": len(current["resources"]), "edge_count": len(current["edges"]), "resources": current["resources"], "edges": current["edges"], "errors": current["errors"]})
+        histories.append({"attempt": attempt, "resource_count": len(current["resources"]), "edge_count": len(current["edges"]), "resources": current["resources"], "edges": current["edges"], "origin_trial": current["origin_trial"], "errors": current["errors"]})
         if not current["errors"]:
             chosen = current; break
         if any("unsafe public resource" in error or "unsafe public resource path" in error for error in current["errors"]): break
@@ -237,11 +254,11 @@ def smoke(root: Path, base: str, expected_sha: str, repository: str, token: str,
         try: provenance = deployment_provenance(repository, expected_sha, base, token, timeout)
         except (RuntimeError, HTTPError, URLError, ValueError, json.JSONDecodeError) as exc: errors.append(f"deployment provenance: {exc}")
     root_url = safe_url(base, "") or base
-    return {"ok": not errors, "base_url": base, "expected_sha": expected_sha, "attempt_count": len(histories), "attempt_history": histories, "resources": final["resources"], "edges": final["edges"], "provenance": provenance, "errors": errors, "index_live_sha256": final["resources"].get(root_url, {}).get("live_sha256")}
+    return {"ok": not errors, "base_url": base, "expected_sha": expected_sha, "attempt_count": len(histories), "attempt_history": histories, "resources": final["resources"], "edges": final["edges"], "origin_trial": final["origin_trial"], "provenance": provenance, "errors": errors, "index_live_sha256": final["resources"].get(root_url, {}).get("live_sha256")}
 
 
 def redact(value: Any, token: str) -> Any:
-    if isinstance(value, dict): return {key: redact(item, token) for key, item in value.items()}
+    if isinstance(value, dict): return {key: "[redacted]" if key.lower() in {"token", "body", "raw"} else redact(item, token) for key, item in value.items()}
     if isinstance(value, list): return [redact(item, token) for item in value]
     if not isinstance(value, str): return value
     result = value.replace(token, "[redacted]") if token else value
@@ -256,6 +273,9 @@ def write_reports(report: dict[str, Any], json_path: Path, markdown_path: Path, 
     lines = ["# Explain Him live Pages smoke", "", f"- Result: {'PASS' if safe_report['ok'] else 'FAIL'}", f"- Expected SHA: `{safe_report['expected_sha']}`", f"- Trigger: `{safe_report.get('trigger', 'local')}`", f"- Run: `{safe_report.get('run_id', 'local')}`", f"- Attempts: {safe_report.get('attempt_count', 0)}", f"- Resources: {len(safe_report['resources'])}", ""]
     if safe_report.get("provenance"):
         lines.extend(["## Deployment provenance", "", f"- Deployment: `{safe_report['provenance'].get('deployment_id')}`", f"- State: `{safe_report['provenance'].get('state')}`", ""])
+    if safe_report.get("origin_trial"):
+        trial = safe_report["origin_trial"]
+        lines.extend(["## WebMCP Origin Trial", "", f"- Status: `{trial.get('status', 'invalid')}`", f"- Feature: `{trial.get('feature', 'unavailable')}`", f"- Origin: `{trial.get('origin', 'unavailable')}`", f"- Expiry: `{trial.get('expiry', 'unavailable')}`", f"- Version: `{trial.get('version', 'unavailable')}`", ""])
     if safe_report["errors"]:
         lines.extend(["## Errors", "", *[f"- {item}" for item in safe_report["errors"]], ""])
     markdown_path.write_text("\n".join(lines), encoding="utf-8")
@@ -281,7 +301,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.retries < 1 or args.timeout <= 0: raise ValueError("timeout must be positive and retries must be at least one")
         report = smoke(args.local_root.resolve(), args.url, args.expected_sha, args.repository, args.token, args.timeout, args.retries, not args.skip_deployment_provenance)
     except (RuntimeError, ValueError, HTTPError, URLError, json.JSONDecodeError) as exc:
-        report = {"ok": False, "base_url": args.url, "expected_sha": args.expected_sha, "attempt_count": 0, "attempt_history": [], "resources": {}, "edges": [], "provenance": None, "errors": [str(exc)], "index_live_sha256": None}
+        report = {"ok": False, "base_url": args.url, "expected_sha": args.expected_sha, "attempt_count": 0, "attempt_history": [], "resources": {}, "edges": [], "origin_trial": None, "provenance": None, "errors": [str(exc)], "index_live_sha256": None}
     report["trigger"] = args.trigger
     report["run_id"] = args.run_id
     write_reports(report, args.report, args.markdown_report, args.token)
