@@ -231,7 +231,10 @@ def main() -> int:
         'Protocol v3 transition and v2 fallback', 'compatibility fallback only',
         'Page-adaptation decision policy', 'apply_explanation` in the same turn is mandatory',
         '`User` and `Consumer` terminology correction', 'call `apply_explanation` in the same turn with a focus-only operation',
-        'chat only for a simple, correct answer', 'requested local page change was not applied'
+        'chat only for a simple, correct answer', 'requested local page change was not applied',
+        'assess both whether the grounded answer and the representation the user requested already exist correctly',
+        'A requested diagram that is absent counts as missing representation',
+        'An explicit instruction not to change the page overrides this matrix'
     ]:
         if expected not in skill:
             errors.append(f'SKILL.md: missing presentation/grounding rule {expected!r}')
@@ -246,7 +249,10 @@ def main() -> int:
         'Treat a topic as the stable semantic subject', 'Use `update` for a same-topic refinement',
         'replace every affected semantic target in one transaction',
         'same-turn `apply_explanation` call with a focus-only operation',
-        'requested local page change was not applied'
+        'requested local page change was not applied',
+        'The conversational answer is always required',
+        'Missing answer or representation: use `add`',
+        'An explicit no-page-change instruction means chat only'
     ]:
         if expected not in presentation_skill:
             errors.append(f'presentation SKILL.md: missing Protocol v3 policy {expected!r}')

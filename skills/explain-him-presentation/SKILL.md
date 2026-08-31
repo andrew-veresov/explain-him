@@ -158,17 +158,21 @@ Do not create a diagram just because diagrams are possible.
 
 ## Same-turn decision and topic reuse
 
-When the grounding skill identifies an explicit UI edit, a visible ambiguity, inconsistency, correction, same-topic refinement, or restore request, execute the selected `apply_explanation` transaction in the same turn. Do this before telling the user that the visible result changed.
+The conversational answer is always required. Before selecting an operation, assess whether both the grounded answer and the representation the user requested already exist correctly in the current Personalized UI. Do not infer that a requested diagram exists merely because equivalent prose exists.
 
-Treat a topic as the stable semantic subject plus its authored target and, once created, its returned `local-*` block ID. In the v2 fallback this identity is session-local agent state, not a new runtime field. Reuse it rather than adding duplicate blocks.
+- Fully present and correct for an ordinary question: do not apply and do not duplicate the result.
+- Fully present and correct for an explicit show or walkthrough: call `apply_explanation` in the same turn with focus only.
+- Missing answer or representation: use `add`; an absent requested diagram is missing representation.
+- Partial result: use `update` on the existing same-topic local block, or add a supplementary block when no such block exists.
+- Inconsistent result: use `replace` for an authored target or `update` for a local block, batching every affected target in one transaction.
+- An explicit no-page-change instruction means chat only, even if a page adaptation would otherwise be appropriate.
+- Explicit restore: use `remove` to return to the Originator's version.
 
-- Use `add` for a new local topic beside an authored target.
-- Use `replace` for a visible authored-target correction or a user-local simplification.
-- Use `update` for a same-topic refinement and preserve the returned local ID.
-- Use `remove` for an explicit restore of the Originator's version.
-- For a walkthrough or existing correct content with no content change, call `apply_explanation` in the same turn with a focus-only operation. Do not use it instead of a required edit or correction.
+When this matrix selects an operation, `apply_explanation` in the same turn is mandatory. Use chat only for a simple, correct answer whose answer and requested representation are already fully present and that is not a show or walkthrough request.
 
-For a visible `User`/`Consumer` inconsistency, replace every affected semantic target in one transaction so Personalized view does not present a mixed terminology. The preferred user-facing local term is `User`; the authored source remains immutable.
+Treat a topic as the stable semantic subject plus its authored target and, once created, its returned `local-*` block ID. In the v2 fallback this identity is session-local agent state, not a new runtime field. Reuse it rather than adding duplicate blocks. Use `update` for a same-topic refinement when that existing local block is partial or needs a refined grounded result. Do not tell the user that a page result changed until the selected same-turn transaction succeeds.
+
+For a visible `User` and `Consumer` terminology correction, update or replace every affected semantic target in one transaction so Personalized view does not present mixed terminology. The preferred user-facing local term is `User` unless the user requests Consumer; the authored source remains immutable.
 
 ## Provenance
 

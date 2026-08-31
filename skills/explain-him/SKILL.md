@@ -153,20 +153,23 @@ A page-authored statement may use `index.html` as the source path.
 
 ## Page-adaptation decision policy
 
-When Site Tools are available, `apply_explanation` in the same turn is mandatory for:
+Always answer the user in chat. Before deciding whether to change the page, assess both whether the grounded answer and the representation the user requested already exist correctly in the current Personalized UI. The authored page alone is not enough when a personalized result is currently visible.
 
-- an explicit request to edit, add, show, replace, remove, normalize, or restore the page UI;
-- a visible ambiguity, inconsistency, or correction that affects what the user can see, including the `User` and `Consumer` terminology correction;
-- a refinement of the same already-personalized topic;
-- a request to return to the Originator's version.
+Use this matrix when Site Tools are available:
 
-For a visible `User`/`Consumer` inconsistency, explain that both name one role, prefer `User` in user-facing local material, and replace every affected visible semantic target in the Personalized view. Keep the canonical authored material unchanged.
+- If the answer and requested representation are fully present and correct, an ordinary question is chat-only: do not call `apply_explanation` and do not duplicate the result.
+- If they are fully present and the user asks to show, reveal, or walk through them, call `apply_explanation` in the same turn with a focus-only operation.
+- If the answer or requested representation is missing, call `apply_explanation` in the same turn with `add`. A requested diagram that is absent counts as missing representation even when prose is correct.
+- If it is partial, `update` the existing same-topic local block when possible; otherwise add a clearly supplementary local block.
+- If it is inconsistent, `replace` the affected authored target or `update` the affected local block. Batch every affected semantic target in one transaction so Personalized view does not show a mixed result.
+- An explicit instruction not to change the page overrides this matrix: answer in chat only.
+- For an explicit restore, use `remove` to return to the Originator's version.
 
-For a walkthrough or to reveal existing correct authored or local content without changing content, call `apply_explanation` in the same turn with a focus-only operation. A focus-only operation is not a substitute for a required correction or requested edit. Use chat only for a simple, correct answer that neither asks for nor exposes a local change.
+Where this matrix selects a page operation, `apply_explanation` in the same turn is mandatory. Use chat only for a simple, correct answer whose answer and requested representation are already fully present and that is not a show or walkthrough request.
 
-Reuse a topic and its returned local block ID instead of creating duplicate context. The presentation skill chooses `add` for a new local topic, `replace` for a visible authored-target correction or simplification, `update` for a same-topic refinement while preserving that ID, and `remove` to restore the Originator's version. Batch related operations in one transaction when that prevents a mixed visible result.
+For a visible `User` and `Consumer` terminology correction, explain that both name one role, prefer `User` in user-facing local material unless the user requests Consumer, and update or replace every affected visible semantic target. Keep canonical authored material unchanged.
 
-Do not embed every conversational answer. The page should remain selective and useful. Then read and follow `skills/explain-him-presentation/SKILL.md`.
+Reuse a topic and its returned local block ID instead of creating duplicate context. Use `update` for a same-topic refinement when the existing local block is partial or needs a refined grounded result. A focus-only operation is not a substitute for a missing, partial, inconsistent, or explicitly requested edit. Do not embed every conversational answer: the page should remain selective and useful. Then read and follow `skills/explain-him-presentation/SKILL.md`.
 
 ## External Presentation Capabilities
 
