@@ -243,8 +243,14 @@ def main() -> int:
         'Additional contract calls are allowed only for a confirmed stale-workspace or session-conflict refresh',
         'Protocol v3 transition and v2 fallback', 'compatibility fallback only',
         'Page-adaptation decision policy', 'apply_explanation` in the same turn is mandatory',
-        '`User` and `Consumer` terminology correction', 'call `apply_explanation` in the same turn with a focus-only operation',
-        'chat only for a simple, correct answer', 'requested local page change was not applied'
+        'call `apply_explanation` in the same turn with a focus-only operation',
+        'chat only for a simple, correct answer', 'requested local page change was not applied',
+        'Terminology consistency precedes fully-present',
+        'An equivalence note does not make mixed labels consistent',
+        'An explicit no-page-change instruction still wins',
+        'Do not normalize labels that denote distinct roles',
+        'use `replace` on `workflow-diagram`',
+        'same returned local block ID'
     ]:
         if expected not in skill:
             errors.append(f'SKILL.md: missing presentation/grounding rule {expected!r}')
@@ -257,9 +263,14 @@ def main() -> int:
         'confirmed stale-workspace or session-conflict refresh',
         'temporary compatibility fallback', 'Same-turn decision and topic reuse',
         'Treat a topic as the stable semantic subject', 'Use `update` for a same-topic refinement',
-        'replace every affected semantic target in one transaction',
+        'Batch any other affected equivalent-label targets in the same transaction',
         'same-turn `apply_explanation` call with a focus-only operation',
-        'requested local page change was not applied'
+        'requested local page change was not applied',
+        'An equivalence note does not make mixed labels consistent',
+        'explicit no-page-change instruction still wins',
+        'Do not normalize labels that denote distinct roles',
+        '`replace` for `workflow-diagram`',
+        'same returned local block ID'
     ]:
         if expected not in presentation_skill:
             errors.append(f'presentation SKILL.md: missing Protocol v3 policy {expected!r}')

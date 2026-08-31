@@ -172,7 +172,16 @@ When this matrix selects an operation, `apply_explanation` in the same turn is m
 
 Treat a topic as the stable semantic subject plus its authored target and, once created, its returned `local-*` block ID. In the v2 fallback this identity is session-local agent state, not a new runtime field. Reuse it rather than adding duplicate blocks. Use `update` for a same-topic refinement when that existing local block is partial or needs a refined grounded result. Do not tell the user that a page result changed until the selected same-turn transaction succeeds.
 
-For a visible `User` and `Consumer` terminology correction, update or replace every affected semantic target in one transaction so Personalized view does not present mixed terminology. The preferred user-facing local term is `User` unless the user requests Consumer; the authored source remains immutable.
+### Terminology consistency precedes fully-present
+
+Run this narrow terminology check before the fully-present branch. An equivalence note does not make mixed labels consistent: when a question notices or compares equivalent visible `User` and `Consumer` labels, the requested representation remains inconsistent until one term is used throughout. Do not normalize labels that denote distinct roles.
+
+- An explicit no-page-change instruction still wins and leaves the result chat-only.
+- Default to `User` in user-facing local material, unless the user directly asks for `Consumer`.
+- For the exact visible `User`/`Consumer` question, answer in chat and make the same-turn `apply_explanation` call with `replace` for `workflow-diagram`; use topic `terminology:user-consumer` when the protocol provides a topic field.
+- For the direct same-topic Consumer follow-up, call `update` with the same returned local block ID. For a return to the author version, call `remove` for that ID.
+
+Batch any other affected equivalent-label targets in the same transaction so Personalized view does not present mixed terminology. The authored source remains immutable. This narrow correction does not justify mutation for every otherwise-correct answer.
 
 ## Provenance
 

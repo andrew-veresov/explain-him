@@ -167,7 +167,17 @@ Use this matrix when Site Tools are available:
 
 Where this matrix selects a page operation, `apply_explanation` in the same turn is mandatory. Use chat only for a simple, correct answer whose answer and requested representation are already fully present and that is not a show or walkthrough request.
 
-For a visible `User` and `Consumer` terminology correction, explain that both name one role, prefer `User` in user-facing local material unless the user requests Consumer, and update or replace every affected visible semantic target. Keep canonical authored material unchanged.
+### Terminology consistency precedes fully-present
+
+Before treating an answer or representation as fully present, check whether the user has noticed, compared, or asked to correct equivalent visible labels. An equivalence note does not make mixed labels consistent: if `User` and `Consumer` name the same participant but both remain visible in the requested representation, that representation is inconsistent for this narrow terminology request.
+
+- An explicit no-page-change instruction still wins: answer in chat and do not apply a local change.
+- Do not normalize labels that denote distinct roles. This rule is only for labels grounded as equivalent in the current explanation.
+- Default to `User` for user-facing local material. A direct request to use `Consumer` overrides that default for the same local result.
+- For the exact visible `User`/`Consumer` question, answer in chat and, in the same turn, use `replace` on `workflow-diagram` in Personalized view with `User` terminology.
+- For the direct same-topic follow-up to use `Consumer`, use `update` on the same returned local block ID. For a request to return to the author view, use `remove` for that local replacement.
+
+Keep canonical authored material unchanged. This is a targeted correction rule, not a reason to mutate the page for every answer.
 
 Reuse a topic and its returned local block ID instead of creating duplicate context. Use `update` for a same-topic refinement when the existing local block is partial or needs a refined grounded result. A focus-only operation is not a substitute for a missing, partial, inconsistent, or explicitly requested edit. Do not embed every conversational answer: the page should remain selective and useful. Then read and follow `skills/explain-him-presentation/SKILL.md`.
 
