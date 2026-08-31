@@ -34,7 +34,7 @@ class LivePagesSmokeTest(unittest.TestCase):
             'assets/app.mjs': "import '../runtime/workspace.mjs'; registerWebMcpTools(); webmcpProtocol",
             'assets/styles.css': 'body { color: #111; }',
             'runtime/workspace.mjs': 'explain-him-local-workspace.v4',
-            'runtime/webmcp.mjs': "explain-him-webmcp-contract.v3 get_explanation_contract apply_explanation IMMUTABLE_SKILL_PROOF 00c89a7c4ef2133189399ba820f92addacdf9b57 decisionPrecedence terminologyConsistency name: 'get_explanation_contract' name: 'apply_explanation' workflow-diagram",
+            'runtime/webmcp.mjs': "explain-him-webmcp-contract.v3 get_explanation_contract apply_explanation IMMUTABLE_SKILL_PROOF d311a3aa74c78292619ce966e0281f20d9599fdc decisionPrecedence terminologyConsistency name: 'get_explanation_contract' name: 'apply_explanation' workflow-diagram",
             'explain-him.yaml': 'repository: andrew-veresov/explain-him\nentrypoint: skills/explain-him/SKILL.md\nentrypoint: skills/explain-him-presentation/SKILL.md\nstate_model: transactional-typed-presentation-operation-log\n- get_explanation_contract\n- apply_explanation\n',
             'schemas/explanation-block.v1.schema.json': '{}',
             'schemas/webmcp-contract.v3.schema.json': '{}',

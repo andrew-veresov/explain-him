@@ -6,15 +6,15 @@ export const EXPLANATION_BLOCK_TYPES = Object.freeze(['callout', 'comparison', '
 export const WEBMCP_PROTOCOL_VERSION = 3;
 const REPOSITORY = 'andrew-veresov/explain-him';
 const REPOSITORY_URL = `https://github.com/${REPOSITORY}`;
-const SKILL_COMMIT = '00c89a7c4ef2133189399ba820f92addacdf9b57';
+const SKILL_COMMIT = 'd311a3aa74c78292619ce966e0281f20d9599fdc';
 export const IMMUTABLE_SKILL_PROOF = Object.freeze([
-  { id: 'explain-him', commit: SKILL_COMMIT, sha256: '5269da73500bdeab7dd1397525d1abed4477ad35ca0ae7a3db72cbeb5e706a1e', path: 'skills/explain-him/SKILL.md', url: `https://raw.githubusercontent.com/${REPOSITORY}/${SKILL_COMMIT}/skills/explain-him/SKILL.md`, responsibility: 'grounding-and-repository-retrieval' },
-  { id: 'explain-him-presentation', commit: SKILL_COMMIT, sha256: '620966939aa4df93d452ee04754375f6a6ac4dcccd4d50f0234574b5abda8902', path: 'skills/explain-him-presentation/SKILL.md', url: `https://raw.githubusercontent.com/${REPOSITORY}/${SKILL_COMMIT}/skills/explain-him-presentation/SKILL.md`, responsibility: 'typed-page-presentation-and-guided-focus' }
+  { id: 'explain-him', commit: SKILL_COMMIT, sha256: '20060aea4e38f7fd30f3188bb7a5c820f053867002282f4db602904f1ccde731', path: 'skills/explain-him/SKILL.md', url: `https://raw.githubusercontent.com/${REPOSITORY}/${SKILL_COMMIT}/skills/explain-him/SKILL.md`, responsibility: 'grounding-and-repository-retrieval' },
+  { id: 'explain-him-presentation', commit: SKILL_COMMIT, sha256: '5daacfb575b6a230f50c92d4c590b21a08d6d148d75c60e13418edc76fb3ec4b', path: 'skills/explain-him-presentation/SKILL.md', url: `https://raw.githubusercontent.com/${REPOSITORY}/${SKILL_COMMIT}/skills/explain-him-presentation/SKILL.md`, responsibility: 'typed-page-presentation-and-guided-focus' }
 ]);
 const LOAD_ORDER = Object.freeze(IMMUTABLE_SKILL_PROOF.map((item) => item.id));
 const HANDSHAKE_FIELDS = Object.freeze(['requestId', 'expectedWorkspaceRevision', 'explanationId', 'topicId', 'operations', 'handshake']);
 const AGENT_POLICY = Object.freeze({
-  revision: 'A3',
+  revision: 'A4',
   bootstrap: { requiredOnPageActivation: true, beforeFirstPageAnswer: true },
   skillLoading: { required: true, loadOrder: LOAD_ORDER },
   decisionPrecedence: ['explicitNoPageChange', 'restore', 'terminologyConsistency', 'answerPresence'],

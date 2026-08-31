@@ -178,17 +178,17 @@ def main() -> int:
         'live_validation: tools/check_live_pages.py', 'native_live_validation: tools/test_native_chrome_webmcp_live.py',
         'host_guarantee: false', 'protocol_version: 3', 'contract_schema: schemas/webmcp-contract.v3.schema.json',
         'apply_schema: schemas/webmcp-apply.v3.schema.json', 'schema_version: explain-him-local-workspace.v4',
-        'commit: 00c89a7c4ef2133189399ba820f92addacdf9b57',
-        'sha256: 5269da73500bdeab7dd1397525d1abed4477ad35ca0ae7a3db72cbeb5e706a1e',
-        'sha256: 620966939aa4df93d452ee04754375f6a6ac4dcccd4d50f0234574b5abda8902',
+        'commit: d311a3aa74c78292619ce966e0281f20d9599fdc',
+        'sha256: 20060aea4e38f7fd30f3188bb7a5c820f053867002282f4db602904f1ccde731',
+        'sha256: 5daacfb575b6a230f50c92d4c590b21a08d6d148d75c60e13418edc76fb3ec4b',
         'activation_handshake: fail-closed',
-        'revision: A3', 'decisionPrecedence: [explicitNoPageChange, restore, terminologyConsistency, answerPresence]',
+        'revision: A4', 'decisionPrecedence: [explicitNoPageChange, restore, terminologyConsistency, answerPresence]',
         'equivalenceNoteDoesNotMakeMixedLabelsConsistent: true',
         'presentationDecision:', 'alwaysProvideChatAnswer: true',
         'assessAnswerAndRequestedRepresentationInPersonalizedUi: true',
         'fullyPresent: {ordinaryQuestion: chat-only, showOrWalkthrough: focus-only}',
         'failure: {applyFailure: honest-acknowledgement-no-false-success}',
-        'rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/00c89a7c4ef2133189399ba820f92addacdf9b57/'
+        'rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/d311a3aa74c78292619ce966e0281f20d9599fdc/'
     ]:
         if expected not in manifest:
             errors.append(f'explain-him.yaml: missing invariant {expected!r}')
@@ -293,7 +293,7 @@ def main() -> int:
     for name in PUBLIC_WEBMCP_TOOLS:
         if f"'{name}'" not in webmcp:
             errors.append(f'runtime/webmcp.mjs: missing public WebMCP tool {name}')
-    for expected in ['explain-him-webmcp-contract.v3', 'IMMUTABLE_SKILL_PROOF', '00c89a7c4ef2133189399ba820f92addacdf9b57', "revision: 'A3'", 'decisionPrecedence', 'terminologyConsistency', 'Call this first, before answering any question about this page or loading Explain Him skills', 'Keep Personalized UI Consistent', 'same turn whenever that answer reveals missing, partial, or inconsistent visible Personalized UI', 'Activation handshake is stale', 'topicId', 'presentationDecision', 'alwaysProvideChatAnswer: true', 'honest-acknowledgement-no-false-success', 'focusOnlyChangesRevision: false']:
+    for expected in ['explain-him-webmcp-contract.v3', 'IMMUTABLE_SKILL_PROOF', 'd311a3aa74c78292619ce966e0281f20d9599fdc', "revision: 'A4'", 'decisionPrecedence', 'terminologyConsistency', 'Call this first, before answering any question about this page or loading Explain Him skills', 'Keep Personalized UI Consistent', 'same turn whenever that answer reveals missing, partial, or inconsistent visible Personalized UI', 'Activation handshake is stale', 'topicId', 'presentationDecision', 'alwaysProvideChatAnswer: true', 'honest-acknowledgement-no-false-success', 'focusOnlyChangesRevision: false']:
         if expected not in webmcp:
             errors.append(f'runtime/webmcp.mjs: missing Protocol v3 invariant {expected!r}')
     for name in OBSOLETE_PUBLIC_TOOLS:

@@ -32,7 +32,7 @@ REQUIRED = ("", "assets/app.mjs", "assets/styles.css", "runtime/workspace.mjs", 
 MARKERS = {
     "index.html": (b"andrew-veresov/explain-him", b"skills/explain-him/SKILL.md", b"skills/explain-him-presentation/SKILL.md", b"data-eh-block-id=\"workflow-diagram\"", b"data-scroll-section=\"how-it-works\"", b"data-scroll-section=\"how-to-express\"", b"Ask your agent how to express your own idea with Explain Him.", b"http-equiv=\"origin-trial\""),
     "assets/app.mjs": (b"registerWebMcpTools", b"webmcpProtocol"),
-    "runtime/webmcp.mjs": (b"explain-him-webmcp-contract.v3", b"get_explanation_contract", b"apply_explanation", b"IMMUTABLE_SKILL_PROOF", b"00c89a7c4ef2133189399ba820f92addacdf9b57", b"decisionPrecedence", b"terminologyConsistency"),
+    "runtime/webmcp.mjs": (b"explain-him-webmcp-contract.v3", b"get_explanation_contract", b"apply_explanation", b"IMMUTABLE_SKILL_PROOF", b"d311a3aa74c78292619ce966e0281f20d9599fdc", b"decisionPrecedence", b"terminologyConsistency"),
     "runtime/workspace.mjs": (b"explain-him-local-workspace.v4",),
     "explain-him.yaml": (b"repository: andrew-veresov/explain-him", b"entrypoint: skills/explain-him/SKILL.md", b"entrypoint: skills/explain-him-presentation/SKILL.md", b"state_model: transactional-typed-presentation-operation-log", b"- get_explanation_contract", b"- apply_explanation"),
     "resolutions/2026-08-30-user-consumer-terminology.md": (b"Status: accepted", b"`User` and `Consumer` refer to the same participant", b"`User` is the preferred term"),
