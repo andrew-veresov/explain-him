@@ -29,16 +29,14 @@ Do not defer this bootstrap until after answering when Site Tools are available.
 
 `get_explanation_contract` is a page contract, not a knowledge-search API. Do not expect WebMCP to answer questions or read GitHub.
 
-## Protocol v3 transition and v2 fallback
+## Protocol selection and legacy v2 fallback
 
-Protocol v3 is the intended activation protocol. It will bind the bootstrap to an activation nonce and to immutable, independently verifiable published skill artifacts before an agent can mutate the local page. Until the runtime exposes that handshake, the present `explain-him-webmcp-contract.v2` response is a compatibility fallback only.
+Select the protocol only from the returned `schemaVersion`; never infer it from this skill, a page label, or an earlier session.
 
-With the v2 fallback:
-
-- still call and validate the contract first;
-- load the repository-scoped skill paths returned by that contract and follow their current content;
-- use the returned revision and local IDs for safe application;
-- do not invent a nonce, immutable artifact digest, protocol-v3 field, or claim that the v3 handshake ran.
+- A returned `explain-him-webmcp-contract.v3` requires the full Protocol v3 activation handshake. Verify the returned activation ID and nonce, exact ordered `skillProof`, immutable raw skill URLs, commits, and digests before loading the skills. Send the complete v3 handshake with every `apply_explanation` request.
+- Never downgrade or translate a returned v3 contract to v2. A v3 contract stays v3 for that activation, including its revision and local block IDs.
+- An actual older page may return `explain-him-webmcp-contract.v2`. That is the legacy compatibility fallback only: validate its returned fields, use only its supported capabilities, and do not invent a nonce, immutable artifact digest, or other v3 field.
+- An absent or unknown contract version cannot authorize a page mutation or focus.
 
 If the Site Tools host is absent, record that the bootstrap was unavailable, use the chat-only fallback below, and never claim a page mutation.
 

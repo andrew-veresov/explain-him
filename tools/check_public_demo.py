@@ -243,7 +243,8 @@ def main() -> int:
         'Repository-authored artifacts are English', 'provenance', 'Archify', 'Never present',
         'Mandatory activation bootstrap', 'make one initial `get_explanation_contract` call for this activation',
         'Additional contract calls are allowed only for a confirmed stale-workspace or session-conflict refresh',
-        'Protocol v3 transition and v2 fallback', 'compatibility fallback only',
+        'Protocol selection and legacy v2 fallback', 'Select the protocol only from the returned `schemaVersion`',
+        'Never downgrade or translate a returned v3 contract to v2', 'An actual older page may return `explain-him-webmcp-contract.v2`',
         'Page-adaptation decision policy', 'apply_explanation` in the same turn is mandatory',
         'call `apply_explanation` in the same turn with a focus-only operation',
         'chat only for a simple, correct answer', 'requested local page change was not applied',
@@ -263,7 +264,8 @@ def main() -> int:
     for expected in [
         'Mandatory activation bootstrap', 'reuse the initial `get_explanation_contract` result for this activation',
         'confirmed stale-workspace or session-conflict refresh',
-        'temporary compatibility fallback', 'Same-turn decision and topic reuse',
+        'Protocol selection and legacy v2 fallback', 'Select the protocol only from the returned `schemaVersion`',
+        'Never downgrade or translate a returned v3 contract to v2', 'actual older page may return `explain-him-webmcp-contract.v2`', 'Same-turn decision and topic reuse',
         'Treat a topic as the stable semantic subject', 'Use `update` for a same-topic refinement',
         'Batch any other affected equivalent-label targets in the same transaction',
         'same-turn `apply_explanation` call with a focus-only operation',
@@ -276,6 +278,10 @@ def main() -> int:
     ]:
         if expected not in presentation_skill:
             errors.append(f'presentation SKILL.md: missing Protocol v3 policy {expected!r}')
+    for skill_name, skill_text in [('SKILL.md', skill), ('presentation SKILL.md', presentation_skill)]:
+        for stale in ['The current runtime returns `explain-him-webmcp-contract.v2`', 'the present `explain-him-webmcp-contract.v2` response']:
+            if stale in skill_text:
+                errors.append(f'{skill_name}: stale current-runtime v2 assertion {stale!r}')
 
     webmcp = (ROOT / 'runtime/webmcp.mjs').read_text(encoding='utf-8')
     if 'environment?.document?.modelContext' not in webmcp or "source: 'document.modelContext'" not in webmcp:

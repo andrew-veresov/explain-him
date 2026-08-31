@@ -22,7 +22,14 @@ Before using this skill:
 5. preserve repository provenance and status;
 6. retain the contract workspace revision, authored target IDs, and local block IDs until the transaction completes.
 
-The current runtime returns `explain-him-webmcp-contract.v2`. It is a temporary compatibility fallback: it has no Protocol v3 activation nonce or immutable skill-artifact pin. Validate and use the v2 contract, but never claim that the v3 handshake ran. If the contract was unavailable, this skill cannot mutate or focus the page.
+## Protocol selection and legacy v2 fallback
+
+Select the protocol only from the returned `schemaVersion`; this skill must not relabel, downgrade, or translate a returned contract.
+
+- A returned `explain-him-webmcp-contract.v3` requires its full activation handshake, including the activation ID, nonce, base revision, and exact ordered `skillProof`. Verify the immutable raw URLs, commits, and digests before applying a typed result, then send the complete v3 handshake unchanged with `apply_explanation`.
+- Never downgrade or translate a returned v3 contract to v2. Retain its revision, topic, and local block IDs for the current activation.
+- An actual older page may return `explain-him-webmcp-contract.v2`. Use that legacy compatibility fallback only with the fields it actually returns. Do not fabricate v3 activation or proof fields, and do not claim that a v3 handshake ran.
+- If the contract is absent or has an unknown version, this skill cannot mutate or focus the page.
 
 The contract tells you:
 
