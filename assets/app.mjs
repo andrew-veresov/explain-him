@@ -67,21 +67,22 @@ function refreshWebMcpCopy() {
   const card = status?.closest?.('.contract-card');
   const heading = card?.querySelector?.('h3');
   const copy = card?.querySelector?.('p');
-  if (heading) heading.textContent = 'WebMCP readiness';
-  if (copy) copy.textContent = 'Page registration and agent connection are reported separately. Two tools only: discover the contract, then apply safe typed blocks.';
+  if (heading) heading.textContent = 'WebMCP runtime status';
+  if (copy) copy.textContent = 'Protocol v3 exposes exactly two page tools: get_explanation_contract and apply_explanation. A 2/2 page status confirms registration, not an agent connection.';
 }
 
 function installWebMcpDemoCard() {
   if (byId('webmcp-demo-card')) return;
-  const anchor = document.querySelector('[data-eh-local-slot="flow-model"]')
+  const anchor = byId('developer-demo-anchor')
+    || document.querySelector('[data-eh-local-slot="flow-model"]')
     || document.querySelector('[data-eh-block-id="flow-model"]');
   if (!anchor?.parentNode) return;
 
   const card = make('section', undefined, 'browser-agent-note');
   card.id = 'webmcp-demo-card';
   card.dataset.webmcpDemo = 'challenge';
-  const heading = make('strong', 'Try the skill-driven WebMCP flow');
-  const copy = make('p', 'The agent grounds the answer from the page/repository, then WebMCP embeds only the typed result into this shared surface.');
+  const heading = make('strong', 'WebMCP test prompts');
+  const copy = make('p', 'For runtime testing, the agent grounds an answer from the page and repository before WebMCP delivers only the typed visual result.');
   const prompts = make('ol');
   for (const prompt of [
     'Explain this idea, then add a short workflow showing how the explanation is produced.',
@@ -248,7 +249,7 @@ async function main() {
         provenance: { sourceBlockIds: [targetId], repositoryRefs: [] }
       });
       setWorkspaceRevision(workspace.getContext?.().workspaceRevision ?? 0);
-      feedback.textContent = byId('agent-placement')?.value === 'replace' ? 'Replaced locally in the personalized view.' : 'Added to the browser-local workspace.';
+      feedback.textContent = byId('agent-placement')?.value === 'replace' ? 'Test block replaced the target in the personalized view.' : 'Test block applied to the browser-local workspace.';
     } catch (error) {
       feedback.textContent = String(error?.message || error);
     }

@@ -133,12 +133,20 @@ def main() -> int:
     parser.feed(html)
     if '<html lang="en">' not in html:
         errors.append('index.html: project page language must be English')
-    for expected in ['class="section-nav"', 'aria-label="Explanation sections"', 'data-scroll-section="how-it-works"', 'data-scroll-section="how-to-express"', 'id="how-it-works"', 'class="continuous-section"', 'id="how-to-express"', 'class="continuous-section continuous-section-expression"', 'Ask your agent how to express your own idea with Explain Him.', 'role="group"', 'aria-label="Explanation view"', 'id="webmcp-status"', 'role="status"', 'aria-live="polite"', 'id="webmcp-page-status"', 'Page WebMCP API – checking', 'id="webmcp-agent-status"', 'Agent connection – not observed', 'id="webmcp-contract-status"', 'Contract – not activated', 'id="webmcp-revision-status"', 'Workspace revision – 0', 'id="source-toggle"', 'aria-controls="source-drawer"', 'id="source-drawer"', 'class="source-drawer"', 'role="region"', 'aria-labelledby="source-drawer-title"']:
+    for expected in ['class="section-nav"', 'aria-label="Explanation sections"', 'data-scroll-section="how-it-works"', 'data-scroll-section="how-to-express"', 'id="how-it-works"', 'class="continuous-section"', 'id="how-to-express"', 'class="continuous-section continuous-section-expression"', 'Express your idea once. Explain Him explains it to everyone.', 'Ask your agent how to express your own idea with Explain Him.', 'id="developer-details"', '<summary>For developers: how it works internally</summary>', 'role="group"', 'aria-label="Explanation view"', 'id="webmcp-status"', 'role="status"', 'aria-live="polite"', 'id="webmcp-page-status"', 'Page WebMCP API – checking', 'id="webmcp-agent-status"', 'Agent connection – not observed', 'id="webmcp-contract-status"', 'Contract – not activated', 'id="webmcp-revision-status"', 'Workspace revision – 0', 'id="source-toggle"', 'aria-controls="source-drawer"', 'id="source-drawer"', 'class="source-drawer"', 'role="region"', 'aria-labelledby="source-drawer-title"']:
         if expected not in html:
             errors.append(f'index.html: missing accessible UI invariant {expected!r}')
-    for obsolete in ['role="tablist"', 'role="tab"', 'role="tabpanel"', 'data-section-panel=', 'data-section="flow"']:
+    if len(re.findall(r'<h1(?:\s|>)', html)) != 1:
+        errors.append('index.html: exactly one h1 is required')
+    if html.count('class="action-step"') != 6:
+        errors.append('index.html: the reader story must contain exactly six steps')
+    header_css = (ROOT / 'assets/header.css').read_text(encoding='utf-8')
+    for obsolete in ['.action-sequence::after', '.action-sequence .action-steps']:
+        if obsolete in header_css:
+            errors.append(f'assets/header.css: six-step reader story must remain visible; found {obsolete!r}')
+    for obsolete in ['role="tablist"', 'role="tab"', 'role="tabpanel"', 'data-section-panel=', 'data-section="flow"', 'Local explanation', 'Who does what', 'Three roles']:
         if obsolete in html:
-            errors.append(f'index.html: obsolete hidden-tab UI remains {obsolete!r}')
+            errors.append(f'index.html: obsolete primary-story UI remains {obsolete!r}')
     for expected in [
         'name="explain-him-repository"', 'content="andrew-veresov/explain-him"',
         'name="explain-him-skill"', 'content="skills/explain-him/SKILL.md"',

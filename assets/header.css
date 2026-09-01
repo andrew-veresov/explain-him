@@ -115,51 +115,6 @@
   z-index: 50;
 }
 
-/* Canonical Archify-authored How it works view. The original ordered list stays
-   in the DOM as an accessibility/fallback source; no external renderer runtime
-   is executed by the page. */
-.action-sequence {
-  overflow-x: auto;
-  padding-bottom: 6px;
-}
-
-.action-sequence .action-steps,
-.action-sequence .action-principle {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  margin: -1px !important;
-  overflow: hidden !important;
-  clip: rect(0, 0, 0, 0) !important;
-  white-space: nowrap !important;
-  border: 0 !important;
-}
-
-.action-sequence-head > p {
-  font-size: 0;
-}
-
-.action-sequence-head > p::after {
-  content: "Archify workflow";
-  font-size: 13px;
-  color: var(--muted);
-  font-weight: 700;
-}
-
-.action-sequence::after {
-  content: "";
-  display: block;
-  width: 100%;
-  min-width: 960px;
-  aspect-ratio: 1200 / 720;
-  margin-top: 14px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: #f6f7f9 url("diagrams/how-it-works.workflow.svg") center / contain no-repeat;
-  box-shadow: 0 12px 32px rgba(31, 42, 61, .07);
-}
-
 @media (max-width: 720px) {
   .topbar {
     min-height: 60px;
@@ -191,7 +146,4 @@
     inset: 60px 0 0 auto;
   }
 
-  .action-sequence::after {
-    min-width: 920px;
-  }
 }

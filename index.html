@@ -9,8 +9,25 @@
     />
     <meta
       name="description"
-      content="Explain Him – public interactive explanation"
+      content="Publish your idea once. Explain Him helps each person's AI agent explain it at the right depth without changing the original."
     />
+    <link rel="canonical" href="https://andrew-veresov.github.io/explain-him/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Explain Him – Your idea, explained for everyone" />
+    <meta
+      property="og:description"
+      content="Publish your idea once. Each person's AI agent can explain it at the right depth in the conversation they already use."
+    />
+    <meta property="og:url" content="https://andrew-veresov.github.io/explain-him/" />
+    <meta
+      property="og:image"
+      content="https://andrew-veresov.github.io/explain-him/assets/diagrams/how-it-works.workflow.svg"
+    />
+    <meta
+      property="og:image:alt"
+      content="Explain Him workflow from author to personal AI explanation"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="explain-him-id" content="explain-him-public-demo" />
     <meta name="explain-him-revision" content="public-facade-v4" />
     <meta name="explain-him-repository" content="andrew-veresov/explain-him" />
@@ -70,7 +87,7 @@
         ]
       }
     </script>
-    <title>Explain Him – public demo</title>
+    <title>Explain Him – Your idea, explained for everyone</title>
     <link rel="stylesheet" href="assets/styles.css" />
     <link rel="stylesheet" href="assets/header.css" />
     <style>
@@ -253,12 +270,6 @@
           ><span class="menu-line" aria-hidden="true"></span>
         </summary>
         <div class="menu-panel">
-          <div class="menu-meta">
-            <span class="status-pill status-demo">demo-only UI</span
-            ><span id="workspace-summary" class="workspace-summary"
-              >Personalized · 0 local explanations</span
-            >
-          </div>
           <div
             class="workspace-view-toggle"
             role="group"
@@ -280,8 +291,6 @@
           </div>
           <a class="menu-link" href="README.md" target="_blank"
             >About / README</a
-          ><button id="workspace-history-open" type="button">History</button
-          ><button id="workspace-export" type="button">Export</button
           ><button id="workspace-reset" class="danger-action" type="button">
             Restore original</button
           ><button
@@ -299,8 +308,12 @@
       <section class="explanation-panel">
         <div class="panel-heading">
           <div>
-            <p class="eyebrow">Visual explanation</p>
-            <h1>Explain Him</h1>
+            <p class="eyebrow">Explain Him</p>
+            <h1>Express your idea once. Explain Him explains it to everyone.</h1>
+            <p class="panel-intro">
+              Give people one page. Their own AI agent explains it at the depth
+              they need, in the conversation they already use.
+            </p>
           </div>
           <div class="panel-state">
             <span>section</span><strong id="current-focus">How it works</strong>
@@ -331,93 +344,51 @@
             aria-labelledby="how-it-works-title"
           >
             <header class="continuous-section-heading">
-              <p class="eyebrow">The shared explanation</p>
+              <p class="eyebrow">One shared explanation</p>
               <h2 id="how-it-works-title">How it works</h2>
               <p>
-                One continuous view connects the roles, the explanation path,
-                and the browser-local adaptation that keeps the authored idea
-                intact.
+                The author publishes the meaning once. Each person can then
+                explore it through the AI agent they already know.
               </p>
             </header>
             <div class="hero-card" data-eh-block-id="flow-model">
               <div>
-                <span class="status-pill status-current">Explain Him</span>
-                <h2>
-                  Express your idea once.<br />Explain Him explains it to
-                  everyone.
-                </h2>
+                <span class="status-pill status-current">One page</span>
+                <h2>Give the link to your AI agent.</h2>
                 <p>
-                  Turn your idea into an interactive explanation people can
-                  explore and understand with their own AI agent.
+                  Ask in your own words. The agent understands your question,
+                  answers at the right depth, and uses this page as the visual
+                  surface.
                 </p>
               </div>
               <div class="hero-metric">
-                <strong>AI</strong><span>explains your idea</span>
+                <strong>1</strong><span>familiar conversation</span>
               </div>
             </div>
             <div data-eh-local-slot="flow-model" class="local-block-slot"></div>
             <div class="section-intro" data-eh-block-id="personal-agent">
-              <h2>Your AI agent becomes the guide.</h2>
+              <h2>Your agent is the conversation. Explain Him is the page.</h2>
               <p>
-                Give your personal AI agent a link to the idea. It learns how
-                the idea should be explained, opens the interactive explanation,
-                and answers questions in the agent interface you already use.
-              </p>
-              <p>
-                <strong
-                  >No second chat. No unfamiliar interface. Explain Him is the
-                  visual explanation; your browser agent is the
-                  conversation.</strong
-                >
+                There is no second chat to learn. The answer stays in the
+                familiar agent interface, while the page gives that answer a
+                shared visual place.
               </p>
             </div>
             <div
               data-eh-local-slot="personal-agent"
               class="local-block-slot"
             ></div>
-            <figure
-              class="workflow-diagram"
-              data-eh-block-id="workflow-diagram"
-            >
-              <figcaption>
-                <strong>Who is in the explanation?</strong
-                ><span>Capability architecture terminology</span>
-              </figcaption>
-              <div class="workflow-diagram-nodes">
-                <span>User</span><b>→</b><span>Personal agent</span><b>→</b
-                ><span>Consumer</span>
-              </div>
-              <p>
-                The diagram uses <strong>Consumer</strong> for the same
-                participant called <strong>User</strong> elsewhere in this page.
-              </p>
-            </figure>
             <div
-              data-eh-local-slot="workflow-diagram"
-              class="local-block-slot"
-            ></div>
-            <div class="section-intro">
-              <h2>
-                Documents store knowledge.<br />Explain Him creates
-                understanding.
-              </h2>
-              <p>
-                Turn READMEs, docs, diagrams, and other source materials into a
-                visual explanation your AI agent can navigate and explain.
-              </p>
-              <p>
-                Explain Him provides the structure, context, and UI
-                capabilities. Your personal agent provides the conversation and
-                reasoning.
-              </p>
-            </div>
-            <div class="action-sequence" aria-labelledby="how-it-works-title">
+              class="action-sequence"
+              data-eh-block-id="workflow-diagram"
+              aria-labelledby="story-path-title"
+            >
               <div class="action-sequence-head">
                 <div>
-                  <p class="eyebrow">Sequence of actions</p>
-                  <h3>Who does what</h3>
+                  <p class="eyebrow">The complete path</p>
+                  <h3 id="story-path-title">One idea, six moments</h3>
                 </div>
-                <p>Who does what</p>
+                <p>Author → person → AI agent → personal view</p>
               </div>
               <ol class="action-steps">
                 <li
@@ -428,12 +399,12 @@
                   <span class="action-number">01</span
                   ><img
                     class="actor-icon"
-                    alt="Originator"
+                    alt="Author"
                     src="data:image/webp;base64,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"
-                  /><strong class="actor-name originator">Originator</strong>
+                  /><strong class="actor-name originator">Author</strong>
                   <p class="action-copy">
-                    Publishes the idea page, sources, and explanation rules in
-                    the repository.
+                    Publishes one page with the idea's canonical meaning and
+                    the sources that support it.
                   </p>
                 </li>
                 <li
@@ -444,12 +415,12 @@
                   <span class="action-number">02</span
                   ><img
                     class="actor-icon"
-                    alt="User"
+                    alt="Person"
                     src="data:image/webp;base64,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"
-                  /><strong class="actor-name user">User</strong>
+                  /><strong class="actor-name user">Person</strong>
                   <p class="action-copy">
-                    Opens the explanation or gives the repository link to their
-                    personal agent.
+                    Gives the page link to the AI agent they already use and
+                    asks a question.
                   </p>
                 </li>
                 <li
@@ -463,10 +434,10 @@
                     role="img"
                     aria-label="Agent"
                     >AI</span
-                  ><strong class="actor-name agent">Agent</strong>
+                  ><strong class="actor-name agent">AI agent</strong>
                   <p class="action-copy">
-                    Reads the page first, checks repository materials only when
-                    more context is needed.
+                    Understands the person's question and how much depth will
+                    be useful.
                   </p>
                 </li>
                 <li
@@ -480,9 +451,10 @@
                     role="img"
                     aria-label="Agent"
                     >AI</span
-                  ><strong class="actor-name agent">Agent</strong>
+                  ><strong class="actor-name agent">AI agent</strong>
                   <p class="action-copy">
-                    Answers the user in the agent interface.
+                    Answers in the familiar agent conversation. There is no
+                    second chat.
                   </p>
                 </li>
                 <li
@@ -496,199 +468,58 @@
                     role="img"
                     aria-label="Agent"
                     >AI</span
-                  ><strong class="actor-name agent">Agent + Explain Him</strong>
+                  ><strong class="actor-name agent">AI agent + page</strong>
                   <p class="action-copy">
-                    Uses Explain Him tools only to focus, highlight, or locally
-                    adapt the visual explanation.
+                    When a visual would help, adapts the page locally for that
+                    person.
+                  </p>
+                </li>
+                <li
+                  class="action-step"
+                  data-focus="action-original-safe"
+                  data-eh-block-id="action-original-safe"
+                >
+                  <span class="action-number">06</span
+                  ><span
+                    class="actor-icon actor-icon-agent"
+                    role="img"
+                    aria-label="Explain Him"
+                    >EH</span
+                  ><strong class="actor-name agent">Explain Him</strong>
+                  <p class="action-copy">
+                    Keeps the authored original unchanged. Personal explanations
+                    are saved separately in the browser.
                   </p>
                 </li>
               </ol>
               <div class="action-principle">
                 <span class="action-principle-mark" aria-hidden="true">✦</span
                 ><strong
-                  >Explain Him is the visual explanation. The browser agent is
-                  the conversation.</strong
+                  >The agent stays the conversation. Explain Him stays the
+                  visual surface.</strong
                 >
               </div>
             </div>
+            <div
+              data-eh-local-slot="workflow-diagram"
+              class="local-block-slot"
+            ></div>
             <div class="loop-card" data-eh-block-id="question-loop">
               <div class="loop-visual">
-                <span>Question in agent</span><b>→</b><span>Evidence</span
-                ><b>→</b><span>Answer</span><b>→</b><span>Issue</span>
+                <span>Missing detail</span><b>→</b><span>Question to author</span>
               </div>
               <div>
-                <h3>A knowledge gap goes back to the Originator</h3>
-                <p>An Issue is created only after user confirmation.</p>
+                <h3>If the idea does not say, the agent asks.</h3>
+                <p>
+                  It never invents missing information. With the person's
+                  approval, the question goes back to the author.
+                </p>
               </div>
             </div>
             <div
               data-eh-local-slot="question-loop"
               class="local-block-slot"
             ></div>
-            <div class="continuous-subsection">
-              <div class="section-intro">
-                <h2>Three roles</h2>
-                <p>
-                  The Originator owns canonical meaning; the user owns the
-                  question; the agent owns the explanation path.
-                </p>
-              </div>
-              <div class="role-grid">
-                <article class="role-card" data-eh-block-id="role-originator">
-                  <span class="role-index">O</span>
-                  <h3>Originator</h3>
-                  <p>Page, statuses, resolutions.</p>
-                </article>
-                <article class="role-card" data-eh-block-id="role-user">
-                  <span class="role-index">U</span>
-                  <h3>User</h3>
-                  <p>Question, depth, write confirmation.</p>
-                </article>
-                <article class="role-card" data-eh-block-id="role-agent">
-                  <span class="role-index">A</span>
-                  <h3>Browser agent</h3>
-                  <p>Conversation, sources, answer, local adaptation.</p>
-                </article>
-              </div>
-              <div
-                data-eh-local-slot="role-originator"
-                class="local-block-slot"
-              ></div>
-              <div
-                data-eh-local-slot="role-user"
-                class="local-block-slot"
-              ></div>
-              <div
-                data-eh-local-slot="role-agent"
-                class="local-block-slot"
-              ></div>
-            </div>
-            <div class="continuous-subsection">
-              <div class="section-intro" data-eh-block-id="browser-workspace">
-                <span class="status-pill status-demo">demo-only</span>
-                <h2>Authored HTML + operation log = personalized page</h2>
-                <p>
-                  Add/remove local blocks, undo/redo, focus, export, and
-                  confirmed reset. The authored layer is immutable.
-                </p>
-              </div>
-              <div
-                data-eh-local-slot="browser-workspace"
-                class="local-block-slot"
-              ></div>
-              <div class="layer-diagram">
-                <article>
-                  <strong>Canonical</strong><small>HTML + sources</small>
-                </article>
-                <b>+</b>
-                <article>
-                  <strong>Local log</strong><small>IndexedDB</small>
-                </article>
-                <b>=</b>
-                <article>
-                  <strong>Visible DOM</strong><small>Safe text</small>
-                </article>
-              </div>
-              <div class="workspace-contract-grid">
-                <article class="contract-card">
-                  <h3>WebMCP readiness</h3>
-                  <p>
-                    Page registration and agent connection are reported
-                    separately. Two tools only.
-                  </p>
-                  <div
-                    id="webmcp-status"
-                    class="webmcp-status-list"
-                    role="status"
-                    aria-live="polite"
-                    aria-atomic="true"
-                  >
-                    <span id="webmcp-page-status"
-                      >Page WebMCP API – checking</span
-                    >
-                    <span id="webmcp-agent-status"
-                      >Agent connection – not observed</span
-                    >
-                    <span id="webmcp-contract-status"
-                      >Contract – not activated</span
-                    >
-                    <span id="webmcp-revision-status"
-                      >Workspace revision – 0</span
-                    >
-                  </div>
-                </article>
-                <article class="contract-card">
-                  <h3>Browser fallback</h3>
-                  <p>
-                    Accessible controls call the same workspace API when WebMCP
-                    is unavailable.
-                  </p>
-                </article>
-              </div>
-              <div class="browser-agent-note">
-                <strong
-                  >The chat lives in your browser agent, not on this
-                  page.</strong
-                >
-                <p>
-                  The controls below only demonstrate the UI mutation contract
-                  an agent can invoke.
-                </p>
-              </div>
-              <form id="agent-action-form" class="agent-action-form">
-                <div class="form-heading">
-                  <div>
-                    <p class="eyebrow">Browser fallback</p>
-                    <h3>Local explanation</h3>
-                  </div>
-                  <span><strong id="workspace-count">0</strong> blocks</span>
-                </div>
-                <div class="form-grid">
-                  <label
-                    >Target<select id="agent-target">
-                      <option value="flow-model">Mechanism</option>
-                      <option value="personal-agent">Agent</option>
-                      <option value="workflow-diagram">Workflow diagram</option>
-                      <option value="browser-workspace" selected>
-                        Workspace
-                      </option>
-                      <option value="grounding-contract">Grounding</option>
-                      <option value="question-loop">Issue loop</option>
-                    </select></label
-                  ><label
-                    >Type<select id="agent-kind">
-                      <option value="example">Example</option>
-                      <option value="analogy" selected>Analogy</option>
-                      <option value="summary">Summary</option>
-                      <option value="warning">Warning</option>
-                      <option value="comparison">Comparison</option>
-                      <option value="diagram">Diagram</option>
-                    </select></label
-                  ><label class="wide-field"
-                    >Title<input
-                      id="agent-title"
-                      maxlength="160"
-                      value="Personal analogy"
-                      required /></label
-                  ><label class="wide-field"
-                    >Explanation<textarea
-                      id="agent-body"
-                      maxlength="5000"
-                      rows="4"
-                      required
-                    >
-The Originator publishes the score, while the personal agent creates a local arrangement without changing the original.</textarea
-                    >
-                  </label>
-                </div>
-                <div class="form-actions">
-                  <button class="primary-action" type="submit">Add</button
-                  ><button id="workspace-undo" type="button">Undo</button
-                  ><button id="workspace-redo" type="button">Redo</button
-                  ><span id="agent-action-feedback" role="status"></span>
-                </div>
-              </form>
-            </div>
           </section>
           <section
             id="how-to-express"
@@ -698,18 +529,20 @@ The Originator publishes the score, while the personal agent creates a local arr
             aria-labelledby="how-to-express-title"
           >
             <header class="continuous-section-heading">
-              <p class="eyebrow">From source to expression</p>
+              <p class="eyebrow">For authors and readers</p>
               <h2 id="how-to-express-title">How to express your idea</h2>
               <p>
-                Ground the answer in what the page and repository actually say,
-                then make a small, typed presentation change only when it
-                improves understanding.
+                Publish the meaning and its evidence clearly. The agent can
+                choose the best explanation path without changing what you
+                meant.
               </p>
             </header>
             <div class="section-intro" data-eh-block-id="grounding-contract">
-              <h2>Adaptation does not rewrite facts</h2>
+              <h2>Readers can trust where an answer came from.</h2>
               <p>
-                resolutions → page/manifest → knowledge → README → inference.
+                Material claims stay connected to the authored page and its
+                sources. The agent tells the reader whether something is
+                current, planned, or still an open question.
               </p>
             </div>
             <div
@@ -718,21 +551,30 @@ The Originator publishes the score, while the personal agent creates a local arr
             ></div>
             <div class="grounding-grid">
               <article>
-                <h3>Status</h3>
-                <p>target/hypothesis/open/demo-only ≠ production.</p>
+                <h3>Meaning belongs to the author</h3>
+                <p>The published page remains the canonical explanation.</p>
               </article>
               <article>
-                <h3>Provenance</h3>
-                <p>Path, section, status, optional ref.</p>
+                <h3>Sources stay visible</h3>
+                <p>Readers can trace important claims back to their origin.</p>
               </article>
               <article>
-                <h3>Fail grounded</h3>
-                <p>A gap is marked, not invented away.</p>
+                <h3>Gaps become questions</h3>
+                <p>Missing information goes back to the author, never into a guess.</p>
               </article>
             </div>
-            <a href="knowledge/03-grounding-and-status.md" target="_blank"
-              >Full contract</a
-            >
+            <div class="section-intro" data-eh-block-id="browser-workspace">
+              <h2>Personal means yours, not rewritten.</h2>
+              <p>
+                The original stays unchanged. Your explanations are saved
+                separately in this browser, so another person can follow a
+                different path without altering the author's page.
+              </p>
+            </div>
+            <div
+              data-eh-local-slot="browser-workspace"
+              class="local-block-slot"
+            ></div>
             <aside class="agent-cta" aria-labelledby="agent-cta-title">
               <p class="eyebrow">Your next conversation</p>
               <h3 id="agent-cta-title">
@@ -746,6 +588,124 @@ The Originator publishes the score, while the personal agent creates a local arr
                 Return to the shared explanation
               </button>
             </aside>
+            <details id="developer-details" class="developer-details">
+              <summary>For developers: how it works internally</summary>
+              <div class="developer-details-body">
+                <p class="developer-caveat">
+                  These diagnostics describe the page runtime. They do not mean
+                  an AI agent is connected or has called the page tools.
+                </p>
+                <div id="developer-demo-anchor"></div>
+                <div class="layer-diagram" aria-label="Personalized page layers">
+                  <article>
+                    <strong>Authored HTML</strong><small>Canonical page</small>
+                  </article>
+                  <b>+</b>
+                  <article>
+                    <strong>Operation log</strong><small>IndexedDB</small>
+                  </article>
+                  <b>=</b>
+                  <article>
+                    <strong>Visible DOM</strong><small>Safe typed blocks</small>
+                  </article>
+                </div>
+                <div class="workspace-contract-grid">
+                  <article class="contract-card">
+                    <h3>WebMCP runtime status</h3>
+                    <p>
+                      Protocol v3 exposes exactly two page tools:
+                      <code>get_explanation_contract</code> and
+                      <code>apply_explanation</code>. A 2/2 page status confirms
+                      registration, not an agent connection.
+                    </p>
+                    <div
+                      id="webmcp-status"
+                      class="webmcp-status-list"
+                      role="status"
+                      aria-live="polite"
+                      aria-atomic="true"
+                    >
+                      <span id="webmcp-page-status"
+                        >Page WebMCP API – checking</span
+                      >
+                      <span id="webmcp-agent-status"
+                        >Agent connection – not observed</span
+                      >
+                      <span id="webmcp-contract-status"
+                        >Contract – not activated</span
+                      >
+                      <span id="webmcp-revision-status"
+                        >Workspace revision – 0</span
+                      >
+                    </div>
+                  </article>
+                  <article class="contract-card">
+                    <h3>Runtime boundaries</h3>
+                    <ul>
+                      <li>Typed schema: callout, comparison, workflow, timeline, diagram.</li>
+                      <li>Browser fallback uses the same local workspace API.</li>
+                      <li>Provenance keeps source path, status, and optional ref.</li>
+                    </ul>
+                  </article>
+                </div>
+                <form id="agent-action-form" class="agent-action-form">
+                  <div class="form-heading">
+                    <div>
+                      <p class="eyebrow">Test harness</p>
+                      <h3>Runtime test controls</h3>
+                    </div>
+                    <span><strong id="workspace-count">0</strong> saved test blocks</span>
+                  </div>
+                  <p id="workspace-summary" class="workspace-summary">
+                    Personalized · 0 saved local presentations
+                  </p>
+                  <div class="form-grid">
+                    <label
+                      >Target<select id="agent-target">
+                        <option value="flow-model">Mechanism</option>
+                        <option value="personal-agent">Agent</option>
+                        <option value="workflow-diagram">Workflow</option>
+                        <option value="browser-workspace" selected>Workspace</option>
+                        <option value="grounding-contract">Grounding</option>
+                        <option value="question-loop">Question loop</option>
+                      </select></label
+                    ><label
+                      >Type<select id="agent-kind">
+                        <option value="example">Example</option>
+                        <option value="analogy" selected>Analogy</option>
+                        <option value="summary">Summary</option>
+                        <option value="warning">Warning</option>
+                        <option value="comparison">Comparison</option>
+                        <option value="diagram">Diagram</option>
+                      </select></label
+                    ><label class="wide-field"
+                      >Title<input
+                        id="agent-title"
+                        maxlength="160"
+                        value="Personal analogy"
+                        required /></label
+                    ><label class="wide-field"
+                      >Explanation<textarea
+                        id="agent-body"
+                        maxlength="5000"
+                        rows="4"
+                        required
+                      >
+The author publishes the meaning, while the personal agent creates a separate local arrangement without changing the original.</textarea
+                      >
+                    </label>
+                  </div>
+                  <div class="form-actions">
+                    <button class="primary-action" type="submit">Apply test block</button
+                    ><button id="workspace-undo" type="button">Undo test</button
+                    ><button id="workspace-redo" type="button">Redo test</button
+                    ><button id="workspace-history-open" type="button">Open operation log</button
+                    ><button id="workspace-export" type="button">Export workspace</button
+                    ><span id="agent-action-feedback" role="status"></span>
+                  </div>
+                </form>
+              </div>
+            </details>
           </section>
         </div>
       </section>
