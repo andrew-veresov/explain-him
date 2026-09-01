@@ -94,7 +94,7 @@ Use the minimum relevant files:
 3. relevant files under `knowledge/`;
 4. `README.md` and navigation material.
 
-Exclude `tests/`, `tools/`, `.github/`, and `demo/evaluation/` from normal product knowledge unless the user explicitly asks about implementation/testing. Do not read evaluation fixtures during an ordinary explanation.
+Exclude `tests/`, `tools/`, `.github/`, and evaluation fixtures from normal product knowledge unless the user explicitly asks about implementation/testing. Do not read evaluation fixtures during an ordinary explanation.
 
 ## Source precedence
 
@@ -213,4 +213,3 @@ WebMCP is never the GitHub Issue gateway.
 - In Chrome sidebar, treat missing WebMCP as a chat-only fallback: answer normally and never claim the page changed. Explain that the full Site Tools flow requires a supported ChatGPT Desktop built-in browser surface.
 - If WebMCP is unavailable for another reason, answer normally and use accessible page controls or an agent-side presentation fallback if helpful.
 - Never present local personalization or external presentation output as Originator-authored knowledge.
-
