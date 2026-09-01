@@ -112,7 +112,7 @@ Unless a later accepted ADR changes this contract:
 - `apply_explanation` performs bounded typed `add`, `replace`, `update`, `remove`, and `focus` operations;
 - repository search, answer generation, GitHub Issues, diagnostics, and arbitrary DOM mutation are not WebMCP tools.
 
-The page may progressively register one composite inline `explain_him` skill through `document.modelContext.registerSkill` when that experimental method exists. This does not add a WebMCP tool. The composite references the same two tools and is generated deterministically from the immutable grounding and presentation skill sources. Its registration state, digest, and provenance are diagnostic facts, not proof that a model read or followed the skill. When the method is absent or registration fails, the pinned remote A7 path remains complete.
+The page may progressively register one composite inline `explain_him` skill through `document.modelContext.registerSkill` when that experimental method exists. This does not add a WebMCP tool. The composite references the same two tools and is generated deterministically from the immutable grounding and presentation skill sources. Its registration state, digest, provenance, and page-issued delivery proof are diagnostic and activation-binding facts, not proof that a model read or followed the skill. When the method is absent or registration fails, the pinned remote A7 path remains complete. WebMCP issue 161 is an open backlog proposal, not a current normative API; Explain Him does not polyfill it or use a navigator variant.
 
 ## Grounding and source navigation
 
@@ -126,7 +126,7 @@ For answer grounding, source precedence remains:
 
 The Product Contract is the required governance source for product purpose, lifecycle, host target, invariants, and non-goals. Any accepted resolution or ADR that changes those facts must update this file in the same publication.
 
-A machine-readable grounding source index is a navigation aid, not a new source of truth. When the visible page is insufficient, the production contract requires the agent to resolve the topic through that index and read the minimum pinned source. The A6 public runtime exposes this immutable index through page bootstrap and `get_explain_him_answer`; [the public roadmap](ROADMAP.md) records the remaining live-host acceptance gate.
+A machine-readable grounding source index is a navigation aid, not a new source of truth. When the visible page is insufficient, the production contract requires the agent to resolve the topic through that index and read the minimum pinned source. The A7 public runtime exposes this immutable index through page bootstrap and `get_explain_him_answer`; [the public roadmap](ROADMAP.md) records the remaining live-host acceptance gate.
 
 ## Key acceptance prompts
 

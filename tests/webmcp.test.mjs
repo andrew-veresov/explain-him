@@ -7,9 +7,9 @@ import { appendTransaction, createInitialWorkspace, materializeWorkspace } from 
 function workspace() { const nodes = ['workflow-diagram', 'flow-model'].map((id) => ({ dataset: { ehBlockId: id }, querySelector: () => ({ textContent: id }) })); let state = createInitialWorkspace({ explanationId: 'test', baseRevision: 'r1' }); return { document: { querySelectorAll: () => nodes }, getContext: () => ({ explanationId: 'test', baseRevision: 'r1', workspaceRevision: state.revision, authoredTargetIds: nodes.map((node) => node.dataset.ehBlockId) }), getVisibleState: () => materializeWorkspace(state, { canonicalIds: nodes.map((node) => node.dataset.ehBlockId) }), getLocalChangeHistory: () => ({ transactions: state.transactions }), applyTransaction: async (operations, options) => { state = appendTransaction(state, operations, options); }, attachTransactionResult: async (id, result) => { state.transactions.find((item) => item.id === id).result = result; }, focusBlock: ({ targetId, blockId }) => ({ targetId, blockId }) }; }
 const diagram = (title = 'User terminology') => ({ type: 'diagram', title, variant: 'flow', nodes: [{ id: 'user', label: 'User' }, { id: 'agent', label: 'Agent' }], edges: [{ from: 'user', to: 'agent', label: 'asks' }], sources: [{ path: 'resolutions/2026-08-30-user-consumer-terminology.md', status: 'current' }] });
 function tools(subject = workspace()) { return new Map(createWebMcpTools(subject).map((tool) => [tool.name, tool])); }
-function request(contract, { requestId = 'request-1', topicId = 'terminology:user-consumer', expectedWorkspaceRevision = contract.workspaceRevision, operations } = {}) { return { requestId, expectedWorkspaceRevision, explanationId: contract.explanationId, topicId, operations, handshake: { bootstrapTool: contract.bootstrapTool, contractId: contract.contractId, activationId: contract.activation.id, nonce: contract.activation.nonce, baseRevision: contract.baseRevision, skillProof: contract.skillProof } }; }
+function request(contract, { requestId = 'request-1', topicId = 'terminology:user-consumer', expectedWorkspaceRevision = contract.workspaceRevision, operations } = {}) { return { requestId, expectedWorkspaceRevision, explanationId: contract.explanationId, topicId, operations, handshake: { bootstrapTool: contract.bootstrapTool, contractId: contract.contractId, activationId: contract.activation.id, nonce: contract.activation.nonce, baseRevision: contract.baseRevision, skillProof: contract.skillProof, skillDeliveryProof: contract.skillDelivery.proof } }; }
 
-test('surface remains exactly two tools and answer bootstrap exposes pinned A6 Protocol v3 workflow', async () => {
+test('surface remains exactly two tools and answer bootstrap exposes pinned A7 Protocol v3 workflow', async () => {
   const map = tools();
   const contract = await map.get('get_explain_him_answer').execute({});
   const repeated = await map.get('get_explain_him_answer').execute({});
@@ -38,17 +38,20 @@ test('surface remains exactly two tools and answer bootstrap exposes pinned A6 P
   assert.equal(contract.activation.nonce, repeated.activation.nonce);
   assert.equal(contract.contractId, repeated.contractId);
   assert.equal(contract.workspaceRevision, repeated.workspaceRevision);
-  assert.equal(contract.skills[0].rawUrl.includes('/e7da9515f5ea444b5919a99477bcbc8e56e03edd/'), true);
+  assert.equal(contract.skills[0].rawUrl.includes('/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/'), true);
   assert.deepEqual(contract.skillProof.map((item) => item.sha256), IMMUTABLE_SKILL_PROOF.map((item) => item.sha256));
   assert.deepEqual(contract.skillProof.map((item) => item.sha256), [
-    'badedfe003582f7fc54eaf862fdbf55e4aec4311dba1c27249229d1a629a4434',
-    '3e8a618543ae59db47c784a25c070c3fccfae3e1bfdc9734907910cfdb094e4e',
+    'b274b2125d2b3f11ded65a9fef26406c8d973333d3e9df88718dba6f22e1becb',
+    'a51bea92203f037402f3feb3e605072d63c30ddf7e9a88426eb1909d2b26382a',
   ]);
-  assert.equal(contract.repository.skillsCommit, 'e7da9515f5ea444b5919a99477bcbc8e56e03edd');
+  assert.equal(contract.repository.skillsCommit, 'ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625');
+  assert.equal(contract.skillDelivery.mode, 'pinned-remote-fallback');
+  assert.equal(contract.skillDelivery.proposalStatus, 'experimental-open-backlog');
+  assert.equal(contract.skillDelivery.proof.compositeSha256, 'e711414af844c93959bd2632846baf8e910685d72a858e31bdb90e03c050b123');
   assert.equal(contract.blockSchema.url, '/explain-him/schemas/explanation-block.v1.schema.json');
   assert.equal(contract.handshakeSchema.url, '/explain-him/schemas/webmcp-apply.v3.schema.json');
   assert.notEqual(contract.skills[0].rawUrl, contract.handshakeSchema.url);
-  assert.equal(contract.agentPolicy.revision, 'A6');
+  assert.equal(contract.agentPolicy.revision, 'A7');
   assert.equal(contract.agentPolicy.repositoryRetrievalRequiredWhenPageInsufficient, true);
   assert.deepEqual(contract.agentPolicy.decisionPrecedence, ['explicitNoPageChange', 'restore', 'terminologyConsistency', 'answerPresence']);
   assert.deepEqual(contract.agentPolicy.terminologyConsistency, { equivalentLabels: ['User', 'Consumer'], equivalenceNoteDoesNotMakeMixedLabelsConsistent: true, questionTriggersSameTurnNormalization: true, defaultTerm: 'User', distinctRoles: 'never-normalize', firstCorrection: { topicId: 'terminology:user-consumer', targetId: 'workflow-diagram', operation: 'replace' }, sameTopicFollowUp: { operation: 'update', reuseLocalBlockId: true }, restore: { operation: 'remove' } });
@@ -63,30 +66,29 @@ test('surface remains exactly two tools and answer bootstrap exposes pinned A6 P
   assert.equal(apply.title, 'Keep Personalized UI Consistent');
   assert.match(apply.description, /same turn whenever the returned policy identifies missing, partial, or inconsistent visible Personalized UI/);
   assert.match(apply.description, /bounded add, replace, update, remove, or focus operations/);
-  assert.match(apply.description, /complete A6 Protocol v3 handshake/);
+  assert.match(apply.description, /complete A7 Protocol v3 activation and page-issued skill-delivery proof/);
 });
-
-test('A6 answer bootstrap pins the minimum repository source for insufficient visible answers', async () => {
+test('A7 answer bootstrap pins the minimum repository source for insufficient visible answers', async () => {
   const map = tools();
   const contract = await map.get('get_explain_him_answer').execute({});
-  assert.equal(contract.agentPolicy.revision, 'A6');
+  assert.equal(contract.agentPolicy.revision, 'A7');
   assert.equal(contract.agentPolicy.repositoryRetrievalRequiredWhenPageInsufficient, true);
   assert.deepEqual(contract.groundingSourceIndex, [{
     topic: 'originator-publishing',
     path: 'knowledge/01-originator-flow.md',
     section: 'Basic flow',
     status: 'current',
-    rawUrl: 'https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/knowledge/01-originator-flow.md',
-    commit: 'e7da9515f5ea444b5919a99477bcbc8e56e03edd',
+    rawUrl: 'https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/knowledge/01-originator-flow.md',
+    commit: 'ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625',
     sha256: 'cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659'
   }, {
     topic: 'originator-publishing',
     path: 'PRODUCT-CONTRACT.md',
     section: 'Authoring and publishing reality',
     status: 'current',
-    rawUrl: 'https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/PRODUCT-CONTRACT.md',
-    commit: 'e7da9515f5ea444b5919a99477bcbc8e56e03edd',
-    sha256: '0df8585ee8293165b936d803eb095bba19e62a32fbd7745db284003ef78b4006'
+    rawUrl: 'https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/PRODUCT-CONTRACT.md',
+    commit: 'ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625',
+    sha256: 'fc3ae6e6dd4d09183ecde12c9a25506a34c969dd6a7ea4ead181990ab2b3a2dd'
   }]);
   assert.match(map.get('get_explain_him_answer').description, /grounding source index/i);
   assert.match(map.get('get_explain_him_answer').description, /visible UI is insufficient/i);
@@ -97,13 +99,13 @@ test('A6 answer bootstrap pins the minimum repository source for insufficient vi
   assert.deepEqual(bootstrap.groundingSourceIndex, contract.groundingSourceIndex);
 });
 
-test('apply schema requires the complete nested v3 handshake', async () => { const registered = new Map(); const host = { registerTool: async (tool) => registered.set(tool.name, tool), getTools: async () => [...registered.values()] }; const status = registerWebMcpTools(workspace(), host); await status.ready; const schema = registered.get('apply_explanation').inputSchema; assert.equal(schema.additionalProperties, false); for (const field of ['requestId', 'expectedWorkspaceRevision', 'explanationId', 'topicId', 'operations', 'handshake']) assert.ok(schema.required.includes(field)); for (const field of ['bootstrapTool', 'contractId', 'activationId', 'nonce', 'baseRevision', 'skillProof']) assert.ok(schema.properties.handshake.required.includes(field)); assert.equal(schema.properties.handshake.properties.bootstrapTool.const, 'get_explain_him_answer'); assert.equal(schema.properties.operations.items.oneOf.length, 5); });
+test('apply schema requires the complete nested v3 handshake', async () => { const registered = new Map(); const host = { registerTool: async (tool) => registered.set(tool.name, tool), getTools: async () => [...registered.values()] }; const status = registerWebMcpTools(workspace(), host); await status.ready; const schema = registered.get('apply_explanation').inputSchema; assert.equal(schema.additionalProperties, false); for (const field of ['requestId', 'expectedWorkspaceRevision', 'explanationId', 'topicId', 'operations', 'handshake']) assert.ok(schema.required.includes(field)); for (const field of ['bootstrapTool', 'contractId', 'activationId', 'nonce', 'baseRevision', 'skillProof', 'skillDeliveryProof']) assert.ok(schema.properties.handshake.required.includes(field)); assert.equal(schema.properties.handshake.properties.bootstrapTool.const, 'get_explain_him_answer'); assert.equal(schema.properties.operations.items.oneOf.length, 5); });
 
 test('same tools instance keeps activation identity while refreshing workspace fields', async () => { const subject = workspace(); const map = tools(subject); const first = await map.get('get_explain_him_answer').execute({}); await map.get('apply_explanation').execute(request(first, { operations: [{ op: 'replace', targetId: 'workflow-diagram', block: diagram() }] })); const refreshed = await map.get('get_explain_him_answer').execute({}); assert.equal(refreshed.contractId, first.contractId); assert.deepEqual(refreshed.activation, first.activation); assert.equal(refreshed.workspaceRevision, 1); assert.equal(refreshed.localBlocks.length, 1); });
 
 test('replace, update, and remove preserve topic-local ID and semantic retries', async () => { const subject = workspace(); const map = tools(subject); const contract = await map.get('get_explain_him_answer').execute({}); const apply = map.get('apply_explanation'); const firstInput = request(contract, { operations: [{ op: 'replace', targetId: 'workflow-diagram', block: diagram() }] }); const first = await apply.execute(firstInput); const id = first.localBlocks[0].id; const retry = await apply.execute({ ...firstInput, expectedWorkspaceRevision: 999 }); assert.equal(retry.idempotent, true); const second = await apply.execute(request(contract, { requestId: 'request-2', expectedWorkspaceRevision: first.workspaceRevision, operations: [{ op: 'update', blockId: id, block: diagram('Consumer terminology') }] })); assert.equal(second.localBlocks[0].id, id); const third = await apply.execute(request(contract, { requestId: 'request-3', expectedWorkspaceRevision: second.workspaceRevision, operations: [{ op: 'remove', blockId: id }] })); assert.equal(third.localBlocks.length, 0); });
 
-test('handshake, topic, duplicate, and executable-content violations fail closed', async () => { const subject = workspace(); const map = tools(subject); const contract = await map.get('get_explain_him_answer').execute({}); const apply = map.get('apply_explanation'); await assert.rejects(apply.execute({ operations: [] }), /Missing required v3 handshake field/); const badNonce = request(contract, { operations: [{ op: 'add', targetId: 'flow-model', block: diagram() }] }); badNonce.handshake.nonce = 'wrong'; await assert.rejects(apply.execute(badNonce), /stale/); const first = await apply.execute(request(contract, { operations: [{ op: 'add', targetId: 'flow-model', block: diagram() }] })); const id = first.localBlocks[0].id; await assert.rejects(apply.execute(request(contract, { requestId: 'other-topic', expectedWorkspaceRevision: first.workspaceRevision, topicId: 'terminology:other', operations: [{ op: 'update', blockId: id, block: diagram() }] })), /different topic/); await assert.rejects(apply.execute(request(contract, { requestId: 'duplicate', expectedWorkspaceRevision: first.workspaceRevision, operations: [{ op: 'add', targetId: 'flow-model', block: diagram() }] })), /Duplicate/); await assert.rejects(apply.execute(request(contract, { requestId: 'executable', expectedWorkspaceRevision: first.workspaceRevision, operations: [{ op: 'add', targetId: 'workflow-diagram', block: { ...diagram(), html: '<script>bad()</script>' } }] })), /forbidden/); });
+test('handshake, delivery proof, topic, duplicate, and executable-content violations fail closed', async () => { const subject = workspace(); const map = tools(subject); const contract = await map.get('get_explain_him_answer').execute({}); const apply = map.get('apply_explanation'); await assert.rejects(apply.execute({ operations: [] }), /Missing required v3 handshake field/); const oldProof = request(contract, { operations: [{ op: 'focus', targetId: 'flow-model' }] }); delete oldProof.handshake.skillDeliveryProof; await assert.rejects(apply.execute(oldProof), /Missing handshake field: skillDeliveryProof/); const forged = request(contract, { operations: [{ op: 'focus', targetId: 'flow-model' }] }); forged.handshake.skillDeliveryProof = { ...forged.handshake.skillDeliveryProof, deliveryId: `delivery-${'0'.repeat(36)}` }; await assert.rejects(apply.execute(forged), /stale, forged/); const badNonce = request(contract, { operations: [{ op: 'add', targetId: 'flow-model', block: diagram() }] }); badNonce.handshake.nonce = 'wrong'; await assert.rejects(apply.execute(badNonce), /stale/); const first = await apply.execute(request(contract, { operations: [{ op: 'add', targetId: 'flow-model', block: diagram() }] })); const id = first.localBlocks[0].id; await assert.rejects(apply.execute(request(contract, { requestId: 'other-topic', expectedWorkspaceRevision: first.workspaceRevision, topicId: 'terminology:other', operations: [{ op: 'update', blockId: id, block: diagram() }] })), /different topic/); await assert.rejects(apply.execute(request(contract, { requestId: 'duplicate', expectedWorkspaceRevision: first.workspaceRevision, operations: [{ op: 'add', targetId: 'flow-model', block: diagram() }] })), /Duplicate/); await assert.rejects(apply.execute(request(contract, { requestId: 'executable', expectedWorkspaceRevision: first.workspaceRevision, operations: [{ op: 'add', targetId: 'workflow-diagram', block: { ...diagram(), html: '<script>bad()</script>' } }] })), /forbidden/); });
 
 test('apply rejects proof obtained from the retired bootstrap tool identity', async () => { const map = tools(); const contract = await map.get('get_explain_him_answer').execute({}); const input = request(contract, { operations: [{ op: 'focus', targetId: 'flow-model' }] }); input.handshake.bootstrapTool = 'get_explanation_contract'; await assert.rejects(map.get('apply_explanation').execute(input), /older bootstrap identities are not accepted/); });
 

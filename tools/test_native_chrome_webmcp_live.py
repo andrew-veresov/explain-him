@@ -137,7 +137,7 @@ def main() -> int:
                             nodes: [{ id: term.toLowerCase(), label: term }, { id: 'agent', label: 'Personal agent' }],
                             edges: [{ from: term.toLowerCase(), to: 'agent', label: 'asks' }], sources: []
                           });
-                          const request = (requestId, expectedWorkspaceRevision, operations) => ({ requestId, expectedWorkspaceRevision, explanationId: contract.explanationId, topicId: 'terminology:user-consumer', operations, handshake: { bootstrapTool: contract.bootstrapTool, contractId: contract.contractId, activationId: contract.activation.id, nonce: contract.activation.nonce, baseRevision: contract.baseRevision, skillProof: contract.skillProof } });
+                          const request = (requestId, expectedWorkspaceRevision, operations) => ({ requestId, expectedWorkspaceRevision, explanationId: contract.explanationId, topicId: 'terminology:user-consumer', operations, handshake: { bootstrapTool: contract.bootstrapTool, contractId: contract.contractId, activationId: contract.activation.id, nonce: contract.activation.nonce, baseRevision: contract.baseRevision, skillProof: contract.skillProof, skillDeliveryProof: contract.skillDelivery.proof } });
                           const first = requireOk(await execute('apply_explanation', request('native-chrome-user-consumer', contractRevision, [{ op: 'replace', targetId: 'workflow-diagram', block: block('User') }])), 'replace');
                           const firstRevision = requireRevision(first.workspaceRevision, 'replace.workspaceRevision');
                           if (firstRevision <= contractRevision) throw new TypeError('replace did not advance workspace revision');
@@ -157,7 +157,14 @@ def main() -> int:
                           const finalBlocks = requireArray(third.localBlocks, 'remove.localBlocks');
                           const thirdApplied = requireArray(third.applied, 'remove.applied');
                           if (thirdApplied[0]?.op !== 'remove' || thirdApplied[0]?.blockId !== id || finalBlocks.length !== 0) throw new TypeError('remove result did not empty the local block list');
-                          return { schema_version: contract.schemaVersion, local_id_preserved: true, local_blocks_after_remove: finalBlocks.length };
+                          return {
+                            schema_version: contract.schemaVersion,
+                            local_id_preserved: true,
+                            local_blocks_after_remove: finalBlocks.length,
+                            skill_delivery_mode: contract.skillDelivery?.mode,
+                            native_skill_state: document.documentElement.dataset.webmcpNativeSkillState,
+                            native_skill_proposal: document.documentElement.dataset.webmcpNativeSkillProposal
+                          };
                         }""")
                     except Error:
                         deployed_schema = page.evaluate("""async () => {
@@ -173,6 +180,11 @@ def main() -> int:
                         return emit("FAILED", "native host rejected the expected contract sequence", chrome_version=version)
                     if flow["schema_version"] != "explain-him-webmcp-contract.v3" or not flow["local_id_preserved"] or flow["local_blocks_after_remove"] != 0:
                         return emit("FAILED", "native replace-update-remove flow violated the WebMCP contract", chrome_version=version, flow=flow)
+                    if flow.get("native_skill_state") not in {"registered", "unavailable", "error"} or flow.get("native_skill_proposal") != "experimental-open-backlog":
+                        return emit("FAILED", "experimental native-skill diagnostic is missing or false", chrome_version=version, flow=flow)
+                    expected_mode = "native-inline" if flow.get("native_skill_state") == "registered" else "pinned-remote-fallback"
+                    if flow.get("skill_delivery_mode") != expected_mode:
+                        return emit("FAILED", "skill delivery mode does not match the page-issued native-skill state", chrome_version=version, flow=flow)
                     return emit(
                         "PASS",
                         "native Chrome page runtime executed the live WebMCP contract",

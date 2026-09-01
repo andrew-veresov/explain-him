@@ -33,16 +33,18 @@ The grounding skill is authoritative for meaning. The presentation skill is auth
 When the page is open in a WebMCP-capable browser:
 
 1. call `get_explain_him_answer` to establish a Protocol v3 activation;
-2. verify the returned immutable raw skill URLs, commit, SHA-256 proofs, and load order before reading the grounding skill;
+2. verify the returned page-issued skill-delivery proof, immutable source commit, SHA-256 proofs, and load order; use the delivered inline composite only for a verified `native-inline` mode, otherwise fetch and verify every immutable raw skill URL;
 3. follow that skill to answer the question and retrieve deeper GitHub evidence when required;
 4. read the presentation skill before embedding a result into the page;
 5. analyse whether the current UI already fully and correctly contains the answer, then always provide the chat answer; do not duplicate a correct UI result, and use focus only for an explicit show or walkthrough request;
 6. when the UI answer is missing, partial, or inconsistent, use a grounded same-turn `apply_explanation` add, replace, or update; restore uses remove or the Originator view;
-7. use `apply_explanation` only after the meaning is grounded and with top-level requestId, expectedWorkspaceRevision, explanationId, topicId, operations, plus nested `handshake` containing contractId, activationId, nonce, baseRevision, and ordered three-field skillProof. If apply fails, say so honestly rather than claiming a page change.
+7. use `apply_explanation` only after the meaning is grounded and with top-level requestId, expectedWorkspaceRevision, explanationId, topicId, operations, plus nested `handshake` containing bootstrapTool, contractId, activationId, nonce, baseRevision, ordered three-field skillProof, and the exact page-issued skillDeliveryProof. If apply fails, say so honestly rather than claiming a page change.
 
 The activation nonce is opaque and session-scoped. It may be reused only for an idempotent retry or ordered local-operation chain in the same activation. Never display or persist it in user-facing output.
 
 The page also publishes invisible machine-readable repository and skill links in its `<head>`. Use them as bootstrap hints when Site Tool discovery succeeds before repository context is available.
+
+The page may register one experimental composite `explain_him` skill only when the standard document host exposes `registerSkill`. This is progressive enhancement based on open WebMCP issue 161. It adds no tool, is never polyfilled, and falls back to the complete pinned A7 remote workflow when unavailable or rejected. Registration does not prove that the model read or followed the instructions.
 
 The complete public WebMCP surface is intentionally only:
 

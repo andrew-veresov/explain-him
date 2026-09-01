@@ -25,4 +25,4 @@ jobs:
       - name: Test workspace, WebMCP, evals and Presentation Capability contract
         run: node --test tests/*.test.mjs
       - name: Test page and agent-host evidence classification
-        run: python -m unittest tools/test_webmcp_host_preflight.py
+        run: python -m unittest tools/test_generate_native_skill.py tools/test_webmcp_host_preflight.py

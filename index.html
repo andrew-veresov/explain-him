@@ -38,7 +38,7 @@
     <meta name="explain-him-skill" content="skills/explain-him/SKILL.md" />
     <meta
       name="explain-him-skill-url"
-      content="https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/skills/explain-him/SKILL.md"
+      content="https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/skills/explain-him/SKILL.md"
     />
     <meta
       name="explain-him-presentation-skill"
@@ -46,8 +46,14 @@
     />
     <meta
       name="explain-him-presentation-skill-url"
-      content="https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/skills/explain-him-presentation/SKILL.md"
+      content="https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/skills/explain-him-presentation/SKILL.md"
     />
+    <meta name="explain-him-native-skill" content="explain_him" />
+    <meta
+      name="explain-him-native-skill-digest"
+      content="e711414af844c93959bd2632846baf8e910685d72a858e31bdb90e03c050b123"
+    />
+    <meta name="explain-him-native-skill-status" content="experimental-open-backlog" />
     <link
       rel="help"
       type="text/markdown"
@@ -68,7 +74,7 @@
         "repository": {
           "fullName": "andrew-veresov/explain-him",
           "url": "https://github.com/andrew-veresov/explain-him",
-          "skillsCommit": "e7da9515f5ea444b5919a99477bcbc8e56e03edd"
+          "skillsCommit": "ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625"
         },
         "tools": ["get_explain_him_answer", "apply_explanation"],
         "repositoryRetrievalRequiredWhenPageInsufficient": true,
@@ -76,15 +82,15 @@
         "skills": [
           {
             "id": "explain-him",
-            "commit": "e7da9515f5ea444b5919a99477bcbc8e56e03edd",
-            "sha256": "badedfe003582f7fc54eaf862fdbf55e4aec4311dba1c27249229d1a629a4434",
-            "rawUrl": "https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/skills/explain-him/SKILL.md"
+            "commit": "ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625",
+            "sha256": "b274b2125d2b3f11ded65a9fef26406c8d973333d3e9df88718dba6f22e1becb",
+            "rawUrl": "https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/skills/explain-him/SKILL.md"
           },
           {
             "id": "explain-him-presentation",
-            "commit": "e7da9515f5ea444b5919a99477bcbc8e56e03edd",
-            "sha256": "3e8a618543ae59db47c784a25c070c3fccfae3e1bfdc9734907910cfdb094e4e",
-            "rawUrl": "https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/skills/explain-him-presentation/SKILL.md"
+            "commit": "ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625",
+            "sha256": "a51bea92203f037402f3feb3e605072d63c30ddf7e9a88426eb1909d2b26382a",
+            "rawUrl": "https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/skills/explain-him-presentation/SKILL.md"
           }
         ],
         "groundingSourceIndex": [
@@ -93,8 +99,8 @@
             "path": "knowledge/01-originator-flow.md",
             "section": "Basic flow",
             "status": "current",
-            "rawUrl": "https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/knowledge/01-originator-flow.md",
-            "commit": "e7da9515f5ea444b5919a99477bcbc8e56e03edd",
+            "rawUrl": "https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/knowledge/01-originator-flow.md",
+            "commit": "ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625",
             "sha256": "cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659"
           },
           {
@@ -102,11 +108,24 @@
             "path": "PRODUCT-CONTRACT.md",
             "section": "Authoring and publishing reality",
             "status": "current",
-            "rawUrl": "https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/PRODUCT-CONTRACT.md",
-            "commit": "e7da9515f5ea444b5919a99477bcbc8e56e03edd",
-            "sha256": "0df8585ee8293165b936d803eb095bba19e62a32fbd7745db284003ef78b4006"
+            "rawUrl": "https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/PRODUCT-CONTRACT.md",
+            "commit": "ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625",
+            "sha256": "fc3ae6e6dd4d09183ecde12c9a25506a34c969dd6a7ea4ead181990ab2b3a2dd"
           }
-        ]
+        ],
+        "nativeSkill": {
+          "name": "explain_him",
+          "api": "document.modelContext.registerSkill",
+          "proposal": {
+            "issue": 161,
+            "status": "experimental-open-backlog",
+            "normative": false
+          },
+          "tools": ["get_explain_him_answer", "apply_explanation"],
+          "sourceCommit": "ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625",
+          "compositeSha256": "e711414af844c93959bd2632846baf8e910685d72a858e31bdb90e03c050b123",
+          "fallbackTool": "get_explain_him_answer"
+        }
       }
     </script>
     <title>Explain Him – Your idea, explained for everyone</title>
@@ -649,6 +668,9 @@
                     >
                       <span id="webmcp-page-status"
                         >Page WebMCP API – checking</span
+                      >
+                      <span id="webmcp-native-skill-status"
+                        >Native skill API – checking (experimental)</span
                       >
                       <span id="webmcp-agent-status"
                         >Agent connection – not observed</span

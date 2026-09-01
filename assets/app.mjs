@@ -150,6 +150,9 @@ function publishWebMcpStatus(registration) {
   document.documentElement.dataset.webmcpApi = 'document.modelContext';
   document.documentElement.dataset.webmcpProtocol = '3';
   document.documentElement.dataset.webmcpTools = registration.expectedTools.join(',');
+  document.documentElement.dataset.webmcpNativeSkillState = registration.skillRegistrationState || 'unavailable';
+  document.documentElement.dataset.webmcpNativeSkillProposal = registration.nativeSkillProposalStatus || 'experimental-open-backlog';
+  document.documentElement.dataset.webmcpNativeSkillDigest = registration.nativeSkillDigest || '';
 }
 
 function dispatchWebMcpReady(registration) {
@@ -161,7 +164,10 @@ function dispatchWebMcpReady(registration) {
       verified: registration.verified,
       hostSource: registration.hostSource,
       registeredTools: [...registration.registered],
-      verifiedTools: [...registration.verifiedTools]
+      verifiedTools: [...registration.verifiedTools],
+      nativeSkillState: registration.skillRegistrationState,
+      nativeSkillDigest: registration.nativeSkillDigest,
+      nativeSkillProposalStatus: registration.nativeSkillProposalStatus
     }
   }));
 }
@@ -211,9 +217,11 @@ async function main() {
   if (registration.supported) {
     setStatusPart('webmcp-page-status', `Page WebMCP API – registering ${registration.expectedTools.length} tools`);
     setWebMcpStatusText(`registering ${registration.expectedTools.length} tools`);
+    setStatusPart('webmcp-native-skill-status', registration.skillApiAvailable ? 'Native skill API – registering (experimental)' : 'Native skill API – unavailable (experimental); pinned fallback active');
   } else {
     setStatusPart('webmcp-page-status', 'Page WebMCP API – unavailable');
     setWebMcpStatusText('unavailable; accessible browser controls remain available');
+    setStatusPart('webmcp-native-skill-status', 'Native skill API – unavailable (experimental); pinned fallback active');
   }
 
   const workspace = await workspacePromise;
@@ -299,6 +307,17 @@ async function main() {
   document.documentElement.dataset.webmcpVerified = String(registration.verified);
   document.documentElement.dataset.webmcpRegistered = registration.registered.join(',');
   document.documentElement.dataset.webmcpVerifiedTools = registration.verifiedTools.join(',');
+  document.documentElement.dataset.webmcpNativeSkillState = registration.skillRegistrationState;
+
+  if (registration.skillRegistrationState === 'registered') {
+    setStatusPart('webmcp-native-skill-status', 'Native skill API – registered (experimental)');
+  } else if (registration.skillRegistrationState === 'error') {
+    setStatusPart('webmcp-native-skill-status', 'Native skill API – registration error (experimental); pinned fallback active');
+  } else if (registration.skillRegistrationState === 'blocked-tools') {
+    setStatusPart('webmcp-native-skill-status', 'Native skill API – blocked by tool registration (experimental); pinned fallback active');
+  } else {
+    setStatusPart('webmcp-native-skill-status', 'Native skill API – unavailable (experimental); pinned fallback active');
+  }
 
   if (registration.verified) {
     setStatusPart('webmcp-page-status', `Page WebMCP API – ${registration.verifiedTools.length}/${registration.expectedTools.length} tools registered`);
@@ -317,6 +336,7 @@ main().catch((error) => {
   console.error(error);
   setWebMcpStatusText(`Initialization error: ${error.message}`);
   setStatusPart('webmcp-page-status', 'Page WebMCP API – initialization error');
+  setStatusPart('webmcp-native-skill-status', 'Native skill API – not initialized (experimental); pinned fallback active');
   document.documentElement.dataset.webmcpState = 'error';
   document.documentElement.dataset.webmcpPageState = 'error';
 });

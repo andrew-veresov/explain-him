@@ -148,7 +148,7 @@ Important statuses are `current`, `target`, `hypothesis`, `open`, `demo-only`, a
 | Model Context Tool Inspector extension | Page-tool debugging only; never an Explain Him production or user workflow |
 | Browser without WebMCP | Human controls continue to work over the same local workspace |
 
-`navigator.modelContext` is retained only as a legacy fallback for older experimental hosts. Explain Him does not depend on the non-standard `registerSkill()` proposal or on declarative WebMCP support.
+`navigator.modelContext` is retained only as a legacy fallback for older experimental tool hosts. Explain Him progressively feature-detects the experimental `document.modelContext.registerSkill` shape proposed in WebMCP issue 161. When present, the page registers one deterministic inline `explain_him` skill linked to the same two tools. When absent or rejected, the complete pinned A7 remote fallback remains operational. The page does not polyfill this API, call `navigator.modelContext.registerSkill`, or claim the open backlog proposal is standardized.
 
 The page cannot invoke an agent or a tool on activation. It registers tools immediately and exposes pinned bootstrap metadata; the host must discover them and choose to call `get_explain_him_answer`. The supported-host invariant is contract invocation before the first grounded page answer. A mutation is accepted only after `apply_explanation` succeeds and workspace revision increases.
 
@@ -177,10 +177,10 @@ Conversation happens in the user's existing agent interface; the Explain Him pag
 ```bash
 python tools/check_public_demo.py
 node --test tests/*.test.mjs
-python -m unittest tools/test_webmcp_host_preflight.py
+python -m unittest tools/test_generate_native_skill.py tools/test_webmcp_host_preflight.py
 ```
 
-Checks cover public boundaries, machine-readable bootstrap, WebMCP host discovery, two-tool registration/verification, typed schemas, workflow insertion, guided focus, workspace behavior, Presentation Artifact safety, host-preflight classification, and prompt-to-tool eval fixtures. Native Chrome page-runtime evidence and deterministic fixture AI are reported separately from real agent-host/model evidence.
+Checks cover public boundaries, deterministic native-skill generation and drift detection, machine-readable bootstrap, WebMCP host discovery, two-tool registration/verification, progressive native-skill registration or pinned fallback, typed schemas, workflow insertion, guided focus, workspace behavior, Presentation Artifact safety, host-preflight classification, and prompt-to-tool eval fixtures. Simulated `registerSkill`, native Chrome page-runtime evidence, and deterministic fixture AI are reported separately from real agent-host/model evidence.
 
 ## Repository structure
 

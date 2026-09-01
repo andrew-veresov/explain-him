@@ -23,16 +23,18 @@ class BrowserE2E(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         cls.browser.close(); cls.playwright.stop(); cls.server.shutdown(); cls.server.server_close(); cls.thread.join(timeout=5)
-    def page(self, host: bool) -> tuple[Page, list[str]]:
+    def page(self, host: bool, native_skill: bool = False) -> tuple[Page, list[str]]:
         context = self.browser.new_context(); self.addCleanup(context.close); page = context.new_page(); page.set_default_timeout(5000); errors: list[str] = []
         page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
         page.add_init_script("""window.__lifecycle=[];addEventListener('explain-him:webmcp-lifecycle',(event)=>window.__lifecycle.push(event.detail))""")
-        if host: page.add_init_script("""Object.defineProperty(document,'modelContext',{configurable:true,value:{async registerTool(tool){window.__tools ||= {};window.__tools[tool.name]=tool},async getTools(){return Object.values(window.__tools||{})}}})""")
+        if host:
+            native_method = "async registerSkill(skill){window.__skills ||= {};window.__skills[skill.name]=skill}," if native_skill else ""
+            page.add_init_script(f"""Object.defineProperty(document,'modelContext',{{configurable:true,value:{{async registerTool(tool){{window.__tools ||= {{}};window.__tools[tool.name]=tool}},{native_method}async getTools(){{return Object.values(window.__tools||{{}})}}}}}})""")
         page.goto(self.base_url, wait_until="domcontentloaded"); return page, errors
     def diagram(self, term: str) -> dict:
         return {"type":"diagram","title":f"{term} workflow","variant":"flow","nodes":[{"id":term.lower(),"label":term},{"id":"agent","label":"Personal agent"}],"edges":[{"from":term.lower(),"to":"agent","label":"asks"}],"sources":[{"path":"resolutions/2026-08-30-user-consumer-terminology.md","status":"current"}]}
     def request(self, contract: dict, request_id: str, revision: int, operations: list[dict]) -> dict:
-        return {"requestId": request_id, "expectedWorkspaceRevision": revision, "explanationId": contract["explanationId"], "topicId": "terminology:user-consumer", "operations": operations, "handshake": {"bootstrapTool": contract["bootstrapTool"], "contractId": contract["contractId"], "activationId": contract["activation"]["id"], "nonce": contract["activation"]["nonce"], "baseRevision": contract["baseRevision"], "skillProof": contract["skillProof"]}}
+        return {"requestId": request_id, "expectedWorkspaceRevision": revision, "explanationId": contract["explanationId"], "topicId": "terminology:user-consumer", "operations": operations, "handshake": {"bootstrapTool": contract["bootstrapTool"], "contractId": contract["contractId"], "activationId": contract["activation"]["id"], "nonce": contract["activation"]["nonce"], "baseRevision": contract["baseRevision"], "skillProof": contract["skillProof"], "skillDeliveryProof": contract["skillDelivery"]["proof"]}}
     def contrast(self, page: Page, foreground: str, background: str) -> float:
         return page.evaluate(r"""([foreground, background]) => {
           const rgba = (value) => { const values = value.match(/\d+(?:\.\d+)?/g).map(Number); return [values[0] / 255, values[1] / 255, values[2] / 255, values.length > 3 ? values[3] : 1]; };
@@ -51,6 +53,7 @@ class BrowserE2E(unittest.TestCase):
         self.assertTrue(contract["repository"]["url"].startswith("https://github.com/")); self.assertEqual(len(contract["skills"]), 2)
         self.assertEqual(page.locator("#webmcp-agent-status").text_content(), "Agent connection – observed")
         self.assertEqual(page.locator("#webmcp-contract-status").text_content(), "Contract – activated")
+        self.assertEqual(page.locator("#webmcp-native-skill-status").text_content(), "Native skill API – unavailable (experimental); pinned fallback active")
         page.evaluate("args => window.__tools.apply_explanation.execute(args)", self.request(contract, "p0-focus", contract["workspaceRevision"], [{"op":"focus","targetId":"flow-model"}]))
         self.assertTrue(page.locator('[data-eh-block-id="flow-model"]').evaluate("node => node.classList.contains('is-focused')"))
         authored = page.locator('[data-eh-block-id="workflow-diagram"]'); authored_before = authored.inner_text()
@@ -87,9 +90,21 @@ class BrowserE2E(unittest.TestCase):
         page, errors = self.page(False); status = page.locator("#webmcp-status-hero").text_content(); self.assertIn("unavailable", status); self.assertIn("accessible browser controls remain available", status)
         self.assertEqual(page.locator("#webmcp-page-status").text_content(), "Page WebMCP API – unavailable")
         self.assertEqual(page.locator("#webmcp-agent-status").text_content(), "Agent connection – not observed")
+        self.assertEqual(page.locator("#webmcp-native-skill-status").text_content(), "Native skill API – unavailable (experimental); pinned fallback active")
         page.locator("#developer-details summary").click()
         page.get_by_role("textbox", name="Title").fill("Fallback E2E"); page.get_by_role("textbox", name="Explanation").fill("Accessible local fallback.")
         page.get_by_role("button", name="Apply test block", exact=True).click(); page.get_by_role("heading", name="Fallback E2E").wait_for(state="visible")
+        self.assertEqual(errors, [])
+
+    def test_experimental_native_skill_registers_once_without_changing_tool_surface(self) -> None:
+        page, errors = self.page(True, native_skill=True)
+        page.wait_for_function("document.documentElement.dataset.webmcpNativeSkillState === 'registered'")
+        self.assertEqual(sorted(page.evaluate("() => Object.keys(window.__tools)")), ["apply_explanation", "get_explain_him_answer"])
+        self.assertEqual(page.evaluate("() => Object.keys(window.__skills)"), ["explain_him"])
+        self.assertEqual(page.locator("#webmcp-native-skill-status").text_content(), "Native skill API – registered (experimental)")
+        contract = page.evaluate("() => window.__tools.get_explain_him_answer.execute({})")
+        self.assertEqual(contract["skillDelivery"]["mode"], "native-inline")
+        self.assertFalse(contract["skillDelivery"]["remoteVerificationRequiredForApply"])
         self.assertEqual(errors, [])
 
     def test_continuous_navigation_status_contrast_and_reduced_motion(self) -> None:
