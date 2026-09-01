@@ -46,8 +46,8 @@ test('checked-in strict schemas accept production descriptor values and reject u
   const [contractSchema, applySchema] = await Promise.all([load('webmcp-contract.v3.schema.json'), load('webmcp-apply.v3.schema.json')]);
   const workspace = await createExplanationWorkspace({ document: null, explanationId: 'checked-schema', baseRevision: 'r1', canonicalIds: ['workflow-diagram'], store: new MemoryWorkspaceStore() });
   const tools = new Map(createWebMcpTools(workspace).map((tool) => [tool.name, tool]));
-  const contract = await tools.get('get_explanation_contract').execute({});
-  const input = { requestId: 'checked-schema-request', expectedWorkspaceRevision: contract.workspaceRevision, explanationId: contract.explanationId, topicId: 'terminology:user-consumer', operations: [{ op: 'replace', targetId: 'workflow-diagram', block: { type: 'diagram', title: 'Terminology', variant: 'flow', nodes: [{ id: 'user', label: 'User' }, { id: 'agent', label: 'Personal agent' }], edges: [{ from: 'user', to: 'agent', label: 'asks' }], sources: [{ path: 'resolutions/terminology.md', status: 'current' }] } }], handshake: { contractId: contract.contractId, activationId: contract.activation.id, nonce: contract.activation.nonce, baseRevision: contract.baseRevision, skillProof: contract.skillProof } };
+  const contract = await tools.get('get_explain_him_answer').execute({});
+  const input = { requestId: 'checked-schema-request', expectedWorkspaceRevision: contract.workspaceRevision, explanationId: contract.explanationId, topicId: 'terminology:user-consumer', operations: [{ op: 'replace', targetId: 'workflow-diagram', block: { type: 'diagram', title: 'Terminology', variant: 'flow', nodes: [{ id: 'user', label: 'User' }, { id: 'agent', label: 'Personal agent' }], edges: [{ from: 'user', to: 'agent', label: 'asks' }], sources: [{ path: 'resolutions/terminology.md', status: 'current' }] } }], handshake: { bootstrapTool: contract.bootstrapTool, contractId: contract.contractId, activationId: contract.activation.id, nonce: contract.activation.nonce, baseRevision: contract.baseRevision, skillProof: contract.skillProof } };
   assert.equal(validate(contractSchema, contractSchema, contract), true);
   assert.equal(validate(applySchema, applySchema, input), true);
   assert.equal((await tools.get('apply_explanation').execute(input)).ok, true);
@@ -64,6 +64,7 @@ test('checked-in strict schemas accept production descriptor values and reject u
   assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, decisionPrecedence: [...contract.agentPolicy.decisionPrecedence].reverse() } }), false);
   assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, terminologyConsistency: { ...contract.agentPolicy.terminologyConsistency, distinctRoles: 'normalize' } } }), false);
   assert.equal(validate(applySchema, applySchema, { ...input, unknown: true }), false);
+  assert.equal(validate(applySchema, applySchema, { ...input, handshake: { ...input.handshake, bootstrapTool: 'get_explanation_contract' } }), false);
   assert.equal(validate(applySchema, applySchema, { ...input, operations: [{ ...input.operations[0], unknown: true }] }), false);
   assert.equal(validate(applySchema, applySchema, { ...input, operations: [{ ...input.operations[0], block: { ...input.operations[0].block, unknown: true } }] }), false);
   assert.equal(validate(applySchema, applySchema, { ...input, operations: [{ ...input.operations[0], block: { ...input.operations[0].block, variant: null } }] }), false);

@@ -40,7 +40,7 @@ FORBIDDEN_CONTENT = [
 ]
 FORBIDDEN_RUNTIME_SNIPPETS = ['innerHTML', 'insertAdjacentHTML', 'eval(', 'new Function']
 PUBLIC_WEBMCP_TOOLS = [
-    'get_explanation_contract',
+    'get_explain_him_answer',
     'apply_explanation',
 ]
 OBSOLETE_PUBLIC_TOOLS = {
@@ -170,30 +170,31 @@ def main() -> int:
             errors.append(f'index.html: agent bootstrap is not valid JSON: {error.msg}')
         else:
             expected_skills = [
-                {'id': 'explain-him', 'commit': '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef', 'sha256': '9929a94b87ed243b6bc81e43950b027d06f0cff4f4c2bb6cabe7de82ca9d99f2', 'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/skills/explain-him/SKILL.md'},
-                {'id': 'explain-him-presentation', 'commit': '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef', 'sha256': '975647e1e1a509068770eb7c5ef172dc7c7ea57a4f6b4a32ac99da7b71ec2122', 'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/skills/explain-him-presentation/SKILL.md'},
+                {'id': 'explain-him', 'commit': 'e7da9515f5ea444b5919a99477bcbc8e56e03edd', 'sha256': 'badedfe003582f7fc54eaf862fdbf55e4aec4311dba1c27249229d1a629a4434', 'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/skills/explain-him/SKILL.md'},
+                {'id': 'explain-him-presentation', 'commit': 'e7da9515f5ea444b5919a99477bcbc8e56e03edd', 'sha256': '3e8a618543ae59db47c784a25c070c3fccfae3e1bfdc9734907910cfdb094e4e', 'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/skills/explain-him-presentation/SKILL.md'},
             ]
             expected_sources = [{
                 'topic': 'originator-publishing',
                 'path': 'knowledge/01-originator-flow.md',
                 'section': 'Basic flow',
                 'status': 'current',
-                'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/knowledge/01-originator-flow.md',
-                'commit': '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef',
+                'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/knowledge/01-originator-flow.md',
+                'commit': 'e7da9515f5ea444b5919a99477bcbc8e56e03edd',
                 'sha256': 'cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659',
             }, {
                 'topic': 'originator-publishing',
                 'path': 'PRODUCT-CONTRACT.md',
                 'section': 'Authoring and publishing reality',
                 'status': 'current',
-                'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/PRODUCT-CONTRACT.md',
-                'commit': '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef',
-                'sha256': 'accf552b100c1acdd056f166e26c1579f0b55048bc4c67b35f16272af344f4d7',
+                'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/PRODUCT-CONTRACT.md',
+                'commit': 'e7da9515f5ea444b5919a99477bcbc8e56e03edd',
+                'sha256': '0df8585ee8293165b936d803eb095bba19e62a32fbd7745db284003ef78b4006',
             }]
             expected_bootstrap = {
                 'schemaVersion': 'explain-him-agent-bootstrap.v1',
                 'protocolVersion': 3,
-                'repository': {'fullName': 'andrew-veresov/explain-him', 'url': 'https://github.com/andrew-veresov/explain-him', 'skillsCommit': '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef'},
+                'bootstrapTool': 'get_explain_him_answer',
+                'repository': {'fullName': 'andrew-veresov/explain-him', 'url': 'https://github.com/andrew-veresov/explain-him', 'skillsCommit': 'e7da9515f5ea444b5919a99477bcbc8e56e03edd'},
                 'tools': PUBLIC_WEBMCP_TOOLS,
                 'repositoryRetrievalRequiredWhenPageInsufficient': True,
                 'skillLoadOrder': [item['id'] for item in expected_skills],
@@ -232,23 +233,25 @@ def main() -> int:
         'live_validation: tools/check_live_pages.py', 'native_live_validation: tools/test_native_chrome_webmcp_live.py',
         'host_guarantee: false', 'protocol_version: 3', 'contract_schema: schemas/webmcp-contract.v3.schema.json',
         'apply_schema: schemas/webmcp-apply.v3.schema.json', 'schema_version: explain-him-local-workspace.v4',
-        'release: A5', 'commit: 054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef',
-        'sha256: 9929a94b87ed243b6bc81e43950b027d06f0cff4f4c2bb6cabe7de82ca9d99f2',
-        'sha256: 975647e1e1a509068770eb7c5ef172dc7c7ea57a4f6b4a32ac99da7b71ec2122',
+        'release: A6', 'commit: e7da9515f5ea444b5919a99477bcbc8e56e03edd',
+        'sha256: badedfe003582f7fc54eaf862fdbf55e4aec4311dba1c27249229d1a629a4434',
+        'sha256: 3e8a618543ae59db47c784a25c070c3fccfae3e1bfdc9734907910cfdb094e4e',
         'activation_handshake: fail-closed',
-        'revision: A5', 'repositoryRetrievalRequiredWhenPageInsufficient: true',
+        'revision: A6', 'bootstrap_tool: get_explain_him_answer',
+        'required_before_any_explain_him_answer: true',
+        'repositoryRetrievalRequiredWhenPageInsufficient: true',
         'groundingSourceIndex:', 'topic: originator-publishing', 'path: knowledge/01-originator-flow.md',
         'section: Basic flow', 'status: current',
         'sha256: cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659',
         'path: PRODUCT-CONTRACT.md', 'section: Authoring and publishing reality',
-        'sha256: accf552b100c1acdd056f166e26c1579f0b55048bc4c67b35f16272af344f4d7',
+        'sha256: 0df8585ee8293165b936d803eb095bba19e62a32fbd7745db284003ef78b4006',
         'decisionPrecedence: [explicitNoPageChange, restore, terminologyConsistency, answerPresence]',
         'equivalenceNoteDoesNotMakeMixedLabelsConsistent: true',
         'presentationDecision:', 'alwaysProvideChatAnswer: true',
         'assessAnswerAndRequestedRepresentationInPersonalizedUi: true',
         'fullyPresent: {ordinaryQuestion: chat-only, showOrWalkthrough: focus-only}',
         'failure: {applyFailure: honest-acknowledgement-no-false-success}',
-        'rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/',
+        'rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/',
         'schema_version: explain-him-agent-bootstrap.v1', 'page_activation_effect: discovery-hint-only',
         'page_api: data-webmcp-page-state', 'agent_connection: data-webmcp-agent-state',
         'contract: data-webmcp-contract-state', 'workspace_revision: data-webmcp-workspace-revision',
@@ -384,7 +387,7 @@ def main() -> int:
     for name in PUBLIC_WEBMCP_TOOLS:
         if f"'{name}'" not in webmcp:
             errors.append(f'runtime/webmcp.mjs: missing public WebMCP tool {name}')
-    for expected in ['explain-him-webmcp-contract.v3', 'IMMUTABLE_SKILL_PROOF', 'GROUNDING_SOURCE_INDEX', '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef', "revision: 'A5'", 'repositoryRetrievalRequiredWhenPageInsufficient: true', 'originator-publishing', 'knowledge/01-originator-flow.md', 'cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659', 'decisionPrecedence', 'terminologyConsistency', 'Call this first, before answering any question about this page or loading Explain Him skills', 'pinned grounding source index', 'visible page is insufficient', 'Keep Personalized UI Consistent', 'same turn whenever that answer reveals missing, partial, or inconsistent visible Personalized UI', 'Activation handshake is stale', 'topicId', 'presentationDecision', 'alwaysProvideChatAnswer: true', 'honest-acknowledgement-no-false-success', 'focusOnlyChangesRevision: false']:
+    for expected in ['explain-him-webmcp-contract.v3', 'get_explain_him_answer', 'explain-him-answer-workflow.v1', 'requiredBeforeAnyExplainHimAnswer: true', 'IMMUTABLE_SKILL_PROOF', 'GROUNDING_SOURCE_INDEX', 'e7da9515f5ea444b5919a99477bcbc8e56e03edd', "revision: 'A6'", 'repositoryRetrievalRequiredWhenPageInsufficient: true', 'originator-publishing', 'knowledge/01-originator-flow.md', 'cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659', 'decisionPrecedence', 'terminologyConsistency', 'MUST ALWAYS be called first and before answering ANY question about Explain Him or the current Explain Him page', 'immutable pinned skills and grounding source index', 'visible UI is insufficient', 'Keep Personalized UI Consistent', 'same turn whenever the returned policy identifies missing, partial, or inconsistent visible Personalized UI', 'older bootstrap identities are not accepted', 'topicId', 'presentationDecision', 'alwaysProvideChatAnswer: true', 'honest-acknowledgement-no-false-success', 'focusOnlyChangesRevision: false']:
         if expected not in webmcp:
             errors.append(f'runtime/webmcp.mjs: missing Protocol v3 invariant {expected!r}')
     for name in OBSOLETE_PUBLIC_TOOLS:
@@ -395,7 +398,7 @@ def main() -> int:
             errors.append(f'runtime/webmcp.mjs: forbidden registered tool {name}')
 
     app = (ROOT / 'assets/app.mjs').read_text(encoding='utf-8')
-    for expected in ['environment: globalThis', 'onLifecycle: publishLifecycle', 'webmcp-status-hero', 'webmcpVerifiedTools', 'webmcpProtocol', 'webmcpPageState', 'webmcpAgentState', 'webmcpContractState', 'webmcpWorkspaceRevision', 'contract-invoked', 'apply-started', 'apply-succeeded', 'apply-failed', 'Page WebMCP API –', 'Agent connection – observed', 'Personalized UI updated – workspace revision', 'Personalized UI update failed – workspace revision']:
+    for expected in ['environment: globalThis', 'onLifecycle: publishLifecycle', 'webmcp-status-hero', 'webmcpVerifiedTools', 'webmcpProtocol', 'webmcpPageState', 'webmcpAgentState', 'webmcpContractState', 'webmcpWorkspaceRevision', 'answer-bootstrap-invoked', 'apply-started', 'apply-succeeded', 'apply-failed', 'Page WebMCP API –', 'Agent connection – observed', 'Personalized UI updated – workspace revision', 'Personalized UI update failed – workspace revision']:
         if expected not in app:
             errors.append(f'assets/app.mjs: missing WebMCP runtime/judge signal {expected!r}')
 
@@ -434,4 +437,3 @@ def main() -> int:
 
 if __name__ == '__main__':
     sys.exit(main())
-

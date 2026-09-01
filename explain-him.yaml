@@ -123,6 +123,8 @@ webmcp:
   protocol_version: 3
   bootstrap_metadata:
     schema_version: explain-him-agent-bootstrap.v1
+    bootstrap_tool: get_explain_him_answer
+    required_before_any_explain_him_answer: true
     location: index.html#explain-him-agent-bootstrap
     machine_readable: true
     immutable_skill_pins_required: true
@@ -198,7 +200,7 @@ webmcp:
     probabilistic_semantic_choice_gate: real-host-model-only
   purpose: typed-result-delivery-to-shared-page
   agent_policy:
-    revision: A5
+    revision: A6
     bootstrap: required-before-retrieval-reasoning-focus-or-apply
     immutable_skill_publication: required
     repositoryRetrievalRequiredWhenPageInsufficient: true
@@ -227,33 +229,33 @@ webmcp:
     failure: {applyFailure: honest-acknowledgement-no-false-success}
   immutable_skill_publication:
     repository: andrew-veresov/explain-him
-    release: A5
-    commit: 054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef
+    release: A6
+    commit: e7da9515f5ea444b5919a99477bcbc8e56e03edd
     load_order: [explain-him, explain-him-presentation]
     skills:
       - id: explain-him
-        sha256: 9929a94b87ed243b6bc81e43950b027d06f0cff4f4c2bb6cabe7de82ca9d99f2
-        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/skills/explain-him/SKILL.md
+        sha256: badedfe003582f7fc54eaf862fdbf55e4aec4311dba1c27249229d1a629a4434
+        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/skills/explain-him/SKILL.md
       - id: explain-him-presentation
-        sha256: 975647e1e1a509068770eb7c5ef172dc7c7ea57a4f6b4a32ac99da7b71ec2122
-        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/skills/explain-him-presentation/SKILL.md
+        sha256: 3e8a618543ae59db47c784a25c070c3fccfae3e1bfdc9734907910cfdb094e4e
+        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/skills/explain-him-presentation/SKILL.md
   groundingSourceIndex:
     - topic: originator-publishing
       path: knowledge/01-originator-flow.md
       section: Basic flow
       status: current
-      rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/knowledge/01-originator-flow.md
-      commit: 054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef
+      rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/knowledge/01-originator-flow.md
+      commit: e7da9515f5ea444b5919a99477bcbc8e56e03edd
       sha256: cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659
     - topic: originator-publishing
       path: PRODUCT-CONTRACT.md
       section: Authoring and publishing reality
       status: current
-      rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/PRODUCT-CONTRACT.md
-      commit: 054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef
-      sha256: accf552b100c1acdd056f166e26c1579f0b55048bc4c67b35f16272af344f4d7
+      rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/e7da9515f5ea444b5919a99477bcbc8e56e03edd/PRODUCT-CONTRACT.md
+      commit: e7da9515f5ea444b5919a99477bcbc8e56e03edd
+      sha256: 0df8585ee8293165b936d803eb095bba19e62a32fbd7745db284003ef78b4006
   tools:
-    - get_explanation_contract
+    - get_explain_him_answer
     - apply_explanation
   contract_returns:
     - repository-location

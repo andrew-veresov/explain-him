@@ -68,7 +68,7 @@ function refreshWebMcpCopy() {
   const heading = card?.querySelector?.('h3');
   const copy = card?.querySelector?.('p');
   if (heading) heading.textContent = 'WebMCP runtime status';
-  if (copy) copy.textContent = 'Protocol v3 exposes exactly two page tools: get_explanation_contract and apply_explanation. A 2/2 page status confirms registration, not an agent connection.';
+  if (copy) copy.textContent = 'Protocol v3 exposes exactly two page tools: get_explain_him_answer and apply_explanation. A 2/2 page status confirms registration, not an agent connection.';
 }
 
 function installWebMcpDemoCard() {
@@ -116,7 +116,7 @@ function setWorkspaceRevision(revision, prefix = null) {
 
 function publishLifecycle(detail) {
   if (!detail || typeof detail !== 'object') return;
-  if (detail.type === 'contract-invoked') {
+  if (detail.type === 'answer-bootstrap-invoked') {
     document.documentElement.dataset.webmcpAgentState = 'observed';
     document.documentElement.dataset.webmcpContractState = 'activated';
     setStatusPart('webmcp-agent-status', 'Agent connection – observed');

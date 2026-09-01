@@ -30,12 +30,12 @@ DEFAULT_REPOSITORY = "andrew-veresov/explain-him"
 SKILLS = ("skills/explain-him/SKILL.md", "skills/explain-him-presentation/SKILL.md")
 REQUIRED = ("", "PRODUCT-CONTRACT.md", "assets/app.mjs", "assets/styles.css", "runtime/workspace.mjs", "runtime/webmcp.mjs", "explain-him.yaml", "schemas/explanation-block.v1.schema.json", "schemas/webmcp-contract.v3.schema.json", "schemas/webmcp-apply.v3.schema.json", "knowledge/01-originator-flow.md", "resolutions/2026-08-30-user-consumer-terminology.md", *SKILLS)
 MARKERS = {
-    "index.html": (b"andrew-veresov/explain-him", b"skills/explain-him/SKILL.md", b"skills/explain-him-presentation/SKILL.md", b"054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef", b"groundingSourceIndex", b"knowledge/01-originator-flow.md", b"cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659", b"PRODUCT-CONTRACT.md", b"accf552b100c1acdd056f166e26c1579f0b55048bc4c67b35f16272af344f4d7", b"data-eh-block-id=\"workflow-diagram\"", b"data-scroll-section=\"how-it-works\"", b"data-scroll-section=\"how-to-express\"", b"Ask your agent how to express your own idea with Explain Him.", b"http-equiv=\"origin-trial\""),
+    "index.html": (b"andrew-veresov/explain-him", b"skills/explain-him/SKILL.md", b"skills/explain-him-presentation/SKILL.md", b"e7da9515f5ea444b5919a99477bcbc8e56e03edd", b"groundingSourceIndex", b"knowledge/01-originator-flow.md", b"cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659", b"PRODUCT-CONTRACT.md", b"0df8585ee8293165b936d803eb095bba19e62a32fbd7745db284003ef78b4006", b"data-eh-block-id=\"workflow-diagram\"", b"data-scroll-section=\"how-it-works\"", b"data-scroll-section=\"how-to-express\"", b"Ask your agent how to express your own idea with Explain Him.", b"http-equiv=\"origin-trial\""),
     "PRODUCT-CONTRACT.md": (b"# Explain Him Product Contract", b"## Authoring and publishing reality", b"does not currently define a dedicated authoring editor", b"GitHub Pages is a publication surface"),
     "assets/app.mjs": (b"registerWebMcpTools", b"webmcpProtocol"),
-    "runtime/webmcp.mjs": (b"explain-him-webmcp-contract.v3", b"get_explanation_contract", b"apply_explanation", b"IMMUTABLE_SKILL_PROOF", b"054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef", b"GROUNDING_SOURCE_INDEX", b"originator-publishing", b"cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659", b"PRODUCT-CONTRACT.md", b"accf552b100c1acdd056f166e26c1579f0b55048bc4c67b35f16272af344f4d7", b"repositoryRetrievalRequiredWhenPageInsufficient", b"decisionPrecedence", b"terminologyConsistency"),
+    "runtime/webmcp.mjs": (b"explain-him-webmcp-contract.v3", b"get_explain_him_answer", b"apply_explanation", b"IMMUTABLE_SKILL_PROOF", b"e7da9515f5ea444b5919a99477bcbc8e56e03edd", b"GROUNDING_SOURCE_INDEX", b"originator-publishing", b"cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659", b"PRODUCT-CONTRACT.md", b"0df8585ee8293165b936d803eb095bba19e62a32fbd7745db284003ef78b4006", b"repositoryRetrievalRequiredWhenPageInsufficient", b"decisionPrecedence", b"terminologyConsistency"),
     "runtime/workspace.mjs": (b"explain-him-local-workspace.v4",),
-    "explain-him.yaml": (b"repository: andrew-veresov/explain-him", b"entrypoint: skills/explain-him/SKILL.md", b"entrypoint: skills/explain-him-presentation/SKILL.md", b"release: A5", b"grounding_source_index", b"topic: originator-publishing", b"knowledge/01-originator-flow.md", b"cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659", b"PRODUCT-CONTRACT.md", b"accf552b100c1acdd056f166e26c1579f0b55048bc4c67b35f16272af344f4d7", b"repositoryRetrievalRequiredWhenPageInsufficient", b"state_model: transactional-typed-presentation-operation-log", b"- get_explanation_contract", b"- apply_explanation"),
+    "explain-him.yaml": (b"repository: andrew-veresov/explain-him", b"entrypoint: skills/explain-him/SKILL.md", b"entrypoint: skills/explain-him-presentation/SKILL.md", b"release: A6", b"grounding_source_index", b"topic: originator-publishing", b"knowledge/01-originator-flow.md", b"cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659", b"PRODUCT-CONTRACT.md", b"0df8585ee8293165b936d803eb095bba19e62a32fbd7745db284003ef78b4006", b"repositoryRetrievalRequiredWhenPageInsufficient", b"state_model: transactional-typed-presentation-operation-log", b"- get_explain_him_answer", b"- apply_explanation"),
     "knowledge/01-originator-flow.md": (b"# Originator flow", b"## Basic flow", b"Publish the repository or GitHub Pages link", b"status: current"),
     "resolutions/2026-08-30-user-consumer-terminology.md": (b"Status: accepted", b"`User` and `Consumer` refer to the same participant", b"`User` is the preferred term"),
     "skills/explain-him/SKILL.md": (b"name: explain-him",),
@@ -212,14 +212,14 @@ def snapshot(root: Path, base: str, expected_sha: str, timeout: float, attempt: 
                     errors.append(f"index.html: WebMCP Origin Trial: {exc}")
             if key == "runtime/webmcp.mjs":
                 tool_names = re.findall(r"name:\s*'([^']+)'", result.body.decode("utf-8", errors="strict"))
-                record["tool_names"] = tool_names; record["exact_tool_names"] = tool_names == ["get_explanation_contract", "apply_explanation"]
+                record["tool_names"] = tool_names; record["exact_tool_names"] = tool_names == ["get_explain_him_answer", "apply_explanation"]
             resources[url] = record
             if result.status != 200: errors.append(f"{url}: expected HTTP 200, got {result.status}")
             if not local.is_file(): errors.append(f"{url}: local facade resource is missing")
             elif result.body != local_bytes: errors.append(f"{url}: live/local SHA-256 mismatch")
             for marker in marker_results:
                 if not marker["present"]: errors.append(f"{key}: missing required marker {marker['marker']}")
-            if key == "runtime/webmcp.mjs" and not record.get("exact_tool_names"): errors.append("runtime/webmcp.mjs: registered tool names are not exactly get_explanation_contract and apply_explanation")
+            if key == "runtime/webmcp.mjs" and not record.get("exact_tool_names"): errors.append("runtime/webmcp.mjs: registered tool names are not exactly get_explain_him_answer and apply_explanation")
             if result.status == 200:
                 for link in graph_links(url, result.content_type, result.body):
                     resolved = safe_url(base, urljoin(url if url.endswith("/") else urljoin(url, "."), link))

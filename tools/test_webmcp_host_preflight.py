@@ -7,7 +7,7 @@ from tools.webmcp_host_preflight import classify_preflight
 
 BASE = {
     "page_api_available": True,
-    "registered_tools": ["get_explanation_contract", "apply_explanation"],
+    "registered_tools": ["get_explain_him_answer", "apply_explanation"],
     "user_turn_observed": True,
     "agent_connection_observed": True,
     "contract_invoked": True,
@@ -25,7 +25,7 @@ class HostPreflightTest(unittest.TestCase):
 
     def test_page_api_and_registration_are_separate_gates(self) -> None:
         self.assertEqual(classify_preflight({**BASE, "page_api_available": False})["code"], "PAGE_API_UNAVAILABLE")
-        self.assertEqual(classify_preflight({**BASE, "registered_tools": ["get_explanation_contract"]})["code"], "PAGE_TOOLS_NOT_REGISTERED")
+        self.assertEqual(classify_preflight({**BASE, "registered_tools": ["get_explain_him_answer"]})["code"], "PAGE_TOOLS_NOT_REGISTERED")
 
     def test_absent_agent_capability_is_blocked_external(self) -> None:
         result = classify_preflight({**BASE, "agent_connection_observed": False, "contract_invoked": False, "apply_succeeded": False})

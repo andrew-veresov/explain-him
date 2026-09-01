@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 
-EXPECTED_TOOLS = {"get_explanation_contract", "apply_explanation"}
+EXPECTED_TOOLS = {"get_explain_him_answer", "apply_explanation"}
 
 
 def _result(status: str, code: str, phase: str) -> dict[str, str]:

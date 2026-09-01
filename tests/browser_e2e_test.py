@@ -32,7 +32,7 @@ class BrowserE2E(unittest.TestCase):
     def diagram(self, term: str) -> dict:
         return {"type":"diagram","title":f"{term} workflow","variant":"flow","nodes":[{"id":term.lower(),"label":term},{"id":"agent","label":"Personal agent"}],"edges":[{"from":term.lower(),"to":"agent","label":"asks"}],"sources":[{"path":"resolutions/2026-08-30-user-consumer-terminology.md","status":"current"}]}
     def request(self, contract: dict, request_id: str, revision: int, operations: list[dict]) -> dict:
-        return {"requestId": request_id, "expectedWorkspaceRevision": revision, "explanationId": contract["explanationId"], "topicId": "terminology:user-consumer", "operations": operations, "handshake": {"contractId": contract["contractId"], "activationId": contract["activation"]["id"], "nonce": contract["activation"]["nonce"], "baseRevision": contract["baseRevision"], "skillProof": contract["skillProof"]}}
+        return {"requestId": request_id, "expectedWorkspaceRevision": revision, "explanationId": contract["explanationId"], "topicId": "terminology:user-consumer", "operations": operations, "handshake": {"bootstrapTool": contract["bootstrapTool"], "contractId": contract["contractId"], "activationId": contract["activation"]["id"], "nonce": contract["activation"]["nonce"], "baseRevision": contract["baseRevision"], "skillProof": contract["skillProof"]}}
     def contrast(self, page: Page, foreground: str, background: str) -> float:
         return page.evaluate(r"""([foreground, background]) => {
           const rgba = (value) => { const values = value.match(/\d+(?:\.\d+)?/g).map(Number); return [values[0] / 255, values[1] / 255, values[2] / 255, values.length > 3 ? values[3] : 1]; };
@@ -44,8 +44,8 @@ class BrowserE2E(unittest.TestCase):
         }""", [foreground, background])
     def test_p0_user_consumer_replace_update_toggle_undo_and_reload(self) -> None:
         page, errors = self.page(True); page.wait_for_function("document.documentElement.dataset.webmcpState === 'verified'")
-        self.assertEqual(sorted(page.evaluate("() => Object.keys(window.__tools)")), ["apply_explanation", "get_explanation_contract"])
-        contract = page.evaluate("() => window.__tools.get_explanation_contract.execute({})")
+        self.assertEqual(sorted(page.evaluate("() => Object.keys(window.__tools)")), ["apply_explanation", "get_explain_him_answer"])
+        contract = page.evaluate("() => window.__tools.get_explain_him_answer.execute({})")
         self.assertEqual(contract["schemaVersion"], "explain-him-webmcp-contract.v3")
         self.assertEqual(contract["workspaceRevision"], 0)
         self.assertTrue(contract["repository"]["url"].startswith("https://github.com/")); self.assertEqual(len(contract["skills"]), 2)
@@ -61,7 +61,7 @@ class BrowserE2E(unittest.TestCase):
         page.get_by_role("heading", name="User workflow").wait_for(state="visible")
         local = page.locator('[data-eh-local-slot="workflow-diagram"]'); self.assertIn("User", local.inner_text()); self.assertNotIn("Consumer", local.inner_text()); self.assertTrue(local.locator('.is-focused').is_visible()); self.assertEqual(page.locator('.is-focused').count(), 1)
         page.reload(wait_until="domcontentloaded"); self.assertTrue(page.get_by_role("heading", name="User workflow").is_visible())
-        contract_after_reload = page.evaluate("() => window.__tools.get_explanation_contract.execute({})")
+        contract_after_reload = page.evaluate("() => window.__tools.get_explain_him_answer.execute({})")
         self.assertEqual(contract_after_reload["workspaceRevision"], 1)
         updated = page.evaluate("args => window.__tools.apply_explanation.execute(args)", self.request(contract_after_reload, "p0-user-consumer-update", contract_after_reload["workspaceRevision"], [{"op":"update","blockId":local_id,"block":self.diagram("Consumer")}]))
         self.assertEqual(updated["workspaceRevision"], 2)
@@ -107,7 +107,7 @@ class BrowserE2E(unittest.TestCase):
         self.assertEqual(page.get_by_role("button", name="Add", exact=True).count(), 0)
         summary = details.locator("summary"); summary.focus(); page.keyboard.press("Enter"); self.assertIsNotNone(details.get_attribute("open"))
         developer_text = details.inner_text()
-        for expected in ["Protocol v3", "get_explanation_contract", "apply_explanation", "2/2 page status", "Operation log", "IndexedDB", "Visible DOM", "Browser fallback", "source path, status, and optional ref"]:
+        for expected in ["Protocol v3", "get_explain_him_answer", "apply_explanation", "2/2 page status", "Operation log", "IndexedDB", "Visible DOM", "Browser fallback", "source path, status, and optional ref"]:
             self.assertIn(expected, developer_text)
         express = page.get_by_role("link", name="How to express your idea", exact=True); express.click()
         self.assertEqual(page.evaluate("() => document.activeElement.id"), "how-to-express"); self.assertEqual(express.get_attribute("aria-current"), "location")

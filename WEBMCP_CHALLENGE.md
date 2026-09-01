@@ -18,7 +18,7 @@ License: Apache-2.0 (`LICENSE`).
 
 A generic browser agent can read pixels/DOM and click controls, but it has to infer the integration contract and safe mutation surface. Explain Him exposes two explicit capabilities:
 
-1. `get_explanation_contract` discovers the public repository, grounding skill, presentation skill, typed-block schema, authored targets, and current local block IDs.
+1. `get_explain_him_answer` discovers the public repository, grounding skill, presentation skill, typed-block schema, authored targets, and current local block IDs.
 2. `apply_explanation` delivers already-grounded typed blocks and guided focus to the same page the human is viewing.
 
 Grounding and GitHub retrieval remain with the personal agent. The authored layer remains immutable. Agent additions are browser-local, reversible, and visibly separated from Originator content.
@@ -30,7 +30,7 @@ Explain Him uses the imperative WebMCP API from top-level JavaScript.
 ```text
 document.modelContext
         |
-        +-- registerTool(get_explanation_contract)
+        +-- registerTool(get_explain_him_answer)
         +-- registerTool(apply_explanation)
 ```
 
@@ -42,7 +42,7 @@ The page `<head>` also exposes immutable machine-readable Protocol v3 bootstrap 
 
 | Tool | Read/write | User intent | Verifiable result |
 |---|---|---|---|
-| `get_explanation_contract` | read | Discover how to ground and present this page | Returns repository, both skills, schema, targets, and local IDs |
+| `get_explain_him_answer` | read | Discover how to ground and present this page | Returns repository, both skills, schema, targets, and local IDs |
 | `apply_explanation` | write | Add/remove a grounded typed block or focus an authored target | Typed block appears/disappears or the target becomes visible and focused |
 
 The public surface intentionally avoids compatibility aliases, diagnostics, retrieval tools, and answer-generation tools.
@@ -57,7 +57,7 @@ Use the live page in a supported agent host. OpenAI currently documents Site Too
 
 Expected behavior:
 
-1. The agent calls `get_explanation_contract`.
+1. The agent calls `get_explain_him_answer`.
 2. It loads both repository-scoped skills.
 3. It reads the authored page and the minimum relevant repository sources, such as `knowledge/01-originator-flow.md`.
 4. It answers in normal chat.

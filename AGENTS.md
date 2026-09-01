@@ -32,7 +32,7 @@ The grounding skill is authoritative for meaning. The presentation skill is auth
 
 When the page is open in a WebMCP-capable browser:
 
-1. call `get_explanation_contract` to establish a Protocol v3 activation;
+1. call `get_explain_him_answer` to establish a Protocol v3 activation;
 2. verify the returned immutable raw skill URLs, commit, SHA-256 proofs, and load order before reading the grounding skill;
 3. follow that skill to answer the question and retrieve deeper GitHub evidence when required;
 4. read the presentation skill before embedding a result into the page;
@@ -46,7 +46,7 @@ The page also publishes invisible machine-readable repository and skill links in
 
 The complete public WebMCP surface is intentionally only:
 
-- `get_explanation_contract`;
+- `get_explain_him_answer`;
 - `apply_explanation`.
 
 Do not look for separate diagnostics, state, focus, undo/redo, compatibility, retrieval, answer-generation, or skill-registration WebMCP tools. `apply_explanation` contains add, replace, update, remove, and focus; undo/redo and Original/Personalized remain human controls.
@@ -56,7 +56,7 @@ The page may still expose ordinary accessible controls for humans/browser automa
 ## Source discovery
 
 1. Treat `index.html` as the Originator-authored explanation page and read it when it answers the user's question.
-2. `get_explanation_contract` provides insertion anchors and skill/schema locations; it is not a source of product facts.
+2. `get_explain_him_answer` provides insertion anchors and skill/schema locations; it is not a source of product facts.
 3. If the page is insufficient, ambiguous, or deeper evidence/version/status is required, use the personal agent's own GitHub/repository integration.
 4. Read the minimum relevant sources.
 5. Check accepted files in `resolutions/` before lower-priority explanatory material.

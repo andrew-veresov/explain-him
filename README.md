@@ -24,7 +24,7 @@ Human asks a question
         v
 Personal AI agent
         |
-        +---- get_explanation_contract ---> repository + skills + targets
+        +---- get_explain_him_answer ---> repository + skills + targets
         |
         +---- read page/repository + answer in normal chat
         |
@@ -44,7 +44,7 @@ The public surface is deliberately small and user-oriented:
 
 | Tool | Purpose |
 |---|---|
-| `get_explanation_contract` | Discover the repository, both skills, typed-block schema, authored targets, and local block IDs |
+| `get_explain_him_answer` | Discover the repository, both skills, typed-block schema, authored targets, and local block IDs |
 | `apply_explanation` | Atomically apply already-grounded typed add/replace/update/remove/focus operations to the browser-local page layer |
 
 There are no duplicate compatibility tools, diagnostic tools, or WebMCP tools for repository search/answer generation. The browser contract models user intentions rather than internal implementation details.
@@ -150,7 +150,7 @@ Important statuses are `current`, `target`, `hypothesis`, `open`, `demo-only`, a
 
 `navigator.modelContext` is retained only as a legacy fallback for older experimental hosts. Explain Him does not depend on the non-standard `registerSkill()` proposal or on declarative WebMCP support.
 
-The page cannot invoke an agent or a tool on activation. It registers tools immediately and exposes pinned bootstrap metadata; the host must discover them and choose to call `get_explanation_contract`. The supported-host invariant is contract invocation before the first grounded page answer. A mutation is accepted only after `apply_explanation` succeeds and workspace revision increases.
+The page cannot invoke an agent or a tool on activation. It registers tools immediately and exposes pinned bootstrap metadata; the host must discover them and choose to call `get_explain_him_answer`. The supported-host invariant is contract invocation before the first grounded page answer. A mutation is accepted only after `apply_explanation` succeeds and workspace revision increases.
 
 On September 1, 2026, the installed official ChatGPT Chrome extension version `1.26.827.12125` answered the exact `User`/`Consumer` prompt, while the page observed no contract invocation and remained at revision 0. The page API independently verified 2/2 tools. This is `BLOCKED_EXTERNAL` at the agent-host connection boundary, not a successful end-to-end run and not a page-registration failure.
 

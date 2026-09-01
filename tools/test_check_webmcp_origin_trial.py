@@ -129,7 +129,7 @@ class OriginTrialCheckTest(unittest.TestCase):
         self.assertIn("contract.skillProof", native_gate)
         self.assertIn("terminology:user-consumer", native_gate)
         self.assertIn("activation?.id", native_gate)
-        self.assertIn("handshake: { contractId", native_gate)
+        self.assertIn("handshake: { bootstrapTool: contract.bootstrapTool, contractId", native_gate)
         self.assertIn("wait_for_function", native_gate)
         self.assertIn("['verified', 'ready', 'partial', 'unavailable', 'error']", native_gate)
         self.assertIn("WebMCP registration was not complete", native_gate)

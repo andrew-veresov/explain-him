@@ -21,7 +21,7 @@ except ModuleNotFoundError:
 
 URL = "https://andrew-veresov.github.io/explain-him/"
 MINIMUM_CHROME_MAJOR = 149
-EXPECTED_TOOLS = ["apply_explanation", "get_explanation_contract"]
+EXPECTED_TOOLS = ["apply_explanation", "get_explain_him_answer"]
 
 
 def emit(status: str, reason: str, **evidence: Any) -> int:
@@ -126,7 +126,7 @@ def main() -> int:
                             if (!descriptor || typeof descriptor !== 'object') throw new TypeError(`${name} descriptor is missing`);
                             return normalizeResult(await document.modelContext.executeTool(descriptor, JSON.stringify(args)), name);
                           };
-                          const contract = await execute('get_explanation_contract', {});
+                          const contract = await execute('get_explain_him_answer', {});
                           if (contract.schemaVersion !== 'explain-him-webmcp-contract.v3' || contract.protocolVersion !== 3) throw new TypeError('unexpected contract schema');
                           const contractRevision = requireRevision(contract.workspaceRevision, 'contract.workspaceRevision');
                           if (!Array.isArray(contract.skillProof) || contract.skillProof.length !== 2 || !contract.contractId || !contract.activation?.id || !contract.activation?.nonce) throw new TypeError('contract is missing the v3 activation proof');
@@ -137,7 +137,7 @@ def main() -> int:
                             nodes: [{ id: term.toLowerCase(), label: term }, { id: 'agent', label: 'Personal agent' }],
                             edges: [{ from: term.toLowerCase(), to: 'agent', label: 'asks' }], sources: []
                           });
-                          const request = (requestId, expectedWorkspaceRevision, operations) => ({ requestId, expectedWorkspaceRevision, explanationId: contract.explanationId, topicId: 'terminology:user-consumer', operations, handshake: { contractId: contract.contractId, activationId: contract.activation.id, nonce: contract.activation.nonce, baseRevision: contract.baseRevision, skillProof: contract.skillProof } });
+                          const request = (requestId, expectedWorkspaceRevision, operations) => ({ requestId, expectedWorkspaceRevision, explanationId: contract.explanationId, topicId: 'terminology:user-consumer', operations, handshake: { bootstrapTool: contract.bootstrapTool, contractId: contract.contractId, activationId: contract.activation.id, nonce: contract.activation.nonce, baseRevision: contract.baseRevision, skillProof: contract.skillProof } });
                           const first = requireOk(await execute('apply_explanation', request('native-chrome-user-consumer', contractRevision, [{ op: 'replace', targetId: 'workflow-diagram', block: block('User') }])), 'replace');
                           const firstRevision = requireRevision(first.workspaceRevision, 'replace.workspaceRevision');
                           if (firstRevision <= contractRevision) throw new TypeError('replace did not advance workspace revision');
@@ -162,7 +162,7 @@ def main() -> int:
                     except Error:
                         deployed_schema = page.evaluate("""async () => {
                           const tools = await document.modelContext.getTools();
-                          const descriptor = tools.find((tool) => tool?.name === 'get_explanation_contract');
+                          const descriptor = tools.find((tool) => tool?.name === 'get_explain_him_answer');
                           if (!descriptor) return null;
                           const raw = await document.modelContext.executeTool(descriptor, JSON.stringify({}));
                           const value = typeof raw === 'string' ? JSON.parse(raw) : raw;
