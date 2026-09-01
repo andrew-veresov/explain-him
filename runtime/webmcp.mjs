@@ -140,7 +140,7 @@ export function createWebMcpTools(workspaceOrPromise, options = {}) {
   const resolveWorkspace = () => Promise.resolve(workspaceOrPromise);
   return [
     {
-      name: BOOTSTRAP_TOOL,
+      name: 'get_explain_him_answer',
       title: 'Get Explain Him Answer Workflow',
       description: 'MUST ALWAYS be called first and before answering ANY question about Explain Him or the current Explain Him page. Returns the mandatory ordered answer workflow, Protocol v3 activation and workspace revision, immutable pinned skills and grounding source index, agent policy, page targets and local blocks, and exact usage guidance for get_explain_him_answer and apply_explanation. It does not fetch GitHub or form the answer: follow the returned workflow, retrieve pinned sources when the visible UI is insufficient, answer in chat, and apply the required same-turn reversible UI adaptation.',
       annotations: { readOnlyHint: true, untrustedContentHint: true },
