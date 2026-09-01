@@ -19,7 +19,7 @@ The [Product Contract](PRODUCT-CONTRACT.md) is the source of truth for product i
 1. Publish an immutable A5 grounding skill that requires repository retrieval whenever the visible page does not explicitly answer a material part of the user's question.
 2. Add a pinned machine-readable `groundingSourceIndex` to page bootstrap and `get_explanation_contract`, including topic, path, section, status, raw URL, commit, and SHA-256.
 3. Update the contract description, Protocol v3 schema, manifest, and public checkers without adding a third tool.
-4. Protect the exact `User`/`Consumer` and `&#x0433;&#x0434;&#x0435; &#x043F;&#x0443;&#x0431;&#x043B;&#x0438;&#x043A;&#x0443;&#x0435;&#x0442; &#x0430;&#x0432;&#x0442;&#x043E;&#x0440; &#x0441;&#x0432;&#x043E;&#x044E; &#x0438;&#x0434;&#x0435;&#x044E;?` behaviors with deterministic fixtures, browser E2E, negative failure checks, and provenance assertions.
+4. Protect the exact `User`/`Consumer` and <code>&#x0433;&#x0434;&#x0435; &#x043F;&#x0443;&#x0431;&#x043B;&#x0438;&#x043A;&#x0443;&#x0435;&#x0442; &#x0430;&#x0432;&#x0442;&#x043E;&#x0440; &#x0441;&#x0432;&#x043E;&#x044E; &#x0438;&#x0434;&#x0435;&#x044E;?</code> behaviors with deterministic fixtures, browser E2E, negative failure checks, and provenance assertions.
 5. Publish private-first, verify the public facade and GitHub Pages deployment, then run the real ChatGPT Desktop Site Tools acceptance gate.
 
 ## Production acceptance gate

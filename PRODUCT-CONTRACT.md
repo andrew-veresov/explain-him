@@ -136,7 +136,7 @@ The agent must answer that they are the same participant and, because the visibl
 
 ### Where the Originator publishes
 
-Prompt: `&#x0433;&#x0434;&#x0435; &#x043F;&#x0443;&#x0431;&#x043B;&#x0438;&#x043A;&#x0443;&#x0435;&#x0442; &#x0430;&#x0432;&#x0442;&#x043E;&#x0440; &#x0441;&#x0432;&#x043E;&#x044E; &#x0438;&#x0434;&#x0435;&#x044E;?`
+Prompt: <code>&#x0433;&#x0434;&#x0435; &#x043F;&#x0443;&#x0431;&#x043B;&#x0438;&#x043A;&#x0443;&#x0435;&#x0442; &#x0430;&#x0432;&#x0442;&#x043E;&#x0440; &#x0441;&#x0432;&#x043E;&#x044E; &#x0438;&#x0434;&#x0435;&#x044E;?</code>
 
 The agent must retrieve the repository source when the visible page is insufficient and answer that the Originator publishes through the idea's GitHub repository or its GitHub Pages URL. It must say that this repository does not currently define a dedicated authoring editor or generator. Because the visible answer is partial, the supported-host scenario also requires a grounded same-turn local page addition or update with provenance.
 
