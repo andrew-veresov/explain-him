@@ -6,17 +6,38 @@ export const EXPLANATION_BLOCK_TYPES = Object.freeze(['callout', 'comparison', '
 export const WEBMCP_PROTOCOL_VERSION = 3;
 export const EXPLAIN_HIM_REPOSITORY = 'andrew-veresov/explain-him';
 export const EXPLAIN_HIM_REPOSITORY_URL = `https://github.com/${EXPLAIN_HIM_REPOSITORY}`;
-export const EXPLAIN_HIM_SKILL_COMMIT = 'd311a3aa74c78292619ce966e0281f20d9599fdc';
+export const EXPLAIN_HIM_SKILL_COMMIT = '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef';
 export const IMMUTABLE_SKILL_PROOF = Object.freeze([
-  { id: 'explain-him', commit: EXPLAIN_HIM_SKILL_COMMIT, sha256: '20060aea4e38f7fd30f3188bb7a5c820f053867002282f4db602904f1ccde731', path: 'skills/explain-him/SKILL.md', url: `https://raw.githubusercontent.com/${EXPLAIN_HIM_REPOSITORY}/${EXPLAIN_HIM_SKILL_COMMIT}/skills/explain-him/SKILL.md`, responsibility: 'grounding-and-repository-retrieval' },
-  { id: 'explain-him-presentation', commit: EXPLAIN_HIM_SKILL_COMMIT, sha256: '5daacfb575b6a230f50c92d4c590b21a08d6d148d75c60e13418edc76fb3ec4b', path: 'skills/explain-him-presentation/SKILL.md', url: `https://raw.githubusercontent.com/${EXPLAIN_HIM_REPOSITORY}/${EXPLAIN_HIM_SKILL_COMMIT}/skills/explain-him-presentation/SKILL.md`, responsibility: 'typed-page-presentation-and-guided-focus' }
+  { id: 'explain-him', commit: EXPLAIN_HIM_SKILL_COMMIT, sha256: '9929a94b87ed243b6bc81e43950b027d06f0cff4f4c2bb6cabe7de82ca9d99f2', path: 'skills/explain-him/SKILL.md', url: `https://raw.githubusercontent.com/${EXPLAIN_HIM_REPOSITORY}/${EXPLAIN_HIM_SKILL_COMMIT}/skills/explain-him/SKILL.md`, responsibility: 'grounding-and-repository-retrieval' },
+  { id: 'explain-him-presentation', commit: EXPLAIN_HIM_SKILL_COMMIT, sha256: '975647e1e1a509068770eb7c5ef172dc7c7ea57a4f6b4a32ac99da7b71ec2122', path: 'skills/explain-him-presentation/SKILL.md', url: `https://raw.githubusercontent.com/${EXPLAIN_HIM_REPOSITORY}/${EXPLAIN_HIM_SKILL_COMMIT}/skills/explain-him-presentation/SKILL.md`, responsibility: 'typed-page-presentation-and-guided-focus' }
+]);
+export const GROUNDING_SOURCE_INDEX = Object.freeze([
+  Object.freeze({
+    topic: 'originator-publishing',
+    path: 'knowledge/01-originator-flow.md',
+    section: 'Basic flow',
+    status: 'current',
+    rawUrl: `https://raw.githubusercontent.com/${EXPLAIN_HIM_REPOSITORY}/${EXPLAIN_HIM_SKILL_COMMIT}/knowledge/01-originator-flow.md`,
+    commit: EXPLAIN_HIM_SKILL_COMMIT,
+    sha256: 'cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659'
+  }),
+  Object.freeze({
+    topic: 'originator-publishing',
+    path: 'PRODUCT-CONTRACT.md',
+    section: 'Authoring and publishing reality',
+    status: 'current',
+    rawUrl: `https://raw.githubusercontent.com/${EXPLAIN_HIM_REPOSITORY}/${EXPLAIN_HIM_SKILL_COMMIT}/PRODUCT-CONTRACT.md`,
+    commit: EXPLAIN_HIM_SKILL_COMMIT,
+    sha256: 'accf552b100c1acdd056f166e26c1579f0b55048bc4c67b35f16272af344f4d7'
+  })
 ]);
 const LOAD_ORDER = Object.freeze(IMMUTABLE_SKILL_PROOF.map((item) => item.id));
 const HANDSHAKE_FIELDS = Object.freeze(['requestId', 'expectedWorkspaceRevision', 'explanationId', 'topicId', 'operations', 'handshake']);
 const AGENT_POLICY = Object.freeze({
-  revision: 'A4',
+  revision: 'A5',
   bootstrap: { requiredOnPageActivation: true, beforeFirstPageAnswer: true },
   skillLoading: { required: true, loadOrder: LOAD_ORDER },
+  repositoryRetrievalRequiredWhenPageInsufficient: true,
   decisionPrecedence: ['explicitNoPageChange', 'restore', 'terminologyConsistency', 'answerPresence'],
   terminologyConsistency: {
     equivalentLabels: ['User', 'Consumer'],
@@ -46,7 +67,7 @@ function targets(workspace) { const nodes = workspace.document?.querySelectorAll
 function locals(workspace) { return (workspace.getVisibleState?.().presentations || []).map((item) => ({ id: item.id, topicId: item.topicId, targetId: item.targetId, placement: item.placement, type: item.artifact?.type, title: item.artifact?.fallback?.title, updatedAt: item.updatedAt })); }
 function proof() { return IMMUTABLE_SKILL_PROOF.map(({ id, commit, sha256 }) => ({ id, commit, sha256 })); }
 function activation() { return { contractId: opaque('contract'), activationId: opaque('activation'), nonce: opaque('nonce') }; }
-function contractFor(workspace, current) { const context = workspace.getContext?.() || {}; const skillProof = proof(); const skills = IMMUTABLE_SKILL_PROOF.map(({ url, ...skill }) => ({ ...skill, rawUrl: url })); return { schemaVersion: 'explain-him-webmcp-contract.v3', protocolVersion: 3, activation: { id: current.activationId, nonce: current.nonce }, contractId: current.contractId, explanationId: context.explanationId || null, baseRevision: context.baseRevision || null, workspaceRevision: context.workspaceRevision ?? 0, repository: { fullName: EXPLAIN_HIM_REPOSITORY, url: EXPLAIN_HIM_REPOSITORY_URL, skillsCommit: EXPLAIN_HIM_SKILL_COMMIT }, skills, skillLoadOrder: LOAD_ORDER, skillProof, agentPolicy: clone(AGENT_POLICY), blockSchema: { path: 'schemas/explanation-block.v1.schema.json', url: '/explain-him/schemas/explanation-block.v1.schema.json', types: EXPLANATION_BLOCK_TYPES }, handshakeSchema: { path: 'schemas/webmcp-apply.v3.schema.json', url: '/explain-him/schemas/webmcp-apply.v3.schema.json' }, targets: targets(workspace), localBlocks: locals(workspace), applyOperations: ['add', 'replace', 'update', 'remove', 'focus'], authoredLayerMutable: false, repositoryAccessViaWebMcp: false }; }
+function contractFor(workspace, current) { const context = workspace.getContext?.() || {}; const skillProof = proof(); const skills = IMMUTABLE_SKILL_PROOF.map(({ url, ...skill }) => ({ ...skill, rawUrl: url })); return { schemaVersion: 'explain-him-webmcp-contract.v3', protocolVersion: 3, activation: { id: current.activationId, nonce: current.nonce }, contractId: current.contractId, explanationId: context.explanationId || null, baseRevision: context.baseRevision || null, workspaceRevision: context.workspaceRevision ?? 0, repository: { fullName: EXPLAIN_HIM_REPOSITORY, url: EXPLAIN_HIM_REPOSITORY_URL, skillsCommit: EXPLAIN_HIM_SKILL_COMMIT }, skills, skillLoadOrder: LOAD_ORDER, skillProof, groundingSourceIndex: clone(GROUNDING_SOURCE_INDEX), agentPolicy: clone(AGENT_POLICY), blockSchema: { path: 'schemas/explanation-block.v1.schema.json', url: '/explain-him/schemas/explanation-block.v1.schema.json', types: EXPLANATION_BLOCK_TYPES }, handshakeSchema: { path: 'schemas/webmcp-apply.v3.schema.json', url: '/explain-him/schemas/webmcp-apply.v3.schema.json' }, targets: targets(workspace), localBlocks: locals(workspace), applyOperations: ['add', 'replace', 'update', 'remove', 'focus'], authoredLayerMutable: false, repositoryAccessViaWebMcp: false }; }
 function block(value) { const input = safeObject(value, 'block'); const type = required(input.type, 'block.type', 40); if (!EXPLANATION_BLOCK_TYPES.includes(type)) throw new TypeError(`Unsupported explanation block type: ${type}`); const allowed = { callout: ['type', 'title', 'body', 'tone', 'sources'], comparison: ['type', 'title', 'columns', 'sources'], workflow: ['type', 'title', 'steps', 'sources'], timeline: ['type', 'title', 'items', 'sources'], diagram: ['type', 'title', 'variant', 'nodes', 'edges', 'sources'] }[type]; strictObject(input, 'block', allowed); const title = required(input.title, 'block.title', 160); const sources = input.sources === undefined ? [] : input.sources; if (!Array.isArray(sources) || sources.length > 20) throw new TypeError('block.sources must contain 0 to 20 entries'); const sourceRefs = sources.map((source) => { const item = strictObject(source, 'source', ['repository', 'path', 'ref', 'section', 'status']); return { repository: Object.hasOwn(item, 'repository') ? required(item.repository, 'source.repository', 200) : EXPLAIN_HIM_REPOSITORY, path: required(item.path, 'source.path', 500), ref: optionalString(item, 'ref', 'source.ref', 160), section: optionalString(item, 'section', 'source.section', 300), status: optionalString(item, 'status', 'source.status', 40) }; });
   if (type === 'callout') { const tone = Object.hasOwn(input, 'tone') ? required(input.tone, 'block.tone', 40) : 'neutral'; if (!['neutral', 'example', 'warning', 'insight'].includes(tone)) throw new TypeError('block.tone must be a supported tone'); return { type, title, body: required(input.body, 'block.body', 5000), tone, sources: sourceRefs }; }
   if (type === 'comparison') { if (!Array.isArray(input.columns) || input.columns.length < 2 || input.columns.length > 4) throw new TypeError('comparison.columns must contain 2 to 4 columns'); return { type, title, sources: sourceRefs, columns: input.columns.map((column) => { const item = strictObject(column, 'comparison.column', ['title', 'items']); return { title: required(item.title, 'comparison.columns.title', 120), items: Array.isArray(item.items) && item.items.length ? item.items.map((value) => required(value, 'comparison.columns.items', 500)) : (() => { throw new TypeError('comparison.columns.items must not be empty'); })() }; }) }; }
@@ -100,7 +121,7 @@ export function createWebMcpTools(workspaceOrPromise, options = {}) {
     {
       name: 'get_explanation_contract',
       title: 'Bootstrap Explain Him Page Contract',
-      description: 'Call this first, before answering any question about this page or loading Explain Him skills. It returns the activation contract, immutable ordered skill URLs and digests, current Personalized UI targets and local blocks, and the revision needed to ground and safely decide a page adaptation.',
+      description: 'Call this first, before answering any question about this page or loading Explain Him skills. It returns the activation contract, immutable ordered skill URLs and digests, pinned grounding source index, current Personalized UI targets and local blocks, and the revision needed to ground and safely decide a page adaptation. When the visible page is insufficient, read the minimum indexed repository sources needed for every material claim before answering and applying the required same-turn page adaptation.',
       annotations: { readOnlyHint: true },
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       execute: async (_input = {}, executionOptions = {}) => {

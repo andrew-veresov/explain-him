@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { EXPLAIN_HIM_REPOSITORY, EXPLAIN_HIM_REPOSITORY_URL, EXPLAIN_HIM_SKILL_COMMIT, EXPLAIN_HIM_WEBMCP_TOOLS, IMMUTABLE_SKILL_PROOF, WEBMCP_PROTOCOL_VERSION, createWebMcpTools, registerWebMcpTools, resolveWebMcpHost } from '../runtime/webmcp.mjs';
+import { EXPLAIN_HIM_REPOSITORY, EXPLAIN_HIM_REPOSITORY_URL, EXPLAIN_HIM_SKILL_COMMIT, EXPLAIN_HIM_WEBMCP_TOOLS, GROUNDING_SOURCE_INDEX, IMMUTABLE_SKILL_PROOF, WEBMCP_PROTOCOL_VERSION, createWebMcpTools, registerWebMcpTools, resolveWebMcpHost } from '../runtime/webmcp.mjs';
 import { appendTransaction, createInitialWorkspace, materializeWorkspace } from '../runtime/workspace.mjs';
 
 function workspace() { const nodes = ['workflow-diagram', 'flow-model'].map((id) => ({ dataset: { ehBlockId: id }, querySelector: () => ({ textContent: id }) })); let state = createInitialWorkspace({ explanationId: 'test', baseRevision: 'r1' }); return { document: { querySelectorAll: () => nodes }, getContext: () => ({ explanationId: 'test', baseRevision: 'r1', workspaceRevision: state.revision, authoredTargetIds: nodes.map((node) => node.dataset.ehBlockId) }), getVisibleState: () => materializeWorkspace(state, { canonicalIds: nodes.map((node) => node.dataset.ehBlockId) }), getLocalChangeHistory: () => ({ transactions: state.transactions }), applyTransaction: async (operations, options) => { state = appendTransaction(state, operations, options); }, attachTransactionResult: async (id, result) => { state.transactions.find((item) => item.id === id).result = result; }, focusBlock: ({ targetId, blockId }) => ({ targetId, blockId }) }; }
@@ -9,7 +9,75 @@ const diagram = (title = 'User terminology') => ({ type: 'diagram', title, varia
 function tools(subject = workspace()) { return new Map(createWebMcpTools(subject).map((tool) => [tool.name, tool])); }
 function request(contract, { requestId = 'request-1', topicId = 'terminology:user-consumer', expectedWorkspaceRevision = contract.workspaceRevision, operations } = {}) { return { requestId, expectedWorkspaceRevision, explanationId: contract.explanationId, topicId, operations, handshake: { contractId: contract.contractId, activationId: contract.activation.id, nonce: contract.activation.nonce, baseRevision: contract.baseRevision, skillProof: contract.skillProof } }; }
 
-test('surface remains exactly two tools and contract exposes pinned A4 Protocol v3 bootstrap', async () => { const map = tools(); const contract = await map.get('get_explanation_contract').execute({}); const repeated = await map.get('get_explanation_contract').execute({}); const bootstrap = map.get('get_explanation_contract'); const apply = map.get('apply_explanation'); assert.deepEqual(EXPLAIN_HIM_WEBMCP_TOOLS, ['get_explanation_contract', 'apply_explanation']); assert.equal(contract.schemaVersion, 'explain-him-webmcp-contract.v3'); assert.equal(contract.protocolVersion, 3); assert.equal(contract.activation.id, repeated.activation.id); assert.equal(contract.activation.nonce, repeated.activation.nonce); assert.equal(contract.contractId, repeated.contractId); assert.equal(contract.workspaceRevision, repeated.workspaceRevision); assert.equal(contract.skills[0].rawUrl.includes('/d311a3aa74c78292619ce966e0281f20d9599fdc/'), true); assert.deepEqual(contract.skillProof.map((item) => item.sha256), IMMUTABLE_SKILL_PROOF.map((item) => item.sha256)); assert.deepEqual(contract.skillProof.map((item) => item.sha256), ['20060aea4e38f7fd30f3188bb7a5c820f053867002282f4db602904f1ccde731', '5daacfb575b6a230f50c92d4c590b21a08d6d148d75c60e13418edc76fb3ec4b']); assert.equal(contract.repository.skillsCommit, 'd311a3aa74c78292619ce966e0281f20d9599fdc'); assert.equal(contract.blockSchema.url, '/explain-him/schemas/explanation-block.v1.schema.json'); assert.equal(contract.handshakeSchema.url, '/explain-him/schemas/webmcp-apply.v3.schema.json'); assert.notEqual(contract.skills[0].rawUrl, contract.handshakeSchema.url); assert.equal(contract.agentPolicy.revision, 'A4'); assert.deepEqual(contract.agentPolicy.decisionPrecedence, ['explicitNoPageChange', 'restore', 'terminologyConsistency', 'answerPresence']); assert.deepEqual(contract.agentPolicy.terminologyConsistency, { equivalentLabels: ['User', 'Consumer'], equivalenceNoteDoesNotMakeMixedLabelsConsistent: true, questionTriggersSameTurnNormalization: true, defaultTerm: 'User', distinctRoles: 'never-normalize', firstCorrection: { topicId: 'terminology:user-consumer', targetId: 'workflow-diagram', operation: 'replace' }, sameTopicFollowUp: { operation: 'update', reuseLocalBlockId: true }, restore: { operation: 'remove' } }); assert.equal(contract.agentPolicy.presentationDecision.alwaysProvideChatAnswer, true); assert.equal(contract.agentPolicy.presentationDecision.fullyPresent.ordinaryQuestion, 'chat-only'); assert.equal(contract.agentPolicy.failure.applyFailure, 'honest-acknowledgement-no-false-success'); assert.equal(bootstrap.title, 'Bootstrap Explain Him Page Contract'); assert.match(bootstrap.description, /Call this first, before answering any question about this page or loading Explain Him skills/); assert.equal(apply.title, 'Keep Personalized UI Consistent'); assert.match(apply.description, /same turn whenever that answer reveals missing, partial, or inconsistent visible Personalized UI/); assert.match(apply.description, /equivalent User and Consumer labels/); assert.match(apply.description, /replace the authored workflow target.*update the same local block/); });
+test('surface remains exactly two tools and contract exposes pinned A5 Protocol v3 bootstrap', async () => {
+  const map = tools();
+  const contract = await map.get('get_explanation_contract').execute({});
+  const repeated = await map.get('get_explanation_contract').execute({});
+  const bootstrap = map.get('get_explanation_contract');
+  const apply = map.get('apply_explanation');
+  assert.deepEqual(EXPLAIN_HIM_WEBMCP_TOOLS, ['get_explanation_contract', 'apply_explanation']);
+  assert.equal(contract.schemaVersion, 'explain-him-webmcp-contract.v3');
+  assert.equal(contract.protocolVersion, 3);
+  assert.equal(contract.activation.id, repeated.activation.id);
+  assert.equal(contract.activation.nonce, repeated.activation.nonce);
+  assert.equal(contract.contractId, repeated.contractId);
+  assert.equal(contract.workspaceRevision, repeated.workspaceRevision);
+  assert.equal(contract.skills[0].rawUrl.includes('/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/'), true);
+  assert.deepEqual(contract.skillProof.map((item) => item.sha256), IMMUTABLE_SKILL_PROOF.map((item) => item.sha256));
+  assert.deepEqual(contract.skillProof.map((item) => item.sha256), [
+    '9929a94b87ed243b6bc81e43950b027d06f0cff4f4c2bb6cabe7de82ca9d99f2',
+    '975647e1e1a509068770eb7c5ef172dc7c7ea57a4f6b4a32ac99da7b71ec2122',
+  ]);
+  assert.equal(contract.repository.skillsCommit, '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef');
+  assert.equal(contract.blockSchema.url, '/explain-him/schemas/explanation-block.v1.schema.json');
+  assert.equal(contract.handshakeSchema.url, '/explain-him/schemas/webmcp-apply.v3.schema.json');
+  assert.notEqual(contract.skills[0].rawUrl, contract.handshakeSchema.url);
+  assert.equal(contract.agentPolicy.revision, 'A5');
+  assert.equal(contract.agentPolicy.repositoryRetrievalRequiredWhenPageInsufficient, true);
+  assert.deepEqual(contract.agentPolicy.decisionPrecedence, ['explicitNoPageChange', 'restore', 'terminologyConsistency', 'answerPresence']);
+  assert.deepEqual(contract.agentPolicy.terminologyConsistency, { equivalentLabels: ['User', 'Consumer'], equivalenceNoteDoesNotMakeMixedLabelsConsistent: true, questionTriggersSameTurnNormalization: true, defaultTerm: 'User', distinctRoles: 'never-normalize', firstCorrection: { topicId: 'terminology:user-consumer', targetId: 'workflow-diagram', operation: 'replace' }, sameTopicFollowUp: { operation: 'update', reuseLocalBlockId: true }, restore: { operation: 'remove' } });
+  assert.equal(contract.agentPolicy.presentationDecision.alwaysProvideChatAnswer, true);
+  assert.equal(contract.agentPolicy.presentationDecision.fullyPresent.ordinaryQuestion, 'chat-only');
+  assert.equal(contract.agentPolicy.failure.applyFailure, 'honest-acknowledgement-no-false-success');
+  assert.equal(bootstrap.title, 'Bootstrap Explain Him Page Contract');
+  assert.match(bootstrap.description, /Call this first, before answering any question about this page or loading Explain Him skills/);
+  assert.match(bootstrap.description, /pinned grounding source index/);
+  assert.equal(apply.title, 'Keep Personalized UI Consistent');
+  assert.match(apply.description, /same turn whenever that answer reveals missing, partial, or inconsistent visible Personalized UI/);
+  assert.match(apply.description, /equivalent User and Consumer labels/);
+  assert.match(apply.description, /replace the authored workflow target.*update the same local block/);
+});
+
+test('A5 contract pins the minimum repository source for insufficient visible answers', async () => {
+  const map = tools();
+  const contract = await map.get('get_explanation_contract').execute({});
+  assert.equal(contract.agentPolicy.revision, 'A5');
+  assert.equal(contract.agentPolicy.repositoryRetrievalRequiredWhenPageInsufficient, true);
+  assert.deepEqual(contract.groundingSourceIndex, [{
+    topic: 'originator-publishing',
+    path: 'knowledge/01-originator-flow.md',
+    section: 'Basic flow',
+    status: 'current',
+    rawUrl: 'https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/knowledge/01-originator-flow.md',
+    commit: '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef',
+    sha256: 'cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659'
+  }, {
+    topic: 'originator-publishing',
+    path: 'PRODUCT-CONTRACT.md',
+    section: 'Authoring and publishing reality',
+    status: 'current',
+    rawUrl: 'https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/PRODUCT-CONTRACT.md',
+    commit: '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef',
+    sha256: 'accf552b100c1acdd056f166e26c1579f0b55048bc4c67b35f16272af344f4d7'
+  }]);
+  assert.match(map.get('get_explanation_contract').description, /pinned grounding source index/i);
+  assert.match(map.get('get_explanation_contract').description, /visible page is insufficient/i);
+
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const bootstrap = JSON.parse(html.match(/<script id="explain-him-agent-bootstrap" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  assert.equal(bootstrap.repositoryRetrievalRequiredWhenPageInsufficient, true);
+  assert.deepEqual(bootstrap.groundingSourceIndex, contract.groundingSourceIndex);
+});
 
 test('apply schema requires the complete nested v3 handshake', async () => { const registered = new Map(); const host = { registerTool: async (tool) => registered.set(tool.name, tool), getTools: async () => [...registered.values()] }; const status = registerWebMcpTools(workspace(), host); await status.ready; const schema = registered.get('apply_explanation').inputSchema; assert.equal(schema.additionalProperties, false); for (const field of ['requestId', 'expectedWorkspaceRevision', 'explanationId', 'topicId', 'operations', 'handshake']) assert.ok(schema.required.includes(field)); for (const field of ['contractId', 'activationId', 'nonce', 'baseRevision', 'skillProof']) assert.ok(schema.properties.handshake.required.includes(field)); assert.equal(schema.properties.operations.items.oneOf.length, 5); });
 
@@ -65,8 +133,10 @@ test('machine-readable bootstrap metadata matches the runtime pins exactly', () 
   assert.equal(bootstrap.protocolVersion, WEBMCP_PROTOCOL_VERSION);
   assert.deepEqual(bootstrap.repository, { fullName: EXPLAIN_HIM_REPOSITORY, url: EXPLAIN_HIM_REPOSITORY_URL, skillsCommit: EXPLAIN_HIM_SKILL_COMMIT });
   assert.deepEqual(bootstrap.tools, EXPLAIN_HIM_WEBMCP_TOOLS);
+  assert.equal(bootstrap.repositoryRetrievalRequiredWhenPageInsufficient, true);
   assert.deepEqual(bootstrap.skillLoadOrder, IMMUTABLE_SKILL_PROOF.map((item) => item.id));
   assert.deepEqual(bootstrap.skills, IMMUTABLE_SKILL_PROOF.map(({ id, commit, sha256, url }) => ({ id, commit, sha256, rawUrl: url })));
+  assert.deepEqual(bootstrap.groundingSourceIndex, GROUNDING_SOURCE_INDEX);
 });
 
 test('tool descriptors follow the current imperative WebMCP shape and bounded-action guidance', async () => {

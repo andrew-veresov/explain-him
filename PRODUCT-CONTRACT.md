@@ -124,7 +124,7 @@ For answer grounding, source precedence remains:
 
 The Product Contract is the required governance source for product purpose, lifecycle, host target, invariants, and non-goals. Any accepted resolution or ADR that changes those facts must update this file in the same publication.
 
-A machine-readable grounding source index is a navigation aid, not a new source of truth. When the visible page is insufficient, the production contract requires the agent to resolve the topic through that index and read the minimum pinned source. The current A4 public runtime does not yet expose this index; [the public roadmap](ROADMAP.md) records the A5 work required to close that gap.
+A machine-readable grounding source index is a navigation aid, not a new source of truth. When the visible page is insufficient, the production contract requires the agent to resolve the topic through that index and read the minimum pinned source. The A5 public runtime exposes this immutable index through page bootstrap and `get_explanation_contract`; [the public roadmap](ROADMAP.md) records the remaining live-host acceptance gate.
 
 ## Key acceptance prompts
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from hashlib import sha256
 from html.parser import HTMLParser
 from pathlib import Path
 import json
@@ -169,19 +170,41 @@ def main() -> int:
             errors.append(f'index.html: agent bootstrap is not valid JSON: {error.msg}')
         else:
             expected_skills = [
-                {'id': 'explain-him', 'commit': 'd311a3aa74c78292619ce966e0281f20d9599fdc', 'sha256': '20060aea4e38f7fd30f3188bb7a5c820f053867002282f4db602904f1ccde731', 'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/d311a3aa74c78292619ce966e0281f20d9599fdc/skills/explain-him/SKILL.md'},
-                {'id': 'explain-him-presentation', 'commit': 'd311a3aa74c78292619ce966e0281f20d9599fdc', 'sha256': '5daacfb575b6a230f50c92d4c590b21a08d6d148d75c60e13418edc76fb3ec4b', 'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/d311a3aa74c78292619ce966e0281f20d9599fdc/skills/explain-him-presentation/SKILL.md'},
+                {'id': 'explain-him', 'commit': '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef', 'sha256': '9929a94b87ed243b6bc81e43950b027d06f0cff4f4c2bb6cabe7de82ca9d99f2', 'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/skills/explain-him/SKILL.md'},
+                {'id': 'explain-him-presentation', 'commit': '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef', 'sha256': '975647e1e1a509068770eb7c5ef172dc7c7ea57a4f6b4a32ac99da7b71ec2122', 'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/skills/explain-him-presentation/SKILL.md'},
             ]
+            expected_sources = [{
+                'topic': 'originator-publishing',
+                'path': 'knowledge/01-originator-flow.md',
+                'section': 'Basic flow',
+                'status': 'current',
+                'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/knowledge/01-originator-flow.md',
+                'commit': '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef',
+                'sha256': 'cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659',
+            }, {
+                'topic': 'originator-publishing',
+                'path': 'PRODUCT-CONTRACT.md',
+                'section': 'Authoring and publishing reality',
+                'status': 'current',
+                'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/PRODUCT-CONTRACT.md',
+                'commit': '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef',
+                'sha256': 'accf552b100c1acdd056f166e26c1579f0b55048bc4c67b35f16272af344f4d7',
+            }]
             expected_bootstrap = {
                 'schemaVersion': 'explain-him-agent-bootstrap.v1',
                 'protocolVersion': 3,
-                'repository': {'fullName': 'andrew-veresov/explain-him', 'url': 'https://github.com/andrew-veresov/explain-him', 'skillsCommit': 'd311a3aa74c78292619ce966e0281f20d9599fdc'},
+                'repository': {'fullName': 'andrew-veresov/explain-him', 'url': 'https://github.com/andrew-veresov/explain-him', 'skillsCommit': '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef'},
                 'tools': PUBLIC_WEBMCP_TOOLS,
+                'repositoryRetrievalRequiredWhenPageInsufficient': True,
                 'skillLoadOrder': [item['id'] for item in expected_skills],
                 'skills': expected_skills,
+                'groundingSourceIndex': expected_sources,
             }
             if bootstrap != expected_bootstrap:
                 errors.append('index.html: agent bootstrap does not exactly match the pinned Protocol v3 runtime contract')
+            source_path = ROOT / expected_sources[0]['path']
+            if source_path.is_file() and sha256(source_path.read_bytes()).hexdigest() != expected_sources[0]['sha256']:
+                errors.append('knowledge/01-originator-flow.md: content does not match the pinned grounding source SHA-256')
     if len(parser.block_ids) != len(set(parser.block_ids)):
         errors.append('index.html: duplicate data-eh-block-id values')
     unknown_slots = sorted(set(parser.slot_ids) - set(parser.block_ids))
@@ -209,17 +232,23 @@ def main() -> int:
         'live_validation: tools/check_live_pages.py', 'native_live_validation: tools/test_native_chrome_webmcp_live.py',
         'host_guarantee: false', 'protocol_version: 3', 'contract_schema: schemas/webmcp-contract.v3.schema.json',
         'apply_schema: schemas/webmcp-apply.v3.schema.json', 'schema_version: explain-him-local-workspace.v4',
-        'commit: d311a3aa74c78292619ce966e0281f20d9599fdc',
-        'sha256: 20060aea4e38f7fd30f3188bb7a5c820f053867002282f4db602904f1ccde731',
-        'sha256: 5daacfb575b6a230f50c92d4c590b21a08d6d148d75c60e13418edc76fb3ec4b',
+        'release: A5', 'commit: 054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef',
+        'sha256: 9929a94b87ed243b6bc81e43950b027d06f0cff4f4c2bb6cabe7de82ca9d99f2',
+        'sha256: 975647e1e1a509068770eb7c5ef172dc7c7ea57a4f6b4a32ac99da7b71ec2122',
         'activation_handshake: fail-closed',
-        'revision: A4', 'decisionPrecedence: [explicitNoPageChange, restore, terminologyConsistency, answerPresence]',
+        'revision: A5', 'repositoryRetrievalRequiredWhenPageInsufficient: true',
+        'groundingSourceIndex:', 'topic: originator-publishing', 'path: knowledge/01-originator-flow.md',
+        'section: Basic flow', 'status: current',
+        'sha256: cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659',
+        'path: PRODUCT-CONTRACT.md', 'section: Authoring and publishing reality',
+        'sha256: accf552b100c1acdd056f166e26c1579f0b55048bc4c67b35f16272af344f4d7',
+        'decisionPrecedence: [explicitNoPageChange, restore, terminologyConsistency, answerPresence]',
         'equivalenceNoteDoesNotMakeMixedLabelsConsistent: true',
         'presentationDecision:', 'alwaysProvideChatAnswer: true',
         'assessAnswerAndRequestedRepresentationInPersonalizedUi: true',
         'fullyPresent: {ordinaryQuestion: chat-only, showOrWalkthrough: focus-only}',
         'failure: {applyFailure: honest-acknowledgement-no-false-success}',
-        'rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/d311a3aa74c78292619ce966e0281f20d9599fdc/',
+        'rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef/',
         'schema_version: explain-him-agent-bootstrap.v1', 'page_activation_effect: discovery-hint-only',
         'page_api: data-webmcp-page-state', 'agent_connection: data-webmcp-agent-state',
         'contract: data-webmcp-contract-state', 'workspace_revision: data-webmcp-workspace-revision',
@@ -249,7 +278,7 @@ def main() -> int:
             errors.append('distribution/public-facade.yml: missing private-to-public publication policy')
         else:
             policy = distribution.read_text(encoding='utf-8')
-            for expected in ['source: demo/.nojekyll', 'target: .nojekyll', 'source: demo/tests/**', 'target: tests/**', 'source: demo/tools/check_public_demo.py', 'target: tools/check_public_demo.py', 'source: tools/check_live_pages.py', 'target: tools/check_live_pages.py', 'source: tools/check_webmcp_origin_trial.py', 'target: tools/check_webmcp_origin_trial.py', 'source: tools/test_check_live_pages.py', 'target: tools/test_check_live_pages.py', 'source: tools/test_native_chrome_webmcp_live.py', 'target: tools/test_native_chrome_webmcp_live.py', 'source: tools/webmcp_host_preflight.py', 'target: tools/webmcp_host_preflight.py', 'source: tools/test_webmcp_host_preflight.py', 'target: tools/test_webmcp_host_preflight.py', 'source: distribution/public-workflows/live-pages-smoke.yml', 'target: .github/workflows/live-pages-smoke.yml', 'source: distribution/public-workflows/public-demo-check.yml', 'target: .github/workflows/public-demo-check.yml', 'source: distribution/public-workflows/webmcp-origin-trial.yml', 'target: .github/workflows/webmcp-origin-trial.yml', 'transactional-typed-presentation-operation-log', 'github-pages-preserves-raw-skill-markdown', 'deployed-pages-matches-exact-public-sha', 'origin-trial-is-pinned-decoded-and-checked-before-webmcp-api', 'current_public_skill_release:', 'protocol-v3-contract-binds-current-public-skill-release', 'page-api-and-agent-host-evidence-are-distinct']:
+            for expected in ['source: demo/.nojekyll', 'target: .nojekyll', 'source: demo/tests/**', 'target: tests/**', 'source: demo/tools/check_public_demo.py', 'target: tools/check_public_demo.py', 'source: tools/check_live_pages.py', 'target: tools/check_live_pages.py', 'source: tools/check_webmcp_origin_trial.py', 'target: tools/check_webmcp_origin_trial.py', 'source: tools/test_check_live_pages.py', 'target: tools/test_check_live_pages.py', 'source: tools/test_native_chrome_webmcp_live.py', 'target: tools/test_native_chrome_webmcp_live.py', 'source: tools/webmcp_host_preflight.py', 'target: tools/webmcp_host_preflight.py', 'source: tools/test_webmcp_host_preflight.py', 'target: tools/test_webmcp_host_preflight.py', 'source: distribution/public-workflows/live-pages-smoke.yml', 'target: .github/workflows/live-pages-smoke.yml', 'source: distribution/public-workflows/public-demo-check.yml', 'target: .github/workflows/public-demo-check.yml', 'source: distribution/public-workflows/webmcp-origin-trial.yml', 'target: .github/workflows/webmcp-origin-trial.yml', 'transactional-typed-presentation-operation-log', 'github-pages-preserves-raw-skill-markdown', 'deployed-pages-matches-exact-public-sha', 'origin-trial-is-pinned-decoded-and-checked-before-webmcp-api', 'current_public_skill_release:', 'protocol-v3-contract-binds-current-public-skill-release', 'pinned-grounding-source-index-matches-public-content', 'page-api-and-agent-host-evidence-are-distinct']:
                 if expected not in policy:
                     errors.append(f'distribution/public-facade.yml: missing controlled facade rule {expected!r}')
 
@@ -354,7 +383,7 @@ def main() -> int:
     for name in PUBLIC_WEBMCP_TOOLS:
         if f"'{name}'" not in webmcp:
             errors.append(f'runtime/webmcp.mjs: missing public WebMCP tool {name}')
-    for expected in ['explain-him-webmcp-contract.v3', 'IMMUTABLE_SKILL_PROOF', 'd311a3aa74c78292619ce966e0281f20d9599fdc', "revision: 'A4'", 'decisionPrecedence', 'terminologyConsistency', 'Call this first, before answering any question about this page or loading Explain Him skills', 'Keep Personalized UI Consistent', 'same turn whenever that answer reveals missing, partial, or inconsistent visible Personalized UI', 'Activation handshake is stale', 'topicId', 'presentationDecision', 'alwaysProvideChatAnswer: true', 'honest-acknowledgement-no-false-success', 'focusOnlyChangesRevision: false']:
+    for expected in ['explain-him-webmcp-contract.v3', 'IMMUTABLE_SKILL_PROOF', 'GROUNDING_SOURCE_INDEX', '054bbf4e4c2f121bf6066ef7d1ae961c7c7a0aef', "revision: 'A5'", 'repositoryRetrievalRequiredWhenPageInsufficient: true', 'originator-publishing', 'knowledge/01-originator-flow.md', 'cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659', 'decisionPrecedence', 'terminologyConsistency', 'Call this first, before answering any question about this page or loading Explain Him skills', 'pinned grounding source index', 'visible page is insufficient', 'Keep Personalized UI Consistent', 'same turn whenever that answer reveals missing, partial, or inconsistent visible Personalized UI', 'Activation handshake is stale', 'topicId', 'presentationDecision', 'alwaysProvideChatAnswer: true', 'honest-acknowledgement-no-false-success', 'focusOnlyChangesRevision: false']:
         if expected not in webmcp:
             errors.append(f'runtime/webmcp.mjs: missing Protocol v3 invariant {expected!r}')
     for name in OBSOLETE_PUBLIC_TOOLS:

@@ -56,7 +56,11 @@ test('checked-in strict schemas accept production descriptor values and reject u
   assert.equal(validate(contractSchema, contractSchema, { ...contract, repository: { ...contract.repository, skillsCommit: '0'.repeat(40) } }), false);
   assert.equal(validate(contractSchema, contractSchema, { ...contract, skills: [{ ...contract.skills[0], sha256: '0'.repeat(64) }, contract.skills[1]] }), false);
   assert.equal(validate(contractSchema, contractSchema, { ...contract, skillProof: [contract.skillProof[1], contract.skillProof[0]] }), false);
+  assert.equal(validate(contractSchema, contractSchema, { ...contract, groundingSourceIndex: undefined }), false);
+  assert.equal(validate(contractSchema, contractSchema, { ...contract, groundingSourceIndex: [{ ...contract.groundingSourceIndex[0], sha256: '0'.repeat(64) }] }), false);
+  assert.equal(validate(contractSchema, contractSchema, { ...contract, groundingSourceIndex: [...contract.groundingSourceIndex].reverse() }), false);
   assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, revision: 'A2' } }), false);
+  assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, repositoryRetrievalRequiredWhenPageInsufficient: false } }), false);
   assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, decisionPrecedence: [...contract.agentPolicy.decisionPrecedence].reverse() } }), false);
   assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, terminologyConsistency: { ...contract.agentPolicy.terminologyConsistency, distinctRoles: 'normalize' } } }), false);
   assert.equal(validate(applySchema, applySchema, { ...input, unknown: true }), false);

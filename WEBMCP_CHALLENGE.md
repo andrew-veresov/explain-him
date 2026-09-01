@@ -36,7 +36,7 @@ document.modelContext
 
 `navigator.modelContext` exists only as a legacy fallback for older experimental hosts. The implementation does not depend on `registerSkill()`, iframe tools, or declarative WebMCP support.
 
-The page `<head>` also exposes immutable machine-readable Protocol v3 bootstrap metadata with repository identity, ordered raw skill URLs, the A4 public commit, and SHA-256 digests. These are consistency and discovery hints, not a hidden knowledge bundle and not a page-side command to an agent.
+The page `<head>` also exposes immutable machine-readable Protocol v3 bootstrap metadata with repository identity, ordered raw A5 skill URLs, the pinned grounding source index, public commits, and SHA-256 digests. These are consistency and discovery hints, not a hidden knowledge bundle and not a page-side command to an agent.
 
 ## Site Tool surface
 
