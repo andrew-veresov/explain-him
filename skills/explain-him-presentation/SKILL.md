@@ -17,18 +17,18 @@ Before using this skill:
 
 1. follow `skills/explain-him/SKILL.md`;
 2. complete its mandatory activation bootstrap before grounding, focus, or mutation;
-3. reuse the initial `get_explanation_contract` result for this activation; request another contract only for a confirmed stale-workspace or session-conflict refresh, or for an explicitly new page session;
+3. reuse the initial `get_explain_him_answer` result for this activation; request another answer bootstrap only for a confirmed stale-workspace or session-conflict refresh, or for an explicitly new page session;
 4. ground the answer from the authored page and, when needed, GitHub;
 5. preserve repository provenance and status;
 6. retain the contract workspace revision, authored target IDs, and local block IDs until the transaction completes.
 
-## Protocol selection and legacy v2 fallback
+## Protocol v3 and release binding
 
 Select the protocol only from the returned `schemaVersion`; this skill must not relabel, downgrade, or translate a returned contract.
 
 - A returned `explain-him-webmcp-contract.v3` requires its full activation handshake, including the activation ID, nonce, base revision, and exact ordered `skillProof`. Verify the immutable raw URLs, commits, and digests before applying a typed result, then send the complete v3 handshake unchanged with `apply_explanation`.
-- Never downgrade or translate a returned v3 contract to v2. Retain its revision, topic, and local block IDs for the current activation.
-- An actual older page may return `explain-him-webmcp-contract.v2`. Use that legacy compatibility fallback only with the fields it actually returns. Do not fabricate v3 activation or proof fields, and do not claim that a v3 handshake ran.
+- Never downgrade or translate a returned v3 contract to v2. A6 accepts only a Protocol v3 activation returned by `get_explain_him_answer`; an older bootstrap identity or proof cannot authorize `apply_explanation`.
+- An actual older page must use the skill release and protocol contract pinned by that page. Do not apply this A6 skill by guessing compatibility or translating its bootstrap identity.
 - If the contract is absent or has an unknown version, this skill cannot mutate or focus the page.
 
 The contract tells you:
@@ -179,7 +179,7 @@ Fully present, correct, and consistent content stays chat-only for an ordinary q
 
 When this matrix selects an operation, `apply_explanation` in the same turn is mandatory. Use chat only for a simple, correct answer whose answer and requested representation are already fully present and that is not a show or walkthrough request.
 
-Treat a topic as the stable semantic subject plus its authored target and, once created, its returned `local-*` block ID. In the v2 fallback this identity is session-local agent state, not a new runtime field. For every continuation on that topic, reuse the same returned local block ID rather than adding a duplicate block. Use `update` for a same-topic refinement when that existing local block is partial or needs a refined grounded result. Do not tell the user that a page result changed until the selected same-turn transaction succeeds.
+Treat a topic as the stable semantic subject plus its authored target and, once created, its returned `local-*` block ID. For every continuation on that topic, reuse the same returned local block ID rather than adding a duplicate block. Use `update` for a same-topic refinement when that existing local block is partial or needs a refined grounded result. Do not tell the user that a page result changed until the selected same-turn transaction succeeds.
 
 ### Terminology consistency precedes fully-present
 
@@ -212,7 +212,7 @@ Use `index.html` when the authored page itself is the source. Do not invent miss
 
 ## Adding blocks
 
-1. Choose the authored `targetId` from `get_explanation_contract`.
+1. Choose the authored `targetId` from `get_explain_him_answer`.
 2. Choose the typed block with the heuristic above.
 3. Keep it concise; the conversational answer remains primary.
 4. Include provenance.
@@ -271,7 +271,7 @@ Example input:
 
 ## Replacing, updating, or removing blocks
 
-Use only block IDs returned by `get_explanation_contract` or a successful `apply_explanation` response.
+Use only block IDs returned by `get_explain_him_answer` or a successful `apply_explanation` response.
 
 Remove:
 
@@ -314,3 +314,4 @@ If the personal agent uses Archify or another external presenter to help design 
 ## Failure behavior
 
 If `apply_explanation` fails, keep the conversational answer and plainly say that the requested local page change was not applied. The agent must explicitly say that the Personalized UI did not change. Do not re-ground or invent different facts to make the renderer succeed, and do not claim that an edit, correction, refinement, or restore completed.
+

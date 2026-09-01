@@ -62,10 +62,10 @@ The WebMCP Model Context Tool Inspector is a developer debugging aid only. It is
 On a supported production host:
 
 1. The reader opens the published page in the ChatGPT Desktop built-in browser.
-2. The page registers exactly `get_explanation_contract` and `apply_explanation` through Protocol v3.
+2. The page registers exactly `get_explain_him_answer` and `apply_explanation` through Protocol v3.
 3. The host discovers the tools. Page JavaScript cannot force discovery or invoke the agent on activation.
-4. Before the first grounded answer about the page, the agent calls `get_explanation_contract`.
-5. The agent verifies the returned activation, workspace revision, immutable skill URLs, commits, SHA-256 proofs, and declared load order.
+4. Before answering any question about Explain Him or the current Explain Him page, the agent calls `get_explain_him_answer`. The descriptor is a strong semantic selection instruction, not a page-side guarantee that the host will invoke it.
+5. The agent follows the returned ordered answer workflow and verifies the activation, workspace revision, immutable skill URLs, commits, SHA-256 proofs, and declared load order.
 6. The agent loads the grounding skill and then the presentation skill.
 7. The agent reads the relevant visible page content and decides whether it fully and correctly answers the question.
 8. The agent always answers in chat.
@@ -108,7 +108,7 @@ Unless a later accepted ADR changes this contract:
 
 - the public WebMCP surface contains exactly two tools;
 - the protocol is Protocol v3;
-- `get_explanation_contract` establishes activation, skills, source navigation, targets, local block IDs, and revision state;
+- `get_explain_him_answer` is the mandatory read-only answer bootstrap. It returns the ordered answer workflow, activation, skills, source navigation, tool usage, targets, local block IDs, and revision state;
 - `apply_explanation` performs bounded typed `add`, `replace`, `update`, `remove`, and `focus` operations;
 - repository search, answer generation, GitHub Issues, diagnostics, and arbitrary DOM mutation are not WebMCP tools.
 
@@ -124,7 +124,7 @@ For answer grounding, source precedence remains:
 
 The Product Contract is the required governance source for product purpose, lifecycle, host target, invariants, and non-goals. Any accepted resolution or ADR that changes those facts must update this file in the same publication.
 
-A machine-readable grounding source index is a navigation aid, not a new source of truth. When the visible page is insufficient, the production contract requires the agent to resolve the topic through that index and read the minimum pinned source. The A5 public runtime exposes this immutable index through page bootstrap and `get_explanation_contract`; [the public roadmap](ROADMAP.md) records the remaining live-host acceptance gate.
+A machine-readable grounding source index is a navigation aid, not a new source of truth. When the visible page is insufficient, the production contract requires the agent to resolve the topic through that index and read the minimum pinned source. The A6 public runtime exposes this immutable index through page bootstrap and `get_explain_him_answer`; [the public roadmap](ROADMAP.md) records the remaining live-host acceptance gate.
 
 ## Key acceptance prompts
 
@@ -163,3 +163,4 @@ Page registration, Origin Trial validation, fixture AI, and native browser tool 
 - [Chrome WebMCP documentation](https://developer.chrome.com/docs/ai/webmcp)
 - [Chrome WebMCP best practices](https://developer.chrome.com/docs/ai/webmcp/best-practices)
 - [WebMCP Community Group source](https://github.com/webmachinelearning/webmcp)
+

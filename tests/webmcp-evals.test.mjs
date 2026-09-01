@@ -6,7 +6,11 @@ import { dirname, join } from 'node:path';
 import { EXPLAIN_HIM_WEBMCP_TOOLS, createWebMcpTools } from '../runtime/webmcp.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const cases = JSON.parse(await readFile(join(here, 'webmcp-eval-cases.json'), 'utf8'));
+const [cases, groundingSkill, presentationSkill] = await Promise.all([
+  readFile(join(here, 'webmcp-eval-cases.json'), 'utf8').then(JSON.parse),
+  readFile(join(here, '..', 'skills', 'explain-him', 'SKILL.md'), 'utf8'),
+  readFile(join(here, '..', 'skills', 'explain-him-presentation', 'SKILL.md'), 'utf8')
+]);
 
 function workspaceStub() {
   return {
@@ -51,3 +55,42 @@ test('eval fixtures match current tool schemas', () => {
     }
   }
 });
+
+test('A6 skills require Protocol v3 and reject an older bootstrap identity', () => {
+  for (const skill of [groundingSkill, presentationSkill]) {
+    assert.match(skill, /Select the protocol only from the returned `schemaVersion`/);
+    assert.match(skill, /A returned `explain-him-webmcp-contract\.v3` requires/);
+    assert.match(skill, /Never downgrade or translate a returned v3 contract to v2/);
+    assert.match(skill, /older bootstrap identity or proof cannot authorize `apply_explanation`/i);
+    assert.match(skill, /actual older page must use the skill release and protocol contract pinned by that page/i);
+    assert.doesNotMatch(skill, /legacy v2 fallback/i);
+    assert.doesNotMatch(skill, /The current runtime returns `explain-him-webmcp-contract\.v2`/);
+    assert.doesNotMatch(skill, /the present `explain-him-webmcp-contract\.v2` response/i);
+  }
+});
+
+test('A6 grounding policy requires the semantic answer bootstrap before every Explain Him answer', () => {
+  assert.match(groundingSkill, /`get_explain_him_answer`/);
+  assert.match(groundingSkill, /before answering any question about Explain Him or the current Explain Him page/i);
+  assert.doesNotMatch(groundingSkill, /`get_explanation_contract`/);
+});
+
+test('A6 grounding policy requires pinned repository retrieval for every material page gap', () => {
+  assert.match(groundingSkill, /If any material part of the answer is not explicit in the visible Personalized UI/);
+  assert.match(groundingSkill, /repository retrieval is required in the same turn/i);
+  assert.match(groundingSkill, /`groundingSourceIndex`/);
+  assert.match(groundingSkill, /minimum pinned source/i);
+  assert.match(groundingSkill, /Do not answer from plausible visible-page inference/i);
+  assert.match(groundingSkill, /does not document a dedicated authoring tool/i);
+  assert.match(groundingSkill, /retrieval failure/i);
+});
+
+test('A6 presentation policy keeps conditional same-turn apply and truthful failure behavior', () => {
+  assert.match(presentationSkill, /initial `get_explain_him_answer` result/);
+  assert.doesNotMatch(presentationSkill, /`get_explanation_contract`/);
+  assert.match(presentationSkill, /Missing, partial, or inconsistent visible UI requires a same-turn `apply_explanation`/);
+  assert.match(presentationSkill, /reuse the same returned local block ID/i);
+  assert.match(presentationSkill, /must explicitly say that the Personalized UI did not change/i);
+  assert.match(presentationSkill, /Fully present, correct, and consistent content stays chat-only/i);
+});
+

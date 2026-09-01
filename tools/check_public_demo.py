@@ -322,10 +322,11 @@ def main() -> int:
         errors.append('SKILL.md: invalid portable frontmatter')
     for expected in [
         'Repository-authored artifacts are English', 'provenance', 'Archify', 'Never present',
-        'Mandatory activation bootstrap', 'make one initial `get_explanation_contract` call for this activation',
+        'Mandatory activation bootstrap', 'make one initial `get_explain_him_answer` call for this activation',
+        'before answering any question about Explain Him or the current Explain Him page',
         'Additional contract calls are allowed only for a confirmed stale-workspace or session-conflict refresh',
-        'Protocol selection and legacy v2 fallback', 'Select the protocol only from the returned `schemaVersion`',
-        'Never downgrade or translate a returned v3 contract to v2', 'An actual older page may return `explain-him-webmcp-contract.v2`',
+        'Protocol v3 and release binding', 'Select the protocol only from the returned `schemaVersion`',
+        'Never downgrade or translate a returned v3 contract to v2', 'an older bootstrap identity or proof cannot authorize `apply_explanation`',
         'Page-adaptation decision policy', 'apply_explanation` in the same turn is mandatory',
         'call `apply_explanation` in the same turn with a focus-only operation',
         'chat only for a simple, correct answer', 'requested local page change was not applied',
@@ -348,10 +349,10 @@ def main() -> int:
     if not presentation_skill.startswith('---\nname: explain-him-presentation\n'):
         errors.append('presentation SKILL.md: invalid portable frontmatter')
     for expected in [
-        'Mandatory activation bootstrap', 'reuse the initial `get_explanation_contract` result for this activation',
+        'Mandatory activation bootstrap', 'reuse the initial `get_explain_him_answer` result for this activation',
         'confirmed stale-workspace or session-conflict refresh',
-        'Protocol selection and legacy v2 fallback', 'Select the protocol only from the returned `schemaVersion`',
-        'Never downgrade or translate a returned v3 contract to v2', 'actual older page may return `explain-him-webmcp-contract.v2`', 'Same-turn decision and topic reuse',
+        'Protocol v3 and release binding', 'Select the protocol only from the returned `schemaVersion`',
+        'Never downgrade or translate a returned v3 contract to v2', 'an older bootstrap identity or proof cannot authorize `apply_explanation`', 'Same-turn decision and topic reuse',
         'Treat a topic as the stable semantic subject', 'Use `update` for a same-topic refinement',
         'Batch any other affected equivalent-label targets in the same transaction',
         'same-turn `apply_explanation` call with a focus-only operation',
@@ -433,3 +434,4 @@ def main() -> int:
 
 if __name__ == '__main__':
     sys.exit(main())
+

@@ -17,25 +17,26 @@ For browser-local presentation, also read `../explain-him-presentation/SKILL.md`
 
 ## Mandatory activation bootstrap
 
-On every Explain Him skill activation, bootstrap the current page before retrieval, reasoning, focus, or a possible local mutation:
+On every Explain Him skill activation, bootstrap the current page before retrieval, reasoning, focus, a possible local mutation, or answering any question about Explain Him or the current Explain Him page:
 
-1. when a Site Tools host is available, make one initial `get_explanation_contract` call for this activation;
-2. confirm the repository is `andrew-veresov/explain-him`, the two expected tools are available, and the returned target and local-block lists are usable;
-3. retain the returned workspace revision, authored target IDs, and local block IDs as the session-local page state;
-4. use authored target IDs only as insertion anchors, never as knowledge;
-5. load this grounding skill, then `skills/explain-him-presentation/SKILL.md`, and only then reason about a page adaptation.
+1. when a Site Tools host is available, make one initial `get_explain_him_answer` call for this activation before answering any question about Explain Him or the current Explain Him page;
+2. follow the returned ordered answer workflow and confirm the repository is `andrew-veresov/explain-him`, the two expected tools are available, and the returned target and local-block lists are usable;
+3. verify and load every immutable skill in `skillLoadOrder` from its raw URL, commit, and SHA-256 proof;
+4. retain the returned workspace revision, activation identity, authored target IDs, and local block IDs as the session-local page state;
+5. use authored target IDs only as insertion anchors, never as knowledge;
+6. load this grounding skill, then `skills/explain-him-presentation/SKILL.md`, and only then reason about the answer and any page adaptation.
 
 Do not defer this bootstrap until after answering when Site Tools are available. Additional contract calls are allowed only for a confirmed stale-workspace or session-conflict refresh, or for an explicitly new page session.
 
-`get_explanation_contract` is a page contract, not a knowledge-search API. Do not expect WebMCP to answer questions or read GitHub.
+`get_explain_him_answer` returns the mandatory answer workflow and page contract. It does not itself search GitHub, form the chat answer, or mutate the page; follow its pinned instructions using the personal agent's repository capability and `apply_explanation` when required.
 
-## Protocol selection and legacy v2 fallback
+## Protocol v3 and release binding
 
 Select the protocol only from the returned `schemaVersion`; never infer it from this skill, a page label, or an earlier session.
 
 - A returned `explain-him-webmcp-contract.v3` requires the full Protocol v3 activation handshake. Verify the returned activation ID and nonce, exact ordered `skillProof`, immutable raw skill URLs, commits, and digests before loading the skills. Send the complete v3 handshake with every `apply_explanation` request.
-- Never downgrade or translate a returned v3 contract to v2. A v3 contract stays v3 for that activation, including its revision and local block IDs.
-- An actual older page may return `explain-him-webmcp-contract.v2`. That is the legacy compatibility fallback only: validate its returned fields, use only its supported capabilities, and do not invent a nonce, immutable artifact digest, or other v3 field.
+- Never downgrade or translate a returned v3 contract to v2. A6 accepts only a Protocol v3 activation returned by `get_explain_him_answer`; an older bootstrap identity or proof cannot authorize `apply_explanation`.
+- An actual older page must use the skill release and protocol contract pinned by that page. Do not apply this A6 skill by guessing compatibility or translating its bootstrap identity.
 - An absent or unknown contract version cannot authorize a page mutation or focus.
 
 If the Site Tools host is absent, record that the bootstrap was unavailable, use the chat-only fallback below, and never claim a page mutation.
@@ -60,7 +61,7 @@ The personal agent must:
 
 WebMCP has exactly two public capabilities:
 
-- `get_explanation_contract` – returns insertion anchors, current local block IDs, block schema location, repository location, and this skill location;
+- `get_explain_him_answer` – must be called before every Explain Him answer and returns the mandatory ordered answer workflow, activation, current revision and local IDs, immutable skills, pinned grounding source index, and tool-usage contract;
 - `apply_explanation` – adds or removes safe typed browser-local explanation blocks and focuses authored targets for a guided walkthrough.
 
 WebMCP must not:
@@ -93,7 +94,7 @@ Use the minimum relevant files:
 3. relevant files under `knowledge/`;
 4. `README.md` and navigation material.
 
-Exclude `tests/`, `tools/`, `.github/`, and `evaluation/` from normal product knowledge unless the user explicitly asks about implementation/testing. Do not read evaluation fixtures during an ordinary explanation.
+Exclude `tests/`, `tools/`, `.github/`, and `demo/evaluation/` from normal product knowledge unless the user explicitly asks about implementation/testing. Do not read evaluation fixtures during an ordinary explanation.
 
 ## Source precedence
 
@@ -212,3 +213,4 @@ WebMCP is never the GitHub Issue gateway.
 - In Chrome sidebar, treat missing WebMCP as a chat-only fallback: answer normally and never claim the page changed. Explain that the full Site Tools flow requires a supported ChatGPT Desktop built-in browser surface.
 - If WebMCP is unavailable for another reason, answer normally and use accessible page controls or an agent-side presentation fallback if helpful.
 - Never present local personalization or external presentation output as Originator-authored knowledge.
+

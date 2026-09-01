@@ -34,7 +34,7 @@ presentation:
 webmcp:
   role: typed-result-delivery-only
   related_tools:
-    - get_explanation_contract
+    - get_explain_him_answer
     - apply_explanation
   companion_skill: ../explain-him-presentation/SKILL.md
   typed_block_schema: ../../schemas/explanation-block.v1.schema.json
@@ -45,3 +45,4 @@ forbidden_webmcp_capabilities:
   - presentation-reasoning
   - arbitrary-html-injection
   - github-issues
+
