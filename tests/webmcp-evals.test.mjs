@@ -56,12 +56,12 @@ test('eval fixtures match current tool schemas', () => {
   }
 });
 
-test('A6 skills require Protocol v3 and reject an older bootstrap identity', () => {
+test('A7 skills require Protocol v3 and reject older bootstrap or delivery proof', () => {
   for (const skill of [groundingSkill, presentationSkill]) {
     assert.match(skill, /Select the protocol only from the returned `schemaVersion`/);
     assert.match(skill, /A returned `explain-him-webmcp-contract\.v3` requires/);
     assert.match(skill, /Never downgrade or translate a returned v3 contract to v2/);
-    assert.match(skill, /older bootstrap identity or proof cannot authorize `apply_explanation`/i);
+    assert.match(skill, /older bootstrap identity or delivery proof cannot authorize `apply_explanation`/i);
     assert.match(skill, /actual older page must use the skill release and protocol contract pinned by that page/i);
     assert.doesNotMatch(skill, /legacy v2 fallback/i);
     assert.doesNotMatch(skill, /The current runtime returns `explain-him-webmcp-contract\.v2`/);
@@ -69,13 +69,13 @@ test('A6 skills require Protocol v3 and reject an older bootstrap identity', () 
   }
 });
 
-test('A6 grounding policy requires the semantic answer bootstrap before every Explain Him answer', () => {
+test('A7 grounding policy requires the semantic answer bootstrap before every Explain Him answer', () => {
   assert.match(groundingSkill, /`get_explain_him_answer`/);
   assert.match(groundingSkill, /before answering any question about Explain Him or the current Explain Him page/i);
   assert.doesNotMatch(groundingSkill, /`get_explanation_contract`/);
 });
 
-test('A6 grounding policy requires pinned repository retrieval for every material page gap', () => {
+test('A7 grounding policy requires pinned repository retrieval for every material page gap', () => {
   assert.match(groundingSkill, /If any material part of the answer is not explicit in the visible Personalized UI/);
   assert.match(groundingSkill, /repository retrieval is required in the same turn/i);
   assert.match(groundingSkill, /`groundingSourceIndex`/);
@@ -85,7 +85,7 @@ test('A6 grounding policy requires pinned repository retrieval for every materia
   assert.match(groundingSkill, /retrieval failure/i);
 });
 
-test('A6 presentation policy keeps conditional same-turn apply and truthful failure behavior', () => {
+test('A7 presentation policy keeps conditional same-turn apply and truthful failure behavior', () => {
   assert.match(presentationSkill, /initial `get_explain_him_answer` result/);
   assert.doesNotMatch(presentationSkill, /`get_explanation_contract`/);
   assert.match(presentationSkill, /Missing, partial, or inconsistent visible UI requires a same-turn `apply_explanation`/);
@@ -94,3 +94,14 @@ test('A6 presentation policy keeps conditional same-turn apply and truthful fail
   assert.match(presentationSkill, /Fully present, correct, and consistent content stays chat-only/i);
 });
 
+test('A7 skills define truthful progressive inline delivery and complete fallback', () => {
+  for (const skill of [groundingSkill, presentationSkill]) {
+    assert.match(skill, /native-inline/);
+    assert.match(skill, /pinned-remote-fallback/);
+    assert.match(skill, /page-issued registration identity/i);
+    assert.match(skill, /does not prove.*model.*read/is);
+  }
+  assert.match(groundingSkill, /document\.modelContext\.registerSkill/);
+  assert.match(groundingSkill, /always registers the two independent tools first/i);
+  assert.match(groundingSkill, /never disables `get_explain_him_answer` or `apply_explanation`/i);
+});

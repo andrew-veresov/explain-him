@@ -21,22 +21,32 @@ On every Explain Him skill activation, bootstrap the current page before retriev
 
 1. when a Site Tools host is available, make one initial `get_explain_him_answer` call for this activation before answering any question about Explain Him or the current Explain Him page;
 2. follow the returned ordered answer workflow and confirm the repository is `andrew-veresov/explain-him`, the two expected tools are available, and the returned target and local-block lists are usable;
-3. verify and load every immutable skill in `skillLoadOrder` from its raw URL, commit, and SHA-256 proof;
+3. inspect `skillDelivery`: when it is `native-inline`, require the exact page-issued registration identity, composite digest, source commit, and ordered source hashes; otherwise verify and load every immutable skill in `skillLoadOrder` from its raw URL, commit, and SHA-256 proof;
 4. retain the returned workspace revision, activation identity, authored target IDs, and local block IDs as the session-local page state;
 5. use authored target IDs only as insertion anchors, never as knowledge;
-6. load this grounding skill, then `skills/explain-him-presentation/SKILL.md`, and only then reason about the answer and any page adaptation.
+6. apply this grounding skill before the presentation skill, whether they arrived as one verified inline composite or through the pinned remote fallback, and only then reason about the answer and any page adaptation.
 
 Do not defer this bootstrap until after answering when Site Tools are available. Additional contract calls are allowed only for a confirmed stale-workspace or session-conflict refresh, or for an explicitly new page session.
 
 `get_explain_him_answer` returns the mandatory answer workflow and page contract. It does not itself search GitHub, form the chat answer, or mutate the page; follow its pinned instructions using the personal agent's repository capability and `apply_explanation` when required.
+
+## Progressive inline skill delivery
+
+Release A7 progressively follows the open WebMCP skills proposal without treating it as a standard. The page always registers the two independent tools first. If and only if `document.modelContext.registerSkill` exists, it also registers one composite `explain_him` skill containing the complete grounding and presentation instructions inline and referencing both tool names.
+
+- `native-inline` means the page observed a successful experimental registration and issued a session-local registration identity bound to the composite SHA-256 and immutable source proofs.
+- `pinned-remote-fallback` means the native API was absent, failed, or was not registered before bootstrap; fetch and verify both immutable raw skills in the declared order.
+- Never accept a caller-supplied delivery-mode claim. Use only the mode and proof returned by the current page activation.
+- Registration success proves that the page handed the composite to the host API. It does not prove that a model read, obeyed, or semantically understood the instructions.
+- A native registration error never disables `get_explain_him_answer` or `apply_explanation` and never permits a false native-skill success claim.
 
 ## Protocol v3 and release binding
 
 Select the protocol only from the returned `schemaVersion`; never infer it from this skill, a page label, or an earlier session.
 
 - A returned `explain-him-webmcp-contract.v3` requires the full Protocol v3 activation handshake. Verify the returned activation ID and nonce, exact ordered `skillProof`, immutable raw skill URLs, commits, and digests before loading the skills. Send the complete v3 handshake with every `apply_explanation` request.
-- Never downgrade or translate a returned v3 contract to v2. A6 accepts only a Protocol v3 activation returned by `get_explain_him_answer`; an older bootstrap identity or proof cannot authorize `apply_explanation`.
-- An actual older page must use the skill release and protocol contract pinned by that page. Do not apply this A6 skill by guessing compatibility or translating its bootstrap identity.
+- Never downgrade or translate a returned v3 contract to v2. A7 accepts only a Protocol v3 activation returned by `get_explain_him_answer` with the exact page-issued skill-delivery proof; an older bootstrap identity or delivery proof cannot authorize `apply_explanation`.
+- An actual older page must use the skill release and protocol contract pinned by that page. Do not apply this A7 skill by guessing compatibility or translating its bootstrap identity.
 - An absent or unknown contract version cannot authorize a page mutation or focus.
 
 If the Site Tools host is absent, record that the bootstrap was unavailable, use the chat-only fallback below, and never claim a page mutation.

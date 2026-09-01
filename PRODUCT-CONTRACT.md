@@ -65,8 +65,8 @@ On a supported production host:
 2. The page registers exactly `get_explain_him_answer` and `apply_explanation` through Protocol v3.
 3. The host discovers the tools. Page JavaScript cannot force discovery or invoke the agent on activation.
 4. Before answering any question about Explain Him or the current Explain Him page, the agent calls `get_explain_him_answer`. The descriptor is a strong semantic selection instruction, not a page-side guarantee that the host will invoke it.
-5. The agent follows the returned ordered answer workflow and verifies the activation, workspace revision, immutable skill URLs, commits, SHA-256 proofs, and declared load order.
-6. The agent loads the grounding skill and then the presentation skill.
+5. The agent follows the returned ordered answer workflow and verifies the activation, workspace revision, selected skill-delivery mode, immutable source commit, SHA-256 proofs, and declared load order.
+6. When the experimental native skill API registered successfully, the agent uses the verified inline composite delivered by the host. Otherwise it loads the grounding skill and then the presentation skill through the pinned remote fallback.
 7. The agent reads the relevant visible page content and decides whether it fully and correctly answers the question.
 8. The agent always answers in chat.
 9. If the visible Personalized UI is missing, partial, or inconsistent, the agent retrieves the minimum required repository evidence, grounds the answer, and calls `apply_explanation` in the same turn.
@@ -112,6 +112,8 @@ Unless a later accepted ADR changes this contract:
 - `apply_explanation` performs bounded typed `add`, `replace`, `update`, `remove`, and `focus` operations;
 - repository search, answer generation, GitHub Issues, diagnostics, and arbitrary DOM mutation are not WebMCP tools.
 
+The page may progressively register one composite inline `explain_him` skill through `document.modelContext.registerSkill` when that experimental method exists. This does not add a WebMCP tool. The composite references the same two tools and is generated deterministically from the immutable grounding and presentation skill sources. Its registration state, digest, and provenance are diagnostic facts, not proof that a model read or followed the skill. When the method is absent or registration fails, the pinned remote A7 path remains complete.
+
 ## Grounding and source navigation
 
 For answer grounding, source precedence remains:
@@ -149,6 +151,7 @@ The agent must retrieve the repository source when the visible page is insuffici
 - Server synchronization of browser-local personalization in the base product.
 - Silent UI mutation or success claims without a successful tool result.
 - Embedding every chat answer or forcing a fixed walkthrough.
+- Treating the open WebMCP skills proposal as a stable browser standard or claiming native skill delivery when only the two tools registered.
 
 ## Acceptance evidence
 
@@ -163,4 +166,3 @@ Page registration, Origin Trial validation, fixture AI, and native browser tool 
 - [Chrome WebMCP documentation](https://developer.chrome.com/docs/ai/webmcp)
 - [Chrome WebMCP best practices](https://developer.chrome.com/docs/ai/webmcp/best-practices)
 - [WebMCP Community Group source](https://github.com/webmachinelearning/webmcp)
-

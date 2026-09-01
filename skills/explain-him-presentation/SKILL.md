@@ -22,13 +22,15 @@ Before using this skill:
 5. preserve repository provenance and status;
 6. retain the contract workspace revision, authored target IDs, and local block IDs until the transaction completes.
 
+When the contract reports `native-inline`, accept it only with the exact page-issued registration identity, composite digest, source commit, and ordered source hashes. When it reports `pinned-remote-fallback`, verify both immutable raw skills before applying. A bare delivery-mode claim is never proof. Native registration proves API handoff but does not prove semantic reading by a model.
+
 ## Protocol v3 and release binding
 
 Select the protocol only from the returned `schemaVersion`; this skill must not relabel, downgrade, or translate a returned contract.
 
-- A returned `explain-him-webmcp-contract.v3` requires its full activation handshake, including the activation ID, nonce, base revision, and exact ordered `skillProof`. Verify the immutable raw URLs, commits, and digests before applying a typed result, then send the complete v3 handshake unchanged with `apply_explanation`.
-- Never downgrade or translate a returned v3 contract to v2. A6 accepts only a Protocol v3 activation returned by `get_explain_him_answer`; an older bootstrap identity or proof cannot authorize `apply_explanation`.
-- An actual older page must use the skill release and protocol contract pinned by that page. Do not apply this A6 skill by guessing compatibility or translating its bootstrap identity.
+- A returned `explain-him-webmcp-contract.v3` requires its full activation handshake, including the activation ID, nonce, base revision, exact ordered `skillProof`, and exact `skillDeliveryProof`. Verify the active delivery proof before applying a typed result, then send the complete v3 handshake unchanged with `apply_explanation`.
+- Never downgrade or translate a returned v3 contract to v2. A7 accepts only a Protocol v3 activation returned by `get_explain_him_answer`; an older bootstrap identity or delivery proof cannot authorize `apply_explanation`.
+- An actual older page must use the skill release and protocol contract pinned by that page. Do not apply this A7 skill by guessing compatibility or translating its bootstrap identity.
 - If the contract is absent or has an unknown version, this skill cannot mutate or focus the page.
 
 The contract tells you:
@@ -314,4 +316,3 @@ If the personal agent uses Archify or another external presenter to help design 
 ## Failure behavior
 
 If `apply_explanation` fails, keep the conversational answer and plainly say that the requested local page change was not applied. The agent must explicitly say that the Personalized UI did not change. Do not re-ground or invent different facts to make the renderer succeed, and do not claim that an edit, correction, refinement, or restore completed.
-

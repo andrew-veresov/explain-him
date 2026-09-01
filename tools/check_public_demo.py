@@ -329,7 +329,7 @@ def main() -> int:
         'before answering any question about Explain Him or the current Explain Him page',
         'Additional contract calls are allowed only for a confirmed stale-workspace or session-conflict refresh',
         'Protocol v3 and release binding', 'Select the protocol only from the returned `schemaVersion`',
-        'Never downgrade or translate a returned v3 contract to v2', 'an older bootstrap identity or proof cannot authorize `apply_explanation`',
+        'Never downgrade or translate a returned v3 contract to v2', 'an older bootstrap identity or delivery proof cannot authorize `apply_explanation`',
         'Page-adaptation decision policy', 'apply_explanation` in the same turn is mandatory',
         'call `apply_explanation` in the same turn with a focus-only operation',
         'chat only for a simple, correct answer', 'requested local page change was not applied',
@@ -343,7 +343,10 @@ def main() -> int:
         'repository retrieval is required in the same turn',
         '`groundingSourceIndex`', 'minimum pinned source',
         'Do not answer from plausible visible-page inference',
-        'does not document a dedicated authoring tool', 'retrieval failure'
+        'does not document a dedicated authoring tool', 'retrieval failure',
+        'Progressive inline skill delivery', 'document.modelContext.registerSkill',
+        '`native-inline`', '`pinned-remote-fallback`', 'page-issued registration identity',
+        'does not prove that a model read', 'never disables `get_explain_him_answer` or `apply_explanation`'
     ]:
         if expected not in skill:
             errors.append(f'SKILL.md: missing presentation/grounding rule {expected!r}')
@@ -355,7 +358,7 @@ def main() -> int:
         'Mandatory activation bootstrap', 'reuse the initial `get_explain_him_answer` result for this activation',
         'confirmed stale-workspace or session-conflict refresh',
         'Protocol v3 and release binding', 'Select the protocol only from the returned `schemaVersion`',
-        'Never downgrade or translate a returned v3 contract to v2', 'an older bootstrap identity or proof cannot authorize `apply_explanation`', 'Same-turn decision and topic reuse',
+        'Never downgrade or translate a returned v3 contract to v2', 'an older bootstrap identity or delivery proof cannot authorize `apply_explanation`', 'Same-turn decision and topic reuse',
         'Treat a topic as the stable semantic subject', 'Use `update` for a same-topic refinement',
         'Batch any other affected equivalent-label targets in the same transaction',
         'same-turn `apply_explanation` call with a focus-only operation',
@@ -368,7 +371,9 @@ def main() -> int:
         'Missing, partial, or inconsistent visible UI requires a same-turn `apply_explanation`',
         'reuse the same returned local block ID',
         'must explicitly say that the Personalized UI did not change',
-        'Fully present, correct, and consistent content stays chat-only'
+        'Fully present, correct, and consistent content stays chat-only',
+        '`native-inline`', '`pinned-remote-fallback`', 'page-issued registration identity',
+        'does not prove semantic reading by a model'
     ]:
         if expected not in presentation_skill:
             errors.append(f'presentation SKILL.md: missing Protocol v3 policy {expected!r}')
