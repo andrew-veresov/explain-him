@@ -305,7 +305,12 @@ def main() -> int:
         'An explicit no-page-change instruction still wins',
         'Do not normalize labels that denote distinct roles',
         'use `replace` on `workflow-diagram`',
-        'same returned local block ID'
+        'same returned local block ID',
+        'If any material part of the answer is not explicit in the visible Personalized UI',
+        'repository retrieval is required in the same turn',
+        '`groundingSourceIndex`', 'minimum pinned source',
+        'Do not answer from plausible visible-page inference',
+        'does not document a dedicated authoring tool', 'retrieval failure'
     ]:
         if expected not in skill:
             errors.append(f'SKILL.md: missing presentation/grounding rule {expected!r}')
@@ -326,7 +331,11 @@ def main() -> int:
         'explicit no-page-change instruction still wins',
         'Do not normalize labels that denote distinct roles',
         '`replace` for `workflow-diagram`',
-        'same returned local block ID'
+        'same returned local block ID',
+        'Missing, partial, or inconsistent visible UI requires a same-turn `apply_explanation`',
+        'reuse the same returned local block ID',
+        'must explicitly say that the Personalized UI did not change',
+        'Fully present, correct, and consistent content stays chat-only'
     ]:
         if expected not in presentation_skill:
             errors.append(f'presentation SKILL.md: missing Protocol v3 policy {expected!r}')

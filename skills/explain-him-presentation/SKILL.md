@@ -167,6 +167,8 @@ Do not create a diagram just because diagrams are possible.
 
 The conversational answer is always required. Before selecting an operation, assess whether both the grounded answer and the representation the user requested already exist correctly in the current Personalized UI. Do not infer that a requested diagram exists merely because equivalent prose exists.
 
+Fully present, correct, and consistent content stays chat-only for an ordinary question, with focus-only reserved for an explicit show or walkthrough. Missing, partial, or inconsistent visible UI requires a same-turn `apply_explanation` after repository grounding, unless the user explicitly requested no page change.
+
 - Fully present and correct for an ordinary question: do not apply and do not duplicate the result.
 - Fully present and correct for an explicit show or walkthrough: call `apply_explanation` in the same turn with focus only.
 - Missing answer or representation: use `add`; an absent requested diagram is missing representation.
@@ -177,7 +179,7 @@ The conversational answer is always required. Before selecting an operation, ass
 
 When this matrix selects an operation, `apply_explanation` in the same turn is mandatory. Use chat only for a simple, correct answer whose answer and requested representation are already fully present and that is not a show or walkthrough request.
 
-Treat a topic as the stable semantic subject plus its authored target and, once created, its returned `local-*` block ID. In the v2 fallback this identity is session-local agent state, not a new runtime field. Reuse it rather than adding duplicate blocks. Use `update` for a same-topic refinement when that existing local block is partial or needs a refined grounded result. Do not tell the user that a page result changed until the selected same-turn transaction succeeds.
+Treat a topic as the stable semantic subject plus its authored target and, once created, its returned `local-*` block ID. In the v2 fallback this identity is session-local agent state, not a new runtime field. For every continuation on that topic, reuse the same returned local block ID rather than adding a duplicate block. Use `update` for a same-topic refinement when that existing local block is partial or needs a refined grounded result. Do not tell the user that a page result changed until the selected same-turn transaction succeeds.
 
 ### Terminology consistency precedes fully-present
 
@@ -311,4 +313,4 @@ If the personal agent uses Archify or another external presenter to help design 
 
 ## Failure behavior
 
-If `apply_explanation` fails, keep the conversational answer and plainly say that the requested local page change was not applied. Do not re-ground or invent different facts to make the renderer succeed, and do not claim that an edit, correction, refinement, or restore completed.
+If `apply_explanation` fails, keep the conversational answer and plainly say that the requested local page change was not applied. The agent must explicitly say that the Personalized UI did not change. Do not re-ground or invent different facts to make the renderer succeed, and do not claim that an edit, correction, refinement, or restore completed.

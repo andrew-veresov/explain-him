@@ -48,8 +48,8 @@ The personal agent must:
 
 - understand the user's question and desired depth;
 - read the current authored page;
-- decide whether the page alone is sufficient;
-- retrieve deeper evidence from GitHub when needed;
+- decide whether every material part of the answer is explicit in the current visible Personalized UI;
+- retrieve the minimum pinned repository evidence whenever any material part is missing, partial, ambiguous, or inconsistent;
 - apply source precedence and claim-status rules;
 - form the grounded answer and provenance;
 - answer the user in the normal agent conversation;
@@ -78,9 +78,13 @@ The presentation skill converts already-grounded meaning into one of the page-su
 
 ## Source discovery
 
-Start with the authored page. Go to GitHub only when deeper evidence is useful.
+Start with the authored page and current Personalized UI. If any material part of the answer is not explicit in the visible Personalized UI, repository retrieval is required in the same turn. Do not answer from plausible visible-page inference, nearby wording, or model memory.
 
 Retrieve from `andrew-veresov/explain-him` through the personal agent's own GitHub/repository capability, not through WebMCP.
+
+For a Protocol v3 contract that provides `groundingSourceIndex`, resolve the user's topic through that index before browsing arbitrary repository paths. Verify the indexed repository, immutable commit, raw URL, section, status, and SHA-256, then read the minimum pinned source that covers the missing material. The index is navigation metadata, not evidence by itself: the agent must read the referenced source.
+
+If no indexed topic covers a material gap, follow source precedence with the minimum additional repository read and disclose that the index did not provide a direct route. Do not broaden retrieval speculatively. If repository retrieval is unavailable, an indexed source is missing, or its digest does not match, stop grounding the unsupported part and disclose the retrieval failure.
 
 Use the minimum relevant files:
 
@@ -122,8 +126,8 @@ For each user question:
 
 1. Complete the mandatory activation bootstrap when Site Tools are available.
 2. Read the current page section(s) that appear relevant.
-3. Determine whether the page is enough for a useful answer.
-4. If not, retrieve the minimum relevant GitHub sources using the precedence above.
+3. Determine whether every material part of the answer is explicit, current, and consistent in the visible Personalized UI.
+4. If any material part is missing, partial, ambiguous, or inconsistent, resolve the topic through `groundingSourceIndex` and retrieve the minimum pinned source in the same turn. If the index has no matching route, retrieve the minimum additional GitHub source using the precedence above and disclose the index gap.
 5. Separate sourced statements from agent inference.
 6. Preserve important statuses.
 7. Form the answer in the user's preferred language.
@@ -132,6 +136,8 @@ For each user question:
 10. Continue the conversational answer and, where appropriate, a guided focus after the transaction result is known.
 
 Do not call `apply_explanation` before the meaning is grounded.
+
+Repository grounding must preserve documented absences as facts. For example, when the authoritative source says the current project does not document a dedicated authoring tool, editor, generator, builder, or CLI, state that limitation directly. Never infer or invent such a platform from the existence of GitHub Pages or a static page.
 
 ## Provenance passed to presentation
 
@@ -200,7 +206,8 @@ WebMCP is never the GitHub Issue gateway.
 
 ## Failure behavior
 
-- If GitHub retrieval is unavailable and the page is insufficient, say the deeper answer cannot be grounded.
+- If GitHub retrieval is unavailable and the page is insufficient, say the deeper answer cannot be grounded and identify the retrieval failure without inventing the missing detail.
+- If `groundingSourceIndex` is missing, does not cover the material topic, points outside the pinned repository commit, or fails its digest check, do not treat its metadata or a plausible visible-page inference as evidence.
 - If `apply_explanation` fails, keep the conversational answer and plainly say that the requested local page change was not applied. Do not acknowledge the edit, correction, refinement, or restore as complete.
 - In Chrome sidebar, treat missing WebMCP as a chat-only fallback: answer normally and never claim the page changed. Explain that the full Site Tools flow requires a supported ChatGPT Desktop built-in browser surface.
 - If WebMCP is unavailable for another reason, answer normally and use accessible page controls or an agent-side presentation fallback if helpful.
