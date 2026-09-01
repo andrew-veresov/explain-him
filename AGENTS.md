@@ -1,5 +1,9 @@
 # Instructions for agents working with Explain Him
 
+## Required product contract
+
+Read [`PRODUCT-CONTRACT.md`](PRODUCT-CONTRACT.md) before explaining, planning, changing, reviewing, or testing Explain Him. It is the canonical product intent. If another navigation document conflicts with it, stop and resolve the conflict through an accepted ADR and a synchronized Product Contract update.
+
 ## Scope
 
 These instructions apply **only** while explaining the public repository `andrew-veresov/explain-him`.

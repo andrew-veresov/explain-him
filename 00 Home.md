@@ -6,6 +6,8 @@ tags: [explain-him, home]
 
 ## Start here
 
+- [Explain Him Product Contract](PRODUCT-CONTRACT.md) – required product intent for every agent and contributor
+- [Public implementation roadmap](ROADMAP.md) – next release and production acceptance gate
 - [[README|Overview and quick start]]
 - [[WEBMCP_CHALLENGE|WebMCP Challenge judge guide]]
 - [[knowledge/00-overview|How Explain Him works]]

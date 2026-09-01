@@ -1,5 +1,7 @@
 # Explain Him
 
+> **Required read:** the [Explain Him Product Contract](PRODUCT-CONTRACT.md) is the canonical product intent for agents and contributors. The [public implementation roadmap](ROADMAP.md) summarizes the next release without claiming that Site Tools are already available for every account or model.
+
 **Express your idea once. Explain Him lets each person's AI explain it to them – and use the same live page as a shared explanation surface.**
 
 Explain Him publishes an Originator-authored visual explanation, repository-scoped grounding and presentation skills, and a typed WebMCP contract. A user's personal agent can discover the repository, answer at the right depth, focus relevant parts, and add reversible browser-local callouts, comparisons, workflows, timelines, or diagrams without rewriting the original.
