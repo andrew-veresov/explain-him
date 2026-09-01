@@ -67,8 +67,8 @@ function refreshWebMcpCopy() {
   const card = status?.closest?.('.contract-card');
   const heading = card?.querySelector?.('h3');
   const copy = card?.querySelector?.('p');
-  if (heading) heading.textContent = 'WebMCP Site Tools';
-  if (copy) copy.textContent = 'Two tools only: discover the explanation contract, then apply safe typed blocks. Skills own grounding and GitHub retrieval.';
+  if (heading) heading.textContent = 'WebMCP readiness';
+  if (copy) copy.textContent = 'Page registration and agent connection are reported separately. Two tools only: discover the contract, then apply safe typed blocks.';
 }
 
 function installWebMcpDemoCard() {
@@ -91,8 +91,8 @@ function installWebMcpDemoCard() {
     prompts.append(make('li', prompt));
   }
   const statusLine = make('p');
-  statusLine.append(make('strong', 'Site Tools: '));
-  const status = make('span', 'Checking WebMCP host…');
+  statusLine.append(make('strong', 'Page API: '));
+  const status = make('span', 'Checking WebMCP registration…');
   status.id = 'webmcp-status-hero';
   statusLine.append(status);
   card.append(heading, copy, prompts, statusLine);
@@ -100,13 +100,51 @@ function installWebMcpDemoCard() {
 }
 
 function setWebMcpStatusText(text) {
-  if (byId('webmcp-status')) byId('webmcp-status').textContent = text;
   if (byId('webmcp-status-hero')) byId('webmcp-status-hero').textContent = text;
+}
+
+function setStatusPart(id, text) {
+  if (byId(id)) byId(id).textContent = text;
+}
+
+function setWorkspaceRevision(revision, prefix = null) {
+  const safeRevision = Number.isInteger(revision) && revision >= 0 ? revision : 0;
+  document.documentElement.dataset.webmcpWorkspaceRevision = String(safeRevision);
+  setStatusPart('webmcp-revision-status', prefix ? `${prefix} ${safeRevision}` : `Workspace revision – ${safeRevision}`);
+}
+
+function publishLifecycle(detail) {
+  if (!detail || typeof detail !== 'object') return;
+  if (detail.type === 'contract-invoked') {
+    document.documentElement.dataset.webmcpAgentState = 'observed';
+    document.documentElement.dataset.webmcpContractState = 'activated';
+    setStatusPart('webmcp-agent-status', 'Agent connection – observed');
+    setStatusPart('webmcp-contract-status', 'Contract – activated');
+    setWorkspaceRevision(detail.workspaceRevision);
+  } else if (detail.type === 'apply-started') {
+    document.documentElement.dataset.webmcpAgentState = 'observed';
+    document.documentElement.dataset.webmcpApplyState = 'started';
+    setStatusPart('webmcp-agent-status', 'Agent connection – observed');
+  } else if (detail.type === 'apply-succeeded') {
+    document.documentElement.dataset.webmcpApplyState = 'succeeded';
+    setWorkspaceRevision(detail.workspaceRevision, 'Personalized UI updated – workspace revision');
+  } else if (detail.type === 'apply-failed') {
+    document.documentElement.dataset.webmcpApplyState = 'failed';
+    setWorkspaceRevision(detail.workspaceRevision, 'Personalized UI update failed – workspace revision');
+  }
+  if (typeof globalThis.CustomEvent === 'function' && typeof globalThis.dispatchEvent === 'function') {
+    globalThis.dispatchEvent(new CustomEvent('explain-him:webmcp-lifecycle', { detail }));
+  }
 }
 
 function publishWebMcpStatus(registration) {
   globalThis.explainHimWebMcp = registration;
   document.documentElement.dataset.webmcpState = registration.supported ? 'detected' : 'unavailable';
+  document.documentElement.dataset.webmcpPageState = registration.supported ? 'detected' : 'unavailable';
+  document.documentElement.dataset.webmcpAgentState = 'not-observed';
+  document.documentElement.dataset.webmcpContractState = 'not-activated';
+  document.documentElement.dataset.webmcpApplyState = 'not-started';
+  document.documentElement.dataset.webmcpWorkspaceRevision = '0';
   document.documentElement.dataset.webmcpHost = registration.hostSource || 'none';
   document.documentElement.dataset.webmcpApi = 'document.modelContext';
   document.documentElement.dataset.webmcpProtocol = '3';
@@ -161,13 +199,25 @@ async function main() {
   });
 
   const canonicalIds = [...document.querySelectorAll('[data-eh-block-id]')].map((node) => node.dataset.ehBlockId);
-  const workspace = await createExplanationWorkspace({
+  const workspacePromise = createExplanationWorkspace({
     document,
     explanationId: document.querySelector('meta[name="explain-him-id"]')?.content || 'explain-him-public-demo',
     baseRevision: document.querySelector('meta[name="explain-him-revision"]')?.content || 'public-v1',
     canonicalIds
   });
+  const registration = registerWebMcpTools(workspacePromise, null, { environment: globalThis, onLifecycle: publishLifecycle });
+  publishWebMcpStatus(registration);
+  if (registration.supported) {
+    setStatusPart('webmcp-page-status', `Page WebMCP API – registering ${registration.expectedTools.length} tools`);
+    setWebMcpStatusText(`registering ${registration.expectedTools.length} tools`);
+  } else {
+    setStatusPart('webmcp-page-status', 'Page WebMCP API – unavailable');
+    setWebMcpStatusText('unavailable; accessible browser controls remain available');
+  }
+
+  const workspace = await workspacePromise;
   globalThis.explainHimWorkspace = workspace;
+  setWorkspaceRevision(workspace.getContext?.().workspaceRevision ?? 0);
 
   if (!byId('agent-placement')) {
     const kindLabel = byId('agent-kind')?.closest('label');
@@ -197,6 +247,7 @@ async function main() {
         actor: { kind: 'agent', channel: 'browser-control' },
         provenance: { sourceBlockIds: [targetId], repositoryRefs: [] }
       });
+      setWorkspaceRevision(workspace.getContext?.().workspaceRevision ?? 0);
       feedback.textContent = byId('agent-placement')?.value === 'replace' ? 'Replaced locally in the personalized view.' : 'Added to the browser-local workspace.';
     } catch (error) {
       feedback.textContent = String(error?.message || error);
@@ -205,13 +256,13 @@ async function main() {
 
   document.addEventListener('click', async (event) => {
     const remove = event.target.closest?.('[data-eh-remove-local]');
-    if (remove) await workspace.removeLocalBlock({ blockId: remove.dataset.ehRemoveLocal });
+    if (remove) { await workspace.removeLocalBlock({ blockId: remove.dataset.ehRemoveLocal }); setWorkspaceRevision(workspace.getContext?.().workspaceRevision ?? 0); }
     const focus = event.target.closest?.('[data-focus]');
     if (focus) workspace.focusBlock({ targetId: focus.dataset.focus });
   });
 
-  byId('workspace-undo')?.addEventListener('click', () => workspace.undo());
-  byId('workspace-redo')?.addEventListener('click', () => workspace.redo());
+  byId('workspace-undo')?.addEventListener('click', async () => { await workspace.undo(); setWorkspaceRevision(workspace.getContext?.().workspaceRevision ?? 0); });
+  byId('workspace-redo')?.addEventListener('click', async () => { await workspace.redo(); setWorkspaceRevision(workspace.getContext?.().workspaceRevision ?? 0); });
   for (const button of document.querySelectorAll('[data-workspace-view]')) {
     button.addEventListener('click', () => workspace.setViewMode(button.dataset.workspaceView));
   }
@@ -219,6 +270,7 @@ async function main() {
   byId('workspace-reset')?.addEventListener('click', async () => {
     if (globalThis.confirm('Remove all browser-local explanations and restore the original page?')) {
       await workspace.reset({ confirmed: true });
+      setWorkspaceRevision(workspace.getContext?.().workspaceRevision ?? 0);
     }
   });
 
@@ -233,30 +285,29 @@ async function main() {
   byId('history-close')?.addEventListener('click', () => historyDialog?.close());
   historyDialog?.addEventListener('close', () => { historyOpener?.focus(); historyOpener = null; });
 
-  const registration = registerWebMcpTools(workspace, null, { environment: globalThis });
-  publishWebMcpStatus(registration);
-
   if (!registration.supported) {
-    setWebMcpStatusText('WebMCP host not detected · no Site Tools mutation was performed; accessible browser controls remain available');
     dispatchWebMcpReady(registration);
     return;
   }
 
-  setWebMcpStatusText(`WebMCP detected via ${registration.hostSource} · registering ${registration.expectedTools.length} Site Tools…`);
   await registration.ready;
 
   const state = registration.verified ? 'verified' : registration.ok ? 'ready' : 'partial';
   document.documentElement.dataset.webmcpState = state;
+  document.documentElement.dataset.webmcpPageState = state;
   document.documentElement.dataset.webmcpVerified = String(registration.verified);
   document.documentElement.dataset.webmcpRegistered = registration.registered.join(',');
   document.documentElement.dataset.webmcpVerifiedTools = registration.verifiedTools.join(',');
 
   if (registration.verified) {
-    setWebMcpStatusText(`WebMCP verified · ${registration.verifiedTools.length}/${registration.expectedTools.length} Site Tools · ${registration.hostSource}`);
+    setStatusPart('webmcp-page-status', `Page WebMCP API – ${registration.verifiedTools.length}/${registration.expectedTools.length} tools registered`);
+    setWebMcpStatusText(`${registration.verifiedTools.length}/${registration.expectedTools.length} tools registered`);
   } else if (registration.ok) {
-    setWebMcpStatusText(`WebMCP ready · ${registration.registered.length} Site Tools · ${registration.hostSource}`);
+    setStatusPart('webmcp-page-status', `Page WebMCP API – ${registration.registered.length}/${registration.expectedTools.length} tools registered, enumeration unavailable`);
+    setWebMcpStatusText(`${registration.registered.length}/${registration.expectedTools.length} tools registered`);
   } else {
-    setWebMcpStatusText(`WebMCP partial · ${registration.registered.length}/${registration.expectedTools.length} Site Tools · ${registration.hostSource}`);
+    setStatusPart('webmcp-page-status', `Page WebMCP API – partial ${registration.registered.length}/${registration.expectedTools.length}`);
+    setWebMcpStatusText(`partial ${registration.registered.length}/${registration.expectedTools.length} registration`);
   }
   dispatchWebMcpReady(registration);
 }
@@ -264,5 +315,7 @@ async function main() {
 main().catch((error) => {
   console.error(error);
   setWebMcpStatusText(`Initialization error: ${error.message}`);
+  setStatusPart('webmcp-page-status', 'Page WebMCP API – initialization error');
   document.documentElement.dataset.webmcpState = 'error';
+  document.documentElement.dataset.webmcpPageState = 'error';
 });

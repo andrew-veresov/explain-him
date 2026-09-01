@@ -1,6 +1,6 @@
 schema_version: explain-him-explanation.v4
 id: explain-him-public-demo
-version: 0.4.0
+version: 0.5.0
 title: How Explain Him works
 language: en
 status: public-demo
@@ -121,6 +121,12 @@ presentation:
 webmcp:
   status: current-demo
   protocol_version: 3
+  bootstrap_metadata:
+    schema_version: explain-him-agent-bootstrap.v1
+    location: index.html#explain-him-agent-bootstrap
+    machine_readable: true
+    immutable_skill_pins_required: true
+    page_activation_effect: discovery-hint-only
   contract_schema: schemas/webmcp-contract.v3.schema.json
   apply_schema: schemas/webmcp-apply.v3.schema.json
   api: document.modelContext
@@ -139,6 +145,55 @@ webmcp:
     live_validation: tools/check_live_pages.py
     native_live_validation: tools/test_native_chrome_webmcp_live.py
     host_guarantee: false
+  runtime_status:
+    page_api: data-webmcp-page-state
+    agent_connection: data-webmcp-agent-state
+    contract: data-webmcp-contract-state
+    apply: data-webmcp-apply-state
+    workspace_revision: data-webmcp-workspace-revision
+    aria_live: polite
+  host_preflight:
+    classifier: tools/webmcp_host_preflight.py
+    page_runtime_is_agent_evidence: false
+    absent_agent_capability: BLOCKED_EXTERNAL
+    false_success_allowed: false
+  host_matrix:
+    chatgpt_desktop_builtin_browser:
+      status: officially-documented-conditional
+      invariant: contract-before-first-grounded-page-answer
+    chrome_origin_trial_page_api:
+      status: current-demo
+      agent_connection_guaranteed: false
+    official_chatgpt_chrome_extension:
+      status: capability-gated
+      observed_version: 1.26.827.12125
+      observed_result: BLOCKED_EXTERNAL
+      observed_reason: page-tools-registered-agent-connection-not-observed
+    model_context_tool_inspector:
+      status: debug-only
+      production_flow: false
+    chrome_builtin_ai_epp:
+      status: preview-and-feedback-program
+      guarantees_openai_extension_capability: false
+  specification:
+    primary_source: https://github.com/webmachinelearning/webmcp/blob/main/index.bs
+    published_snapshot: https://webmachinelearning.github.io/webmcp/
+    published_snapshot_role: generated-corroboration
+    imperative_callback_accepts_abort_signal: true
+    callback_result_json_serializable: true
+    execute_tool_result_is_browser-json-string: true
+    draft_execute_tool_input: object
+    chrome_151_execute_tool_input: serialized-json-string
+    draft_to_shipped_divergence_retest_required: true
+    toolchange_owner: browser
+  best_practices:
+    focused_nonoverlapping_tools: true
+    descriptions_state_what_and_when: true
+    strict_typed_schemas_and_runtime_validation: true
+    bounded_reversible_local_side_effects: true
+    idempotent_retry_key: requestId-plus-semantic-fingerprint
+    errors_fail_closed: true
+    probabilistic_semantic_choice_gate: real-host-model-only
   purpose: typed-result-delivery-to-shared-page
   agent_policy:
     revision: A4

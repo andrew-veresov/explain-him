@@ -36,7 +36,7 @@ document.modelContext
 
 `navigator.modelContext` exists only as a legacy fallback for older experimental hosts. The implementation does not depend on `registerSkill()`, iframe tools, or declarative WebMCP support.
 
-The page `<head>` also exposes invisible machine-readable repository and skill links. These are bootstrap hints, not a hidden knowledge bundle.
+The page `<head>` also exposes immutable machine-readable Protocol v3 bootstrap metadata with repository identity, ordered raw skill URLs, the A4 public commit, and SHA-256 digests. These are consistency and discovery hints, not a hidden knowledge bundle and not a page-side command to an agent.
 
 ## Site Tool surface
 
@@ -49,7 +49,7 @@ The public surface intentionally avoids compatibility aliases, diagnostics, retr
 
 ## Judge flow
 
-Use the live page in the ChatGPT Desktop built-in browser only when it actually exposes `document.modelContext`. A WebMCP-enabled Chrome surface is conditional and non-standard; the ordinary ChatGPT/Codex Chrome sidebar is chat-only and must not be presented as a Site Tools or page-mutation flow.
+Use the live page in a supported agent host. OpenAI currently documents Site Tools for the ChatGPT Desktop built-in browser. Chrome Origin Trial enrollment enables the page API, while agent discovery remains a separate host capability. An official ChatGPT Chrome extension run is accepted only when the page observes contract/apply lifecycle events and the expected revision; otherwise report `BLOCKED_EXTERNAL`, not success.
 
 ### Prompt 1 – originator workflow
 
@@ -78,7 +78,7 @@ Expected behavior: `apply_explanation` with a `focus` operation reveals and high
 
 ## Runtime verification
 
-The page publishes runtime state on the root element after registration:
+The page publishes separate runtime state on the root element:
 
 - `data-webmcp-api="document.modelContext"`
 - `data-webmcp-host`
@@ -86,8 +86,27 @@ The page publishes runtime state on the root element after registration:
 - `data-webmcp-tools`
 - `data-webmcp-registered`
 - `data-webmcp-verified`
+- `data-webmcp-page-state`
+- `data-webmcp-agent-state`
+- `data-webmcp-contract-state`
+- `data-webmcp-apply-state`
+- `data-webmcp-workspace-revision`
 
-When the host implements `document.modelContext.getTools()`, Explain Him verifies both tools and reports `WebMCP verified`. When `getTools()` is not exposed but both registrations succeed, it reports `WebMCP ready`.
+`getTools()` verification proves the browser page surface only. Agent connection becomes observed when the host invokes the contract. Apply success is shown only after the transaction succeeds, and the status includes the resulting workspace revision. Failures never emit a success lifecycle event.
+
+## Host preflight and evidence classes
+
+Run `python tools/webmcp_host_preflight.py evidence.json` with non-secret observable evidence. The classifier distinguishes page API/registration, agent connection, contract choice, apply execution, and revision confirmation. Missing agent capability is `BLOCKED_EXTERNAL`; a real turn that has access but skips the mandatory contract or required mutation is a failure; a success claim without lifecycle and revision evidence is `FALSE_SUCCESS`.
+
+The native Chrome gate exercises the deployed page runtime through the browser's `executeTool()` and parses its JSON-string result. It does not test an AI agent. The deterministic fixture suite validates policy and payloads, but it does not qualify a host/model compatibility claim. Such a claim requires at least 10 independent real-host/model turns, at least 90% required tool selection, and zero false-success claims.
+
+Chrome's Model Context Tool Inspector may inspect descriptors, call tools, and run a Gemini-backed debugging chat. It is debug-only and is not the production flow. Chrome built-in AI EPP membership provides preview and feedback access, but does not guarantee the OpenAI extension's capability gate.
+
+## Current WebMCP compatibility
+
+Explain Him follows the current `webmachinelearning/webmcp` imperative descriptor shape: two bounded tools, clear what-and-when descriptions, strict object schemas and runtime validation, correct read-only annotations, callback `AbortSignal`, JSON-serializable callback results, and browser-managed `toolchange`. The page does not synthesize `toolchange` or depend on timing against unrelated tasks. The repository `main/index.bs` is the primary current source; `gh-pages` is treated as a generated published snapshot and is checked for correspondence, not as a separate API definition.
+
+The current draft declares an object input to `ModelContext.executeTool()`. Installed Chrome 151 currently rejects that form and accepts serialized JSON arguments; it returns serialized JSON as a string. The native gate uses this observed shipped form and parses results fail-closed. This divergence is isolated to the diagnostic caller, not the page's registered callback contract.
 
 ## Human fallback
 

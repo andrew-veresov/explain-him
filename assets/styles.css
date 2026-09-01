@@ -87,6 +87,8 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 
 .role-grid, .workspace-contract-grid, .persistence-grid, .boundary-grid, .grounding-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
 .role-card, .contract-card, .persistence-grid article, .boundary-grid article, .grounding-grid article { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: white; }
+.webmcp-status-list { display: grid; gap: 6px; margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.webmcp-status-list span { display: block; }
 .role-index { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-weight: 800; }
 
 .layer-diagram { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 10px; align-items: center; margin: 18px 0; }

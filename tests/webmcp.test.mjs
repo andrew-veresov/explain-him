@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { EXPLAIN_HIM_WEBMCP_TOOLS, IMMUTABLE_SKILL_PROOF, createWebMcpTools, registerWebMcpTools, resolveWebMcpHost } from '../runtime/webmcp.mjs';
+import { readFileSync } from 'node:fs';
+import { EXPLAIN_HIM_REPOSITORY, EXPLAIN_HIM_REPOSITORY_URL, EXPLAIN_HIM_SKILL_COMMIT, EXPLAIN_HIM_WEBMCP_TOOLS, IMMUTABLE_SKILL_PROOF, WEBMCP_PROTOCOL_VERSION, createWebMcpTools, registerWebMcpTools, resolveWebMcpHost } from '../runtime/webmcp.mjs';
 import { appendTransaction, createInitialWorkspace, materializeWorkspace } from '../runtime/workspace.mjs';
 
 function workspace() { const nodes = ['workflow-diagram', 'flow-model'].map((id) => ({ dataset: { ehBlockId: id }, querySelector: () => ({ textContent: id }) })); let state = createInitialWorkspace({ explanationId: 'test', baseRevision: 'r1' }); return { document: { querySelectorAll: () => nodes }, getContext: () => ({ explanationId: 'test', baseRevision: 'r1', workspaceRevision: state.revision, authoredTargetIds: nodes.map((node) => node.dataset.ehBlockId) }), getVisibleState: () => materializeWorkspace(state, { canonicalIds: nodes.map((node) => node.dataset.ehBlockId) }), getLocalChangeHistory: () => ({ transactions: state.transactions }), applyTransaction: async (operations, options) => { state = appendTransaction(state, operations, options); }, attachTransactionResult: async (id, result) => { state.transactions.find((item) => item.id === id).result = result; }, focusBlock: ({ targetId, blockId }) => ({ targetId, blockId }) }; }
@@ -25,3 +26,78 @@ test('runtime rejects optional nulls and invalid enum values exactly as the v3 s
 test('focus-only is replay-safe and does not change workspace revision', async () => { const subject = workspace(); const map = tools(subject); const contract = await map.get('get_explanation_contract').execute({}); const input = request(contract, { operations: [{ op: 'focus', targetId: 'flow-model' }] }); const first = await map.get('apply_explanation').execute(input); const second = await map.get('apply_explanation').execute(input); assert.equal(first.workspaceRevision, contract.workspaceRevision); assert.equal(second.idempotent, true); });
 
 test('standard document.modelContext is preferred and both tools register', async () => { const registered = new Map(); const host = { registerTool: async (tool) => registered.set(tool.name, tool), getTools: async () => [...registered.values()] }; assert.equal(resolveWebMcpHost({ document: { modelContext: host }, navigator: {} }).source, 'document.modelContext'); const status = registerWebMcpTools(workspace(), host); await status.ready; assert.equal(status.verified, true); assert.deepEqual([...registered.keys()], [...EXPLAIN_HIM_WEBMCP_TOOLS]); });
+
+test('descriptors register before a delayed workspace finishes initialization', async () => {
+  let resolveWorkspace;
+  const delayedWorkspace = new Promise((resolve) => { resolveWorkspace = resolve; });
+  const registered = new Map();
+  const host = { registerTool: async (tool) => registered.set(tool.name, tool), getTools: async () => [...registered.values()] };
+  const status = registerWebMcpTools(delayedWorkspace, host);
+  await status.ready;
+  assert.equal(status.verified, true);
+  assert.deepEqual([...registered.keys()], [...EXPLAIN_HIM_WEBMCP_TOOLS]);
+  resolveWorkspace(workspace());
+  const contract = await registered.get('get_explanation_contract').execute({});
+  assert.equal(contract.schemaVersion, 'explain-him-webmcp-contract.v3');
+});
+
+test('lifecycle events expose only safe status fields and never report success after failure', async () => {
+  const events = [];
+  const map = new Map(createWebMcpTools(workspace(), { onLifecycle: (event) => events.push(event) }).map((tool) => [tool.name, tool]));
+  const contract = await map.get('get_explanation_contract').execute({});
+  const applied = await map.get('apply_explanation').execute(request(contract, { operations: [{ op: 'replace', targetId: 'workflow-diagram', block: diagram() }] }));
+  await assert.rejects(map.get('apply_explanation').execute(request(contract, { requestId: 'bad-revision', expectedWorkspaceRevision: 0, operations: [{ op: 'remove', blockId: applied.localBlocks[0].id }] })), /Stale workspace revision/);
+  assert.deepEqual(events.map((event) => event.type), ['contract-invoked', 'apply-started', 'apply-succeeded', 'apply-started', 'apply-failed']);
+  assert.deepEqual(Object.keys(events[0]).sort(), ['type', 'workspaceRevision']);
+  assert.deepEqual(Object.keys(events[2]).sort(), ['localBlockIds', 'operations', 'topicId', 'type', 'workspaceRevision']);
+  assert.deepEqual(Object.keys(events[4]).sort(), ['errorCode', 'topicId', 'type', 'workspaceRevision']);
+  assert.equal(events[4].errorCode, 'conflict');
+  assert.equal(events.some((event) => JSON.stringify(event).includes(contract.activation.nonce)), false);
+  assert.equal(events.filter((event) => event.type === 'apply-succeeded').length, 1);
+});
+
+test('machine-readable bootstrap metadata matches the runtime pins exactly', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const match = html.match(/<script id="explain-him-agent-bootstrap" type="application\/json">([\s\S]*?)<\/script>/);
+  assert.ok(match, 'bootstrap metadata script must exist');
+  const bootstrap = JSON.parse(match[1]);
+  assert.equal(bootstrap.schemaVersion, 'explain-him-agent-bootstrap.v1');
+  assert.equal(bootstrap.protocolVersion, WEBMCP_PROTOCOL_VERSION);
+  assert.deepEqual(bootstrap.repository, { fullName: EXPLAIN_HIM_REPOSITORY, url: EXPLAIN_HIM_REPOSITORY_URL, skillsCommit: EXPLAIN_HIM_SKILL_COMMIT });
+  assert.deepEqual(bootstrap.tools, EXPLAIN_HIM_WEBMCP_TOOLS);
+  assert.deepEqual(bootstrap.skillLoadOrder, IMMUTABLE_SKILL_PROOF.map((item) => item.id));
+  assert.deepEqual(bootstrap.skills, IMMUTABLE_SKILL_PROOF.map(({ id, commit, sha256, url }) => ({ id, commit, sha256, rawUrl: url })));
+});
+
+test('tool descriptors follow the current imperative WebMCP shape and bounded-action guidance', async () => {
+  const descriptors = createWebMcpTools(workspace());
+  assert.equal(descriptors.length, 2);
+  for (const descriptor of descriptors) {
+    assert.match(descriptor.name, /^[A-Za-z0-9_.-]{1,128}$/);
+    assert.equal(typeof descriptor.title, 'string');
+    assert.ok(descriptor.title.length > 0);
+    assert.equal(typeof descriptor.description, 'string');
+    assert.match(descriptor.description, /call this|Call this/);
+    assert.equal(descriptor.inputSchema.type, 'object');
+    assert.equal(descriptor.inputSchema.additionalProperties, false);
+    assert.equal(typeof descriptor.annotations.readOnlyHint, 'boolean');
+    assert.equal(typeof descriptor.execute, 'function');
+    const serialized = JSON.stringify(await descriptor.execute({}, { signal: new AbortController().signal }).catch((error) => ({ error: error.message })));
+    assert.equal(typeof serialized, 'string');
+  }
+  assert.match(descriptors[0].description, /before answering any question/);
+  assert.match(descriptors[1].description, /same turn/);
+  assert.notEqual(descriptors[0].annotations.readOnlyHint, descriptors[1].annotations.readOnlyHint);
+});
+
+test('imperative callbacks honor the current WebMCP execution AbortSignal without false success', async () => {
+  const events = [];
+  const controller = new AbortController();
+  controller.abort(new Error('cancelled by host'));
+  const map = new Map(createWebMcpTools(workspace(), { onLifecycle: (event) => events.push(event) }).map((tool) => [tool.name, tool]));
+  await assert.rejects(map.get('get_explanation_contract').execute({}, { signal: controller.signal }), /cancelled by host/);
+  await assert.rejects(map.get('apply_explanation').execute({}, { signal: controller.signal }), /cancelled by host/);
+  assert.deepEqual(events.map((event) => event.type), ['apply-started', 'apply-failed']);
+  assert.equal(events.some((event) => event.type === 'apply-succeeded'), false);
+  assert.equal(events[1].errorCode, 'execution-error');
+});

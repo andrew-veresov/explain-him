@@ -99,9 +99,9 @@ def resolve_wikilink(source: Path, raw: str) -> bool:
 def main() -> int:
     errors: list[str] = []
 
-    deployment_required = ['tools/check_live_pages.py', 'tools/check_webmcp_origin_trial.py', '.github/workflows/live-pages-smoke.yml', '.github/workflows/webmcp-origin-trial.yml']
+    deployment_required = ['tools/check_live_pages.py', 'tools/check_webmcp_origin_trial.py', 'tools/webmcp_host_preflight.py', 'tools/test_webmcp_host_preflight.py', '.github/workflows/live-pages-smoke.yml', '.github/workflows/public-demo-check.yml', '.github/workflows/webmcp-origin-trial.yml']
     if PRIVATE_DEMO:
-        deployment_required = ['../tools/check_live_pages.py', '../tools/check_webmcp_origin_trial.py', '../distribution/public-workflows/live-pages-smoke.yml', '../distribution/public-workflows/webmcp-origin-trial.yml']
+        deployment_required = ['../tools/check_live_pages.py', '../tools/check_webmcp_origin_trial.py', '../tools/webmcp_host_preflight.py', '../tools/test_webmcp_host_preflight.py', '../distribution/public-workflows/live-pages-smoke.yml', '../distribution/public-workflows/public-demo-check.yml', '../distribution/public-workflows/webmcp-origin-trial.yml']
     for item in [*REQUIRED, *deployment_required]:
         if not (ROOT / item).is_file():
             errors.append(f'Missing required file: {item}')
@@ -133,7 +133,7 @@ def main() -> int:
     parser.feed(html)
     if '<html lang="en">' not in html:
         errors.append('index.html: project page language must be English')
-    for expected in ['class="section-nav"', 'aria-label="Explanation sections"', 'data-scroll-section="how-it-works"', 'data-scroll-section="how-to-express"', 'id="how-it-works"', 'class="continuous-section"', 'id="how-to-express"', 'class="continuous-section continuous-section-expression"', 'Ask your agent how to express your own idea with Explain Him.', 'role="group"', 'aria-label="Explanation view"', 'id="webmcp-status"', 'role="status"', 'aria-live="polite"', 'id="source-toggle"', 'aria-controls="source-drawer"', 'id="source-drawer"', 'class="source-drawer"', 'role="region"', 'aria-labelledby="source-drawer-title"']:
+    for expected in ['class="section-nav"', 'aria-label="Explanation sections"', 'data-scroll-section="how-it-works"', 'data-scroll-section="how-to-express"', 'id="how-it-works"', 'class="continuous-section"', 'id="how-to-express"', 'class="continuous-section continuous-section-expression"', 'Ask your agent how to express your own idea with Explain Him.', 'role="group"', 'aria-label="Explanation view"', 'id="webmcp-status"', 'role="status"', 'aria-live="polite"', 'id="webmcp-page-status"', 'Page WebMCP API – checking', 'id="webmcp-agent-status"', 'Agent connection – not observed', 'id="webmcp-contract-status"', 'Contract – not activated', 'id="webmcp-revision-status"', 'Workspace revision – 0', 'id="source-toggle"', 'aria-controls="source-drawer"', 'id="source-drawer"', 'class="source-drawer"', 'role="region"', 'aria-labelledby="source-drawer-title"']:
         if expected not in html:
             errors.append(f'index.html: missing accessible UI invariant {expected!r}')
     for obsolete in ['role="tablist"', 'role="tab"', 'role="tabpanel"', 'data-section-panel=', 'data-section="flow"']:
@@ -151,6 +151,29 @@ def main() -> int:
             errors.append(f'index.html: missing raw skill bootstrap path {skill_path!r}')
         if (ROOT / skill_path).with_suffix('.html').exists():
             errors.append(f'{skill_path}: generated HTML substitute is forbidden; GitHub Pages must expose the raw Markdown route')
+    bootstrap_match = re.search(r'<script id="explain-him-agent-bootstrap" type="application/json">([\s\S]*?)</script>', html)
+    if not bootstrap_match:
+        errors.append('index.html: pinned machine-readable agent bootstrap is missing')
+    else:
+        try:
+            bootstrap = json.loads(bootstrap_match.group(1))
+        except json.JSONDecodeError as error:
+            errors.append(f'index.html: agent bootstrap is not valid JSON: {error.msg}')
+        else:
+            expected_skills = [
+                {'id': 'explain-him', 'commit': 'd311a3aa74c78292619ce966e0281f20d9599fdc', 'sha256': '20060aea4e38f7fd30f3188bb7a5c820f053867002282f4db602904f1ccde731', 'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/d311a3aa74c78292619ce966e0281f20d9599fdc/skills/explain-him/SKILL.md'},
+                {'id': 'explain-him-presentation', 'commit': 'd311a3aa74c78292619ce966e0281f20d9599fdc', 'sha256': '5daacfb575b6a230f50c92d4c590b21a08d6d148d75c60e13418edc76fb3ec4b', 'rawUrl': 'https://raw.githubusercontent.com/andrew-veresov/explain-him/d311a3aa74c78292619ce966e0281f20d9599fdc/skills/explain-him-presentation/SKILL.md'},
+            ]
+            expected_bootstrap = {
+                'schemaVersion': 'explain-him-agent-bootstrap.v1',
+                'protocolVersion': 3,
+                'repository': {'fullName': 'andrew-veresov/explain-him', 'url': 'https://github.com/andrew-veresov/explain-him', 'skillsCommit': 'd311a3aa74c78292619ce966e0281f20d9599fdc'},
+                'tools': PUBLIC_WEBMCP_TOOLS,
+                'skillLoadOrder': [item['id'] for item in expected_skills],
+                'skills': expected_skills,
+            }
+            if bootstrap != expected_bootstrap:
+                errors.append('index.html: agent bootstrap does not exactly match the pinned Protocol v3 runtime contract')
     if len(parser.block_ids) != len(set(parser.block_ids)):
         errors.append('index.html: duplicate data-eh-block-id values')
     unknown_slots = sorted(set(parser.slot_ids) - set(parser.block_ids))
@@ -188,7 +211,20 @@ def main() -> int:
         'assessAnswerAndRequestedRepresentationInPersonalizedUi: true',
         'fullyPresent: {ordinaryQuestion: chat-only, showOrWalkthrough: focus-only}',
         'failure: {applyFailure: honest-acknowledgement-no-false-success}',
-        'rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/d311a3aa74c78292619ce966e0281f20d9599fdc/'
+        'rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/d311a3aa74c78292619ce966e0281f20d9599fdc/',
+        'schema_version: explain-him-agent-bootstrap.v1', 'page_activation_effect: discovery-hint-only',
+        'page_api: data-webmcp-page-state', 'agent_connection: data-webmcp-agent-state',
+        'contract: data-webmcp-contract-state', 'workspace_revision: data-webmcp-workspace-revision',
+        'classifier: tools/webmcp_host_preflight.py', 'absent_agent_capability: BLOCKED_EXTERNAL',
+        'page_runtime_is_agent_evidence: false', 'false_success_allowed: false',
+        'official_chatgpt_chrome_extension:', 'observed_result: BLOCKED_EXTERNAL',
+        'model_context_tool_inspector:', 'production_flow: false',
+        'chrome_builtin_ai_epp:', 'guarantees_openai_extension_capability: false',
+        'primary_source: https://github.com/webmachinelearning/webmcp/blob/main/index.bs',
+        'imperative_callback_accepts_abort_signal: true', 'draft_execute_tool_input: object',
+        'chrome_151_execute_tool_input: serialized-json-string', 'draft_to_shipped_divergence_retest_required: true',
+        'toolchange_owner: browser',
+        'descriptions_state_what_and_when: true', 'probabilistic_semantic_choice_gate: real-host-model-only'
     ]:
         if expected not in manifest:
             errors.append(f'explain-him.yaml: missing invariant {expected!r}')
@@ -205,7 +241,7 @@ def main() -> int:
             errors.append('distribution/public-facade.yml: missing private-to-public publication policy')
         else:
             policy = distribution.read_text(encoding='utf-8')
-            for expected in ['source: demo/.nojekyll', 'target: .nojekyll', 'source: demo/tests/**', 'target: tests/**', 'source: demo/tools/check_public_demo.py', 'target: tools/check_public_demo.py', 'source: tools/check_live_pages.py', 'target: tools/check_live_pages.py', 'source: tools/check_webmcp_origin_trial.py', 'target: tools/check_webmcp_origin_trial.py', 'source: tools/test_check_live_pages.py', 'target: tools/test_check_live_pages.py', 'source: tools/test_native_chrome_webmcp_live.py', 'target: tools/test_native_chrome_webmcp_live.py', 'source: distribution/public-workflows/live-pages-smoke.yml', 'target: .github/workflows/live-pages-smoke.yml', 'source: distribution/public-workflows/webmcp-origin-trial.yml', 'target: .github/workflows/webmcp-origin-trial.yml', 'transactional-typed-presentation-operation-log', 'github-pages-preserves-raw-skill-markdown', 'deployed-pages-matches-exact-public-sha', 'origin-trial-is-pinned-decoded-and-checked-before-webmcp-api', 'current_public_skill_release:', 'protocol-v3-contract-binds-current-public-skill-release']:
+            for expected in ['source: demo/.nojekyll', 'target: .nojekyll', 'source: demo/tests/**', 'target: tests/**', 'source: demo/tools/check_public_demo.py', 'target: tools/check_public_demo.py', 'source: tools/check_live_pages.py', 'target: tools/check_live_pages.py', 'source: tools/check_webmcp_origin_trial.py', 'target: tools/check_webmcp_origin_trial.py', 'source: tools/test_check_live_pages.py', 'target: tools/test_check_live_pages.py', 'source: tools/test_native_chrome_webmcp_live.py', 'target: tools/test_native_chrome_webmcp_live.py', 'source: tools/webmcp_host_preflight.py', 'target: tools/webmcp_host_preflight.py', 'source: tools/test_webmcp_host_preflight.py', 'target: tools/test_webmcp_host_preflight.py', 'source: distribution/public-workflows/live-pages-smoke.yml', 'target: .github/workflows/live-pages-smoke.yml', 'source: distribution/public-workflows/public-demo-check.yml', 'target: .github/workflows/public-demo-check.yml', 'source: distribution/public-workflows/webmcp-origin-trial.yml', 'target: .github/workflows/webmcp-origin-trial.yml', 'transactional-typed-presentation-operation-log', 'github-pages-preserves-raw-skill-markdown', 'deployed-pages-matches-exact-public-sha', 'origin-trial-is-pinned-decoded-and-checked-before-webmcp-api', 'current_public_skill_release:', 'protocol-v3-contract-binds-current-public-skill-release', 'page-api-and-agent-host-evidence-are-distinct']:
                 if expected not in policy:
                     errors.append(f'distribution/public-facade.yml: missing controlled facade rule {expected!r}')
 
@@ -219,6 +255,14 @@ def main() -> int:
     for unsafe in ['echo "sha=${{', '--expected-sha "${{', 'candidate="${{']:
         if unsafe in live_workflow:
             errors.append(f'.github/workflows/live-pages-smoke.yml: unsafe direct shell interpolation {unsafe!r}')
+
+    public_check_path = ROOT / '.github' / 'workflows' / 'public-demo-check.yml'
+    if PRIVATE_DEMO:
+        public_check_path = ROOT.parent / 'distribution' / 'public-workflows' / 'public-demo-check.yml'
+    public_check = public_check_path.read_text(encoding='utf-8')
+    for expected in ['python tools/check_public_demo.py', 'node --test tests/*.test.mjs', 'python -m unittest tools/test_webmcp_host_preflight.py']:
+        if expected not in public_check:
+            errors.append(f'.github/workflows/public-demo-check.yml: missing public regression marker {expected!r}')
 
     origin_trial_workflow = ROOT / '.github' / 'workflows' / 'webmcp-origin-trial.yml'
     if PRIVATE_DEMO:
@@ -304,7 +348,7 @@ def main() -> int:
             errors.append(f'runtime/webmcp.mjs: forbidden registered tool {name}')
 
     app = (ROOT / 'assets/app.mjs').read_text(encoding='utf-8')
-    for expected in ['environment: globalThis', 'data', 'webmcp-status-hero', 'webmcpVerifiedTools', 'webmcpProtocol']:
+    for expected in ['environment: globalThis', 'onLifecycle: publishLifecycle', 'webmcp-status-hero', 'webmcpVerifiedTools', 'webmcpProtocol', 'webmcpPageState', 'webmcpAgentState', 'webmcpContractState', 'webmcpWorkspaceRevision', 'contract-invoked', 'apply-started', 'apply-succeeded', 'apply-failed', 'Page WebMCP API –', 'Agent connection – observed', 'Personalized UI updated – workspace revision', 'Personalized UI update failed – workspace revision']:
         if expected not in app:
             errors.append(f'assets/app.mjs: missing WebMCP runtime/judge signal {expected!r}')
 

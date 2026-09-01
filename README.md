@@ -47,7 +47,7 @@ The public surface is deliberately small and user-oriented:
 
 There are no duplicate compatibility tools, diagnostic tools, or WebMCP tools for repository search/answer generation. The browser contract models user intentions rather than internal implementation details.
 
-When the host also exposes `document.modelContext.getTools()`, the page verifies the two expected tools against the host and reports **WebMCP verified**. Otherwise successful `registerTool()` registration reports **WebMCP ready**.
+When the browser also exposes `document.modelContext.getTools()`, the page verifies the two expected descriptors. This proves the page API surface, not that an adjacent agent can access it. The status card therefore reports four independent facts: **Page WebMCP API**, **Agent connection**, **Contract**, and **Workspace revision**.
 
 ## Try the human–agent flow
 
@@ -138,16 +138,21 @@ Important statuses are `current`, `target`, `hypothesis`, `open`, `demo-only`, a
 
 ## Browser compatibility
 
-| Host | Behavior |
+| Surface | Verified meaning |
 |---|---|
-| ChatGPT Desktop built-in browser | Full Site Tools flow only when the host exposes `document.modelContext` |
-| WebMCP-enabled Chrome build | Conditional, non-standard surface that may expose the same imperative tools; never a promise for ordinary Chrome |
-| Ordinary ChatGPT/Codex Chrome sidebar | Chat-only fallback: it must not claim Site Tool discovery or page mutation |
+| ChatGPT Desktop built-in browser | Official OpenAI Site Tools path; full flow still requires that the selected account/model exposes the page tools |
+| Chrome 149+ with this Origin Trial | Enables the page WebMCP API for this origin; does not by itself connect an agent |
+| Official ChatGPT Chrome extension | Capability-gated agent host; when no WebMCP connection is exposed, classify the flow `BLOCKED_EXTERNAL` and use chat-only fallback |
+| Model Context Tool Inspector extension | Page-tool debugging only; never an Explain Him production or user workflow |
 | Browser without WebMCP | Human controls continue to work over the same local workspace |
 
 `navigator.modelContext` is retained only as a legacy fallback for older experimental hosts. Explain Him does not depend on the non-standard `registerSkill()` proposal or on declarative WebMCP support.
 
-The ordinary Chrome sidebar can still provide a grounded chat answer, but it cannot be treated as evidence that WebMCP changed the page. The full personal-agent page flow is supported only on a host that actually exposes `document.modelContext`. A WebMCP-enabled Chrome build is a conditional integration surface, not a statement about the standard Chrome sidebar.
+The page cannot invoke an agent or a tool on activation. It registers tools immediately and exposes pinned bootstrap metadata; the host must discover them and choose to call `get_explanation_contract`. The supported-host invariant is contract invocation before the first grounded page answer. A mutation is accepted only after `apply_explanation` succeeds and workspace revision increases.
+
+On September 1, 2026, the installed official ChatGPT Chrome extension version `1.26.827.12125` answered the exact `User`/`Consumer` prompt, while the page observed no contract invocation and remained at revision 0. The page API independently verified 2/2 tools. This is `BLOCKED_EXTERNAL` at the agent-host connection boundary, not a successful end-to-end run and not a page-registration failure.
+
+Chrome's built-in AI Early Preview Program gives access to feedback channels and opportunities to test unreleased APIs through local prototypes. It does not guarantee a WebMCP feature gate or packaged bridge in the ChatGPT extension.
 
 ## Challenge-period work
 
@@ -170,9 +175,10 @@ Conversation happens in the user's existing agent interface; the Explain Him pag
 ```bash
 python tools/check_public_demo.py
 node --test tests/*.test.mjs
+python -m unittest tools/test_webmcp_host_preflight.py
 ```
 
-Checks cover public boundaries, machine-readable bootstrap, WebMCP host discovery, two-tool registration/verification, typed schemas, workflow insertion, guided focus, workspace behavior, Presentation Artifact safety, and prompt-to-tool eval fixtures.
+Checks cover public boundaries, machine-readable bootstrap, WebMCP host discovery, two-tool registration/verification, typed schemas, workflow insertion, guided focus, workspace behavior, Presentation Artifact safety, host-preflight classification, and prompt-to-tool eval fixtures. Native Chrome page-runtime evidence and deterministic fixture AI are reported separately from real agent-host/model evidence.
 
 ## Repository structure
 

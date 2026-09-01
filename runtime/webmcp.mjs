@@ -4,12 +4,12 @@ export const EXPLAIN_HIM_WEBMCP_TOOLS = Object.freeze(['get_explanation_contract
 export const EXPLAIN_HIM_UI_TOOLS = EXPLAIN_HIM_WEBMCP_TOOLS;
 export const EXPLANATION_BLOCK_TYPES = Object.freeze(['callout', 'comparison', 'workflow', 'timeline', 'diagram']);
 export const WEBMCP_PROTOCOL_VERSION = 3;
-const REPOSITORY = 'andrew-veresov/explain-him';
-const REPOSITORY_URL = `https://github.com/${REPOSITORY}`;
-const SKILL_COMMIT = 'd311a3aa74c78292619ce966e0281f20d9599fdc';
+export const EXPLAIN_HIM_REPOSITORY = 'andrew-veresov/explain-him';
+export const EXPLAIN_HIM_REPOSITORY_URL = `https://github.com/${EXPLAIN_HIM_REPOSITORY}`;
+export const EXPLAIN_HIM_SKILL_COMMIT = 'd311a3aa74c78292619ce966e0281f20d9599fdc';
 export const IMMUTABLE_SKILL_PROOF = Object.freeze([
-  { id: 'explain-him', commit: SKILL_COMMIT, sha256: '20060aea4e38f7fd30f3188bb7a5c820f053867002282f4db602904f1ccde731', path: 'skills/explain-him/SKILL.md', url: `https://raw.githubusercontent.com/${REPOSITORY}/${SKILL_COMMIT}/skills/explain-him/SKILL.md`, responsibility: 'grounding-and-repository-retrieval' },
-  { id: 'explain-him-presentation', commit: SKILL_COMMIT, sha256: '5daacfb575b6a230f50c92d4c590b21a08d6d148d75c60e13418edc76fb3ec4b', path: 'skills/explain-him-presentation/SKILL.md', url: `https://raw.githubusercontent.com/${REPOSITORY}/${SKILL_COMMIT}/skills/explain-him-presentation/SKILL.md`, responsibility: 'typed-page-presentation-and-guided-focus' }
+  { id: 'explain-him', commit: EXPLAIN_HIM_SKILL_COMMIT, sha256: '20060aea4e38f7fd30f3188bb7a5c820f053867002282f4db602904f1ccde731', path: 'skills/explain-him/SKILL.md', url: `https://raw.githubusercontent.com/${EXPLAIN_HIM_REPOSITORY}/${EXPLAIN_HIM_SKILL_COMMIT}/skills/explain-him/SKILL.md`, responsibility: 'grounding-and-repository-retrieval' },
+  { id: 'explain-him-presentation', commit: EXPLAIN_HIM_SKILL_COMMIT, sha256: '5daacfb575b6a230f50c92d4c590b21a08d6d148d75c60e13418edc76fb3ec4b', path: 'skills/explain-him-presentation/SKILL.md', url: `https://raw.githubusercontent.com/${EXPLAIN_HIM_REPOSITORY}/${EXPLAIN_HIM_SKILL_COMMIT}/skills/explain-him-presentation/SKILL.md`, responsibility: 'typed-page-presentation-and-guided-focus' }
 ]);
 const LOAD_ORDER = Object.freeze(IMMUTABLE_SKILL_PROOF.map((item) => item.id));
 const HANDSHAKE_FIELDS = Object.freeze(['requestId', 'expectedWorkspaceRevision', 'explanationId', 'topicId', 'operations', 'handshake']);
@@ -46,8 +46,8 @@ function targets(workspace) { const nodes = workspace.document?.querySelectorAll
 function locals(workspace) { return (workspace.getVisibleState?.().presentations || []).map((item) => ({ id: item.id, topicId: item.topicId, targetId: item.targetId, placement: item.placement, type: item.artifact?.type, title: item.artifact?.fallback?.title, updatedAt: item.updatedAt })); }
 function proof() { return IMMUTABLE_SKILL_PROOF.map(({ id, commit, sha256 }) => ({ id, commit, sha256 })); }
 function activation() { return { contractId: opaque('contract'), activationId: opaque('activation'), nonce: opaque('nonce') }; }
-function contractFor(workspace, current) { const context = workspace.getContext?.() || {}; const skillProof = proof(); const skills = IMMUTABLE_SKILL_PROOF.map(({ url, ...skill }) => ({ ...skill, rawUrl: url })); return { schemaVersion: 'explain-him-webmcp-contract.v3', protocolVersion: 3, activation: { id: current.activationId, nonce: current.nonce }, contractId: current.contractId, explanationId: context.explanationId || null, baseRevision: context.baseRevision || null, workspaceRevision: context.workspaceRevision ?? 0, repository: { fullName: REPOSITORY, url: REPOSITORY_URL, skillsCommit: SKILL_COMMIT }, skills, skillLoadOrder: LOAD_ORDER, skillProof, agentPolicy: clone(AGENT_POLICY), blockSchema: { path: 'schemas/explanation-block.v1.schema.json', url: '/explain-him/schemas/explanation-block.v1.schema.json', types: EXPLANATION_BLOCK_TYPES }, handshakeSchema: { path: 'schemas/webmcp-apply.v3.schema.json', url: '/explain-him/schemas/webmcp-apply.v3.schema.json' }, targets: targets(workspace), localBlocks: locals(workspace), applyOperations: ['add', 'replace', 'update', 'remove', 'focus'], authoredLayerMutable: false, repositoryAccessViaWebMcp: false }; }
-function block(value) { const input = safeObject(value, 'block'); const type = required(input.type, 'block.type', 40); if (!EXPLANATION_BLOCK_TYPES.includes(type)) throw new TypeError(`Unsupported explanation block type: ${type}`); const allowed = { callout: ['type', 'title', 'body', 'tone', 'sources'], comparison: ['type', 'title', 'columns', 'sources'], workflow: ['type', 'title', 'steps', 'sources'], timeline: ['type', 'title', 'items', 'sources'], diagram: ['type', 'title', 'variant', 'nodes', 'edges', 'sources'] }[type]; strictObject(input, 'block', allowed); const title = required(input.title, 'block.title', 160); const sources = input.sources === undefined ? [] : input.sources; if (!Array.isArray(sources) || sources.length > 20) throw new TypeError('block.sources must contain 0 to 20 entries'); const sourceRefs = sources.map((source) => { const item = strictObject(source, 'source', ['repository', 'path', 'ref', 'section', 'status']); return { repository: Object.hasOwn(item, 'repository') ? required(item.repository, 'source.repository', 200) : REPOSITORY, path: required(item.path, 'source.path', 500), ref: optionalString(item, 'ref', 'source.ref', 160), section: optionalString(item, 'section', 'source.section', 300), status: optionalString(item, 'status', 'source.status', 40) }; });
+function contractFor(workspace, current) { const context = workspace.getContext?.() || {}; const skillProof = proof(); const skills = IMMUTABLE_SKILL_PROOF.map(({ url, ...skill }) => ({ ...skill, rawUrl: url })); return { schemaVersion: 'explain-him-webmcp-contract.v3', protocolVersion: 3, activation: { id: current.activationId, nonce: current.nonce }, contractId: current.contractId, explanationId: context.explanationId || null, baseRevision: context.baseRevision || null, workspaceRevision: context.workspaceRevision ?? 0, repository: { fullName: EXPLAIN_HIM_REPOSITORY, url: EXPLAIN_HIM_REPOSITORY_URL, skillsCommit: EXPLAIN_HIM_SKILL_COMMIT }, skills, skillLoadOrder: LOAD_ORDER, skillProof, agentPolicy: clone(AGENT_POLICY), blockSchema: { path: 'schemas/explanation-block.v1.schema.json', url: '/explain-him/schemas/explanation-block.v1.schema.json', types: EXPLANATION_BLOCK_TYPES }, handshakeSchema: { path: 'schemas/webmcp-apply.v3.schema.json', url: '/explain-him/schemas/webmcp-apply.v3.schema.json' }, targets: targets(workspace), localBlocks: locals(workspace), applyOperations: ['add', 'replace', 'update', 'remove', 'focus'], authoredLayerMutable: false, repositoryAccessViaWebMcp: false }; }
+function block(value) { const input = safeObject(value, 'block'); const type = required(input.type, 'block.type', 40); if (!EXPLANATION_BLOCK_TYPES.includes(type)) throw new TypeError(`Unsupported explanation block type: ${type}`); const allowed = { callout: ['type', 'title', 'body', 'tone', 'sources'], comparison: ['type', 'title', 'columns', 'sources'], workflow: ['type', 'title', 'steps', 'sources'], timeline: ['type', 'title', 'items', 'sources'], diagram: ['type', 'title', 'variant', 'nodes', 'edges', 'sources'] }[type]; strictObject(input, 'block', allowed); const title = required(input.title, 'block.title', 160); const sources = input.sources === undefined ? [] : input.sources; if (!Array.isArray(sources) || sources.length > 20) throw new TypeError('block.sources must contain 0 to 20 entries'); const sourceRefs = sources.map((source) => { const item = strictObject(source, 'source', ['repository', 'path', 'ref', 'section', 'status']); return { repository: Object.hasOwn(item, 'repository') ? required(item.repository, 'source.repository', 200) : EXPLAIN_HIM_REPOSITORY, path: required(item.path, 'source.path', 500), ref: optionalString(item, 'ref', 'source.ref', 160), section: optionalString(item, 'section', 'source.section', 300), status: optionalString(item, 'status', 'source.status', 40) }; });
   if (type === 'callout') { const tone = Object.hasOwn(input, 'tone') ? required(input.tone, 'block.tone', 40) : 'neutral'; if (!['neutral', 'example', 'warning', 'insight'].includes(tone)) throw new TypeError('block.tone must be a supported tone'); return { type, title, body: required(input.body, 'block.body', 5000), tone, sources: sourceRefs }; }
   if (type === 'comparison') { if (!Array.isArray(input.columns) || input.columns.length < 2 || input.columns.length > 4) throw new TypeError('comparison.columns must contain 2 to 4 columns'); return { type, title, sources: sourceRefs, columns: input.columns.map((column) => { const item = strictObject(column, 'comparison.column', ['title', 'items']); return { title: required(item.title, 'comparison.columns.title', 120), items: Array.isArray(item.items) && item.items.length ? item.items.map((value) => required(value, 'comparison.columns.items', 500)) : (() => { throw new TypeError('comparison.columns.items must not be empty'); })() }; }) }; }
   if (type === 'workflow') { if (!Array.isArray(input.steps) || input.steps.length < 2 || input.steps.length > 12) throw new TypeError('workflow.steps must contain 2 to 12 steps'); return { type, title, sources: sourceRefs, steps: input.steps.map((step) => { const item = strictObject(step, 'workflow.step', ['title', 'body']); return { title: required(item.title, 'workflow.steps.title', 120), body: optionalString(item, 'body', 'workflow.steps.body', 800) }; }) }; }
@@ -82,5 +82,70 @@ function applySchemaV3() {
   const operation = (name, required, properties) => ({ type: 'object', additionalProperties: false, required: ['op', ...required], properties: { op: { const: name }, ...properties } });
   return { type: 'object', additionalProperties: false, required: HANDSHAKE_FIELDS, properties: { requestId: string(), expectedWorkspaceRevision: { type: 'integer', minimum: 0 }, explanationId: string(), topicId: { type: 'string', minLength: 1, maxLength: 120, pattern: '^[A-Za-z][A-Za-z0-9._:-]*$' }, operations: { type: 'array', minItems: 1, maxItems: 8, items: { oneOf: [operation('add', ['targetId', 'block'], { targetId: string(120), blockId: localId, block }), operation('replace', ['targetId', 'block'], { targetId: string(120), blockId: localId, block }), operation('update', ['blockId', 'block'], { blockId: localId, block }), operation('remove', ['blockId'], { blockId: localId }), { type: 'object', additionalProperties: false, properties: { op: { const: 'focus' }, targetId: string(120), blockId: localId }, oneOf: [{ required: ['op', 'targetId'] }, { required: ['op', 'blockId'] }] }] } }, handshake: { type: 'object', additionalProperties: false, required: ['contractId', 'activationId', 'nonce', 'baseRevision', 'skillProof'], properties: { contractId: string(), activationId: string(), nonce: string(), baseRevision: string(), skillProof: { type: 'array', minItems: 2, maxItems: 2, items: proofItem } } } } };
 }
-export function createWebMcpTools(workspace) { let current = null; const focusReplays = new Map(); return [{ name: 'get_explanation_contract', title: 'Bootstrap Explain Him Page Contract', description: 'Call this first, before answering any question about this page or loading Explain Him skills. It returns the activation contract, immutable ordered skill URLs and digests, current Personalized UI targets and local blocks, and the revision needed to ground and safely decide a page adaptation.', annotations: { readOnlyHint: true }, inputSchema: { type: 'object', properties: {}, additionalProperties: false }, execute: async () => { current ||= activation(); return contractFor(workspace, current); } }, { name: 'apply_explanation', title: 'Keep Personalized UI Consistent', description: 'After grounding the chat answer, call this in the same turn whenever that answer reveals missing, partial, or inconsistent visible Personalized UI. For equivalent User and Consumer labels, replace the authored workflow target for the first correction and update the same local block for a direct follow-up, using a typed payload and the complete Protocol v3 activation handshake.', annotations: { readOnlyHint: false }, inputSchema: applySchemaV3(), execute: async (input) => apply(workspace, input, current, focusReplays) }]; }
-export function registerWebMcpTools(workspace, modelContext = null, options = {}) { const resolved = modelContext && typeof modelContext.registerTool === 'function' ? { modelContext, source: options.hostSource || 'explicit', standard: options.standardHost ?? options.hostSource === 'document.modelContext' } : resolveWebMcpHost(options.environment || globalThis); const status = { supported: Boolean(resolved.modelContext), ok: false, verified: false, verificationError: null, hostSource: resolved.source, standardHost: resolved.standard, expectedTools: [...EXPLAIN_HIM_WEBMCP_TOOLS], registered: [], verifiedTools: [], errors: [], ready: null }; if (!resolved.modelContext) { status.ready = Promise.resolve(status); return status; } status.ready = (async () => { for (const tool of createWebMcpTools(workspace)) try { await resolved.modelContext.registerTool(tool); status.registered.push(tool.name); } catch (error) { status.errors.push({ name: tool.name, message: String(error?.message || error) }); } status.ok = !status.errors.length && status.expectedTools.every((name) => status.registered.includes(name)); if (typeof resolved.modelContext.getTools === 'function') try { const available = await resolved.modelContext.getTools(); const names = Array.isArray(available) ? available.map((item) => typeof item === 'string' ? item : item?.name) : []; status.verifiedTools = status.expectedTools.filter((name) => names.includes(name)); status.verified = status.verifiedTools.length === status.expectedTools.length; } catch (error) { status.verificationError = String(error?.message || error); } return status; })(); return status; }
+function lifecycle(callback, detail) {
+  if (typeof callback !== 'function') return;
+  try { callback(clone(detail)); } catch { /* Observability must never change tool behavior. */ }
+}
+function throwIfAborted(signal) {
+  if (!signal?.aborted) return;
+  throw signal.reason instanceof Error ? signal.reason : new Error('Tool execution was cancelled');
+}
+function safeTopicId(input) { return typeof input?.topicId === 'string' && /^[A-Za-z][A-Za-z0-9._:-]{0,119}$/.test(input.topicId) ? input.topicId : null; }
+function lifecycleErrorCode(error) { return error instanceof RangeError ? 'conflict' : error instanceof TypeError ? 'validation-error' : 'execution-error'; }
+export function createWebMcpTools(workspaceOrPromise, options = {}) {
+  let current = null;
+  const focusReplays = new Map();
+  const resolveWorkspace = () => Promise.resolve(workspaceOrPromise);
+  return [
+    {
+      name: 'get_explanation_contract',
+      title: 'Bootstrap Explain Him Page Contract',
+      description: 'Call this first, before answering any question about this page or loading Explain Him skills. It returns the activation contract, immutable ordered skill URLs and digests, current Personalized UI targets and local blocks, and the revision needed to ground and safely decide a page adaptation.',
+      annotations: { readOnlyHint: true },
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      execute: async (_input = {}, executionOptions = {}) => {
+        throwIfAborted(executionOptions.signal);
+        const workspace = await resolveWorkspace();
+        throwIfAborted(executionOptions.signal);
+        current ||= activation();
+        const output = contractFor(workspace, current);
+        lifecycle(options.onLifecycle, { type: 'contract-invoked', workspaceRevision: output.workspaceRevision });
+        return output;
+      }
+    },
+    {
+      name: 'apply_explanation',
+      title: 'Keep Personalized UI Consistent',
+      description: 'After grounding the chat answer, call this in the same turn whenever that answer reveals missing, partial, or inconsistent visible Personalized UI. For equivalent User and Consumer labels, replace the authored workflow target for the first correction and update the same local block for a direct follow-up, using a typed payload and the complete Protocol v3 activation handshake.',
+      annotations: { readOnlyHint: false },
+      inputSchema: applySchemaV3(),
+      execute: async (input, executionOptions = {}) => {
+        const topicId = safeTopicId(input);
+        let workspaceRevision = 0;
+        let started = false;
+        try {
+          throwIfAborted(executionOptions.signal);
+          const workspace = await resolveWorkspace();
+          throwIfAborted(executionOptions.signal);
+          workspaceRevision = workspace.getContext?.().workspaceRevision ?? 0;
+          lifecycle(options.onLifecycle, { type: 'apply-started', topicId, workspaceRevision });
+          started = true;
+          const output = await apply(workspace, input, current, focusReplays);
+          lifecycle(options.onLifecycle, {
+            type: 'apply-succeeded',
+            topicId: output.topicId,
+            workspaceRevision: output.workspaceRevision,
+            operations: output.applied.map((item) => item.op),
+            localBlockIds: output.localBlocks.map((item) => item.id)
+          });
+          return output;
+        } catch (error) {
+          if (!started) lifecycle(options.onLifecycle, { type: 'apply-started', topicId, workspaceRevision });
+          lifecycle(options.onLifecycle, { type: 'apply-failed', topicId, workspaceRevision, errorCode: lifecycleErrorCode(error) });
+          throw error;
+        }
+      }
+    }
+  ];
+}
+export function registerWebMcpTools(workspaceOrPromise, modelContext = null, options = {}) { const resolved = modelContext && typeof modelContext.registerTool === 'function' ? { modelContext, source: options.hostSource || 'explicit', standard: options.standardHost ?? options.hostSource === 'document.modelContext' } : resolveWebMcpHost(options.environment || globalThis); const status = { supported: Boolean(resolved.modelContext), ok: false, verified: false, verificationError: null, hostSource: resolved.source, standardHost: resolved.standard, expectedTools: [...EXPLAIN_HIM_WEBMCP_TOOLS], registered: [], verifiedTools: [], errors: [], ready: null }; if (!resolved.modelContext) { status.ready = Promise.resolve(status); return status; } status.ready = (async () => { for (const tool of createWebMcpTools(workspaceOrPromise, { onLifecycle: options.onLifecycle })) try { await resolved.modelContext.registerTool(tool); status.registered.push(tool.name); } catch (error) { status.errors.push({ name: tool.name, message: String(error?.message || error) }); } status.ok = !status.errors.length && status.expectedTools.every((name) => status.registered.includes(name)); if (typeof resolved.modelContext.getTools === 'function') try { const available = await resolved.modelContext.getTools(); const names = Array.isArray(available) ? available.map((item) => typeof item === 'string' ? item : item?.name) : []; status.verifiedTools = status.expectedTools.filter((name) => names.includes(name)); status.verified = status.verifiedTools.length === status.expectedTools.length; } catch (error) { status.verificationError = String(error?.message || error); } return status; })(); return status; }

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-"""Exercise the deployed WebMCP flow in native Chrome without testing feature flags.
+"""Exercise the deployed page-side WebMCP runtime in native Chrome.
 
-Exit 0 means the live browser flow passed. Exit 2 is BLOCKED: the required
-deployment or native host capability is absent, so this script never turns that
-state into a false pass. Exit 1 means a present capability violated the contract.
+This is not an agent-host test. Exit 0 proves the page API, descriptors, and
+runtime sequence. Exit 2 is BLOCKED when the deployment or browser page API is
+absent. Exit 1 means a present page capability violated the contract.
 """
 
 import json
@@ -173,7 +173,15 @@ def main() -> int:
                         return emit("FAILED", "native host rejected the expected contract sequence", chrome_version=version)
                     if flow["schema_version"] != "explain-him-webmcp-contract.v3" or not flow["local_id_preserved"] or flow["local_blocks_after_remove"] != 0:
                         return emit("FAILED", "native replace-update-remove flow violated the WebMCP contract", chrome_version=version, flow=flow)
-                    return emit("PASS", "native Chrome executed the live WebMCP contract", chrome_version=version, cdp=cdp_evidence, tool_names=names)
+                    return emit(
+                        "PASS",
+                        "native Chrome page runtime executed the live WebMCP contract",
+                        chrome_version=version,
+                        cdp=cdp_evidence,
+                        tool_names=names,
+                        evidence_scope="page-runtime-only",
+                        agent_host_connection="not-tested",
+                    )
                 finally:
                     context.close()
             finally:
