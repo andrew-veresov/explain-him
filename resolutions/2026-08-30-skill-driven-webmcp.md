@@ -1,6 +1,7 @@
 ---
 title: Skills own grounding and WebMCP delivers typed results
-status: accepted
+status: superseded
+superseded_by: 2026-09-02-webmcp-protocol-v4-explanation-display
 date: 2026-08-30
 tags: [explain-him, resolution, webmcp, skills, typed-ui]
 ---
