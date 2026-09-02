@@ -1,225 +1,144 @@
 ---
 name: explain-him
-description: Ground an explanation from the Originator-authored page and public repository, then hand a grounded result to the Explain Him presentation skill for typed browser-local embedding.
+description: Ground an explanation from the Originator-authored page and public repository, then hand a grounded result to the Explain Him presentation skill for safe browser-local display.
 ---
 
 # Explain Him – grounding skill
 
 ## Purpose
 
-Use the user's existing personal agent to explain the idea represented by this repository. The agent owns understanding, retrieval, reasoning, grounding, and the conversational answer. WebMCP is only the typed channel used to embed the already-grounded result back into the live Explain Him page.
+Use the user's existing personal agent to explain the idea represented by this repository. The agent owns understanding, retrieval, reasoning, grounding, and the conversational answer. WebMCP is the typed channel used to inspect the live page and display an already-grounded result.
 
-This skill is repository-scoped. Do not persist it as global behavior.
-
-Repository-authored artifacts are English. The personal agent may answer the user in the user's preferred language.
+This skill is repository-scoped. Do not persist it as global behavior. Repository-authored artifacts are English; the personal agent may answer in the user's preferred language.
 
 For browser-local presentation, also read `../explain-him-presentation/SKILL.md`.
 
-## Mandatory activation bootstrap
+## Mandatory page context
 
-On every Explain Him skill activation, bootstrap the current page before retrieval, reasoning, focus, a possible local mutation, or answering any question about Explain Him or the current Explain Him page:
+On every request to explain, clarify, compare, show, or walk through Explain Him or content on the current Explain Him page:
 
-1. when a Site Tools host is available, make one initial `get_explain_him_answer` call for this activation before answering any question about Explain Him or the current Explain Him page;
-2. follow the returned ordered answer workflow and confirm the repository is `andrew-veresov/explain-him`, the two expected tools are available, and the returned target and local-block lists are usable;
-3. inspect `skillDelivery`: when it is `native-inline`, require the exact page-issued registration identity, composite digest, source commit, and ordered source hashes; otherwise verify and load every immutable skill in `skillLoadOrder` from its raw URL, commit, and SHA-256 proof;
-4. retain the returned workspace revision, activation identity, authored target IDs, and local block IDs as the session-local page state;
-5. use authored target IDs only as insertion anchors, never as knowledge;
-6. apply this grounding skill before the presentation skill, whether they arrived as one verified inline composite or through the pinned remote fallback, and only then reason about the answer and any page adaptation.
+1. Call `get_explain_him_context` before reasoning about a page change.
+2. Verify `protocolVersion` is `4`, retain `activationId` and `workspaceRevision`, and inspect both authored `targets` and current `localBlocks`.
+3. Use `contentSummary`, `allowedOperations`, `hasInsertionSlot`, `topicId`, and the current Original/Personalized mode to determine whether the requested explanation is already visible.
+4. Always provide the grounded answer in the user's normal agent conversation.
+5. Unless the user explicitly forbids page changes or scrolling, call `explain_tool` in the same turn for every explanation request: focus an existing explanation or create, update, or replace the missing, partial, or inconsistent explanation.
+6. Confirm the returned `ok`, `workspaceRevision`, `focused`, and local block identity before claiming that the page changed or moved.
 
-Do not defer this bootstrap until after answering when Site Tools are available. Additional contract calls are allowed only for a confirmed stale-workspace or session-conflict refresh, or for an explicitly new page session.
+The page cannot force an arbitrary host or model to call a tool. These instructions define required agent behavior when the Site Tools host is available.
 
-`get_explain_him_answer` returns the mandatory answer workflow and page contract. It does not itself search GitHub, form the chat answer, or mutate the page; follow its pinned instructions using the personal agent's repository capability and `apply_explanation` when required.
+`get_explain_him_context` is read-only. It does not search GitHub, form an answer, or mutate the page.
 
-## Progressive inline skill delivery
+## Protocol v4
 
-Release A7 progressively follows the open WebMCP skills proposal without treating it as a standard. The page always registers the two independent tools first. If and only if `document.modelContext.registerSkill` exists, it also registers one composite `explain_him` skill containing the complete grounding and presentation instructions inline and referencing both tool names.
+The public WebMCP surface contains exactly:
 
-- `native-inline` means the page observed a successful experimental registration and issued a session-local registration identity bound to the composite SHA-256 and immutable source proofs.
-- `pinned-remote-fallback` means the native API was absent, failed, or was not registered before bootstrap; fetch and verify both immutable raw skills in the declared order.
-- Never accept a caller-supplied delivery-mode claim. Use only the mode and proof returned by the current page activation.
-- Registration success proves that the page handed the composite to the host API. It does not prove that a model read, obeyed, or semantically understood the instructions.
-- A native registration error never disables `get_explain_him_answer` or `apply_explanation` and never permits a false native-skill success claim.
+- `get_explain_him_context` – returns the current visible page state, Protocol v4 activation, repository guidance, target capabilities, local block IDs, skill-delivery state, and decision policy;
+- `explain_tool` – applies a bounded typed local operation or focuses an existing explanation.
 
-## Protocol v3 and release binding
+Use only `document.modelContext`. Do not use or emulate a navigator host, legacy tool identity, compatibility handshake, proof echo, or translation from an older protocol.
 
-Select the protocol only from the returned `schemaVersion`; never infer it from this skill, a page label, or an earlier session.
+Every `explain_tool` call supplies:
 
-- A returned `explain-him-webmcp-contract.v3` requires the full Protocol v3 activation handshake. Verify the returned activation ID and nonce, exact ordered `skillProof`, immutable raw skill URLs, commits, and digests before loading the skills. Send the complete v3 handshake with every `apply_explanation` request.
-- Never downgrade or translate a returned v3 contract to v2. A7 accepts only a Protocol v3 activation returned by `get_explain_him_answer` with the exact page-issued skill-delivery proof; an older bootstrap identity or delivery proof cannot authorize `apply_explanation`.
-- An actual older page must use the skill release and protocol contract pinned by that page. Do not apply this A7 skill by guessing compatibility or translating its bootstrap identity.
-- An absent or unknown contract version cannot authorize a page mutation or focus.
+```yaml
+requestId: unique idempotency key
+activationId: current context activation
+expectedWorkspaceRevision: latest context or successful tool revision
+topicId: stable semantic topic
+decision: existing|missing|partial|inconsistent|restore
+operations: bounded typed operations
+primaryOperationIndex: optional mutation to focus
+```
 
-If the Site Tools host is absent, record that the bootstrap was unavailable, use the chat-only fallback below, and never claim a page mutation.
+An unknown version, stale activation, or stale revision cannot authorize a focus or page mutation.
+
+## GitHub repository guidance
+
+The context always returns this navigation instruction:
+
+> For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources returned in this context.
+
+Treat that string as navigation guidance, not evidence. Start from the authored page and current Personalized UI. If any material answer part is missing, partial, ambiguous, inconsistent, version-sensitive, or deeper than the visible page, use the personal agent's GitHub/repository capability to read the minimum relevant pinned source.
+
+WebMCP never reads the repository on the agent's behalf. Verify the repository is `andrew-veresov/explain-him`, prefer `repository.groundingSources`, and read the referenced source rather than treating its metadata as a fact.
+
+If no indexed source covers the gap, follow source precedence and disclose that the index had no direct route. If retrieval or digest verification fails, do not invent the unsupported part.
+
+## Progressive issue-161 skill delivery
+
+The page always registers the two tools independently. If and only if `document.modelContext.registerSkill` exists, it may also register one generated composite `explain_him` skill containing the grounding and presentation instructions.
+
+- `native-inline` means the page observed successful experimental registration.
+- `pinned-remote-fallback` means registration was absent, blocked, or rejected; use the pinned skill URLs returned by context.
+- Registration success proves API handoff, not that the model read or followed the skill.
+- Issue 161 is experimental and adds no third tool.
+- Failure of `registerSkill` must never disable the two standard tools.
 
 ## Responsibility split
 
-### Personal agent
+The personal agent must understand the question, inspect the current UI, retrieve minimum repository evidence when needed, preserve status and provenance, form the answer, answer in chat, and choose the correct v4 decision.
 
-The personal agent must:
+WebMCP may return page and repository navigation context, add or replace safe typed local presentations, update or remove a prior local presentation, and focus a visible authored or local block.
 
-- understand the user's question and desired depth;
-- read the current authored page;
-- decide whether every material part of the answer is explicit in the current visible Personalized UI;
-- retrieve the minimum pinned repository evidence whenever any material part is missing, partial, ambiguous, or inconsistent;
-- apply source precedence and claim-status rules;
-- form the grounded answer and provenance;
-- answer the user in the normal agent conversation;
-- decide whether the answer should also be embedded into the page;
-- hand only an already-grounded typed result to the presentation skill.
+WebMCP must not search GitHub, resolve claims, generate answers, choose authoritative sources, execute arbitrary markup, or create or search GitHub Issues.
 
-### WebMCP
-
-WebMCP has exactly two public capabilities:
-
-- `get_explain_him_answer` – must be called before every Explain Him answer and returns the mandatory ordered answer workflow, activation, current revision and local IDs, immutable skills, pinned grounding source index, and tool-usage contract;
-- `apply_explanation` – adds or removes safe typed browser-local explanation blocks and focuses authored targets for a guided walkthrough.
-
-WebMCP must not:
-
-- search or read repository knowledge;
-- resolve claims or generate answers;
-- decide which sources are authoritative;
-- choose an explanation strategy;
-- execute arbitrary HTML or JavaScript;
-- create or search GitHub Issues.
-
-### Presentation skill
-
-The presentation skill converts already-grounded meaning into one of the page-supported typed blocks and calls `apply_explanation`. It does not introduce new facts.
-
-## Source discovery
-
-Start with the authored page and current Personalized UI. If any material part of the answer is not explicit in the visible Personalized UI, repository retrieval is required in the same turn. Do not answer from plausible visible-page inference, nearby wording, or model memory.
-
-Retrieve from `andrew-veresov/explain-him` through the personal agent's own GitHub/repository capability, not through WebMCP.
-
-For a Protocol v3 contract that provides `groundingSourceIndex`, resolve the user's topic through that index before browsing arbitrary repository paths. Verify the indexed repository, immutable commit, raw URL, section, status, and SHA-256, then read the minimum pinned source that covers the missing material. The index is navigation metadata, not evidence by itself: the agent must read the referenced source.
-
-If no indexed topic covers a material gap, follow source precedence with the minimum additional repository read and disclose that the index did not provide a direct route. Do not broaden retrieval speculatively. If repository retrieval is unavailable, an indexed source is missing, or its digest does not match, stop grounding the unsupported part and disclose the retrieval failure.
-
-Use the minimum relevant files:
-
-1. accepted `resolutions/` for explicit decisions and clarifications;
-2. `index.html` and explicit claims in `explain-him.yaml`;
-3. relevant files under `knowledge/`;
-4. `README.md` and navigation material.
-
-Exclude `tests/`, `tools/`, `.github/`, and evaluation fixtures from normal product knowledge unless the user explicitly asks about implementation/testing. Do not read evaluation fixtures during an ordinary explanation.
+The presentation skill converts already-grounded meaning into a supported block and calls `explain_tool`. It does not introduce facts.
 
 ## Source precedence
 
-From strongest to weakest when sources conflict:
+From strongest to weakest:
 
 1. accepted files in `resolutions/`;
-2. Originator-authored `index.html` and explicit manifest claims;
-3. `knowledge/`;
-4. `README.md` and other navigation material;
-5. agent inference.
+2. Originator-authored `index.html` and explicit claims in `explain-him.yaml`;
+3. relevant files under `knowledge/`;
+4. `README.md` and navigation material;
+5. clearly marked agent inference.
 
-A lower-priority source must not silently override a higher-priority source.
+Exclude `tests/`, `tools/`, `.github/`, and evaluation fixtures from normal product knowledge unless the user explicitly asks about implementation or testing.
 
-## Claim status
+Preserve material statuses: `current`, `target`, `hypothesis`, `open`, `demo-only`, and `deprecated`.
 
-Preserve status when it materially changes meaning:
+## Explanation and page decision
 
-- `current` – accepted/current artifact or behavior;
-- `target` – intended future behavior;
-- `hypothesis` – proposition under validation;
-- `open` – unresolved point;
-- `demo-only` – implemented only for demonstration/reference;
-- `deprecated` – superseded behavior.
+Always answer in chat. Unless the user explicitly requests no page change, every explanation request also calls `explain_tool`:
 
-Never present `target`, `hypothesis`, `open`, or `demo-only` as production fact.
+| Visible answer state | Required decision |
+| --- | --- |
+| Fully present and correct | `existing`: focus the exact authored or local block without changing workspace revision |
+| Missing | Retrieve evidence when needed, then `missing`: add and automatically focus the result |
+| Partial | Retrieve evidence, then `partial`: update the same-topic block, or add only when no same-topic block exists |
+| Inconsistent | Retrieve authoritative evidence, then `inconsistent`: replace the authored target locally or update the local block |
+| Explicit no-page-change request | Chat only; do not call `explain_tool` |
+| Explicit restore request | `restore`: remove the local result and focus its authored target |
 
-## Grounding procedure
+For a continuation, reuse the same `topicId` and returned local block ID. Do not add a duplicate same-topic block.
 
-For each user question:
+## Terminology consistency
 
-1. Complete the mandatory activation bootstrap when Site Tools are available.
-2. Read the current page section(s) that appear relevant.
-3. Determine whether every material part of the answer is explicit, current, and consistent in the visible Personalized UI.
-4. If any material part is missing, partial, ambiguous, or inconsistent, resolve the topic through `groundingSourceIndex` and retrieve the minimum pinned source in the same turn. If the index has no matching route, retrieve the minimum additional GitHub source using the precedence above and disclose the index gap.
-5. Separate sourced statements from agent inference.
-6. Preserve important statuses.
-7. Form the answer in the user's preferred language.
-8. Attach provenance for material claims that will be embedded into the page.
-9. Apply the decision policy below. When a local change is mandatory and Site Tools are available, call `apply_explanation` in the same turn before acknowledging the result in chat.
-10. Continue the conversational answer and, where appropriate, a guided focus after the transaction result is known.
+Terminology consistency precedes the fully-present branch. `User` and `Consumer` identify the same participant in the current explanation, but an equivalence note does not make a visibly mixed requested representation consistent.
 
-Do not call `apply_explanation` before the meaning is grounded.
-
-Repository grounding must preserve documented absences as facts. For example, when the authoritative source says the current project does not document a dedicated authoring tool, editor, generator, builder, or CLI, state that limitation directly. Never infer or invent such a platform from the existence of GitHub Pages or a static page.
+- Default to `User` for user-facing personalized material.
+- A direct request for `Consumer` overrides that default for the same local result.
+- For the visible `User`/`Consumer` inconsistency, use topic `terminology:user-consumer` and decision `inconsistent` to replace `workflow-diagram` locally.
+- A same-topic follow-up updates the returned local block ID.
+- Restore removes that local replacement and focuses `workflow-diagram`.
+- Never normalize labels that denote distinct roles.
 
 ## Provenance passed to presentation
 
-For every repository-backed page block, retain source entries with as much of the following as is known:
+For every repository-backed block, retain known source fields without inventing optional values:
 
 ```yaml
 repository: andrew-veresov/explain-him
 path: knowledge/...
-ref: main-or-commit
+ref: pinned-commit-or-known-ref
 section: optional heading
 status: current|target|hypothesis|open|demo-only|deprecated
 ```
 
-Do not fabricate refs or sections. Omit unknown optional fields.
+The authored page may use `index.html` as its source path. Browser-local presentations are never canonical evidence.
 
-A page-authored statement may use `index.html` as the source path.
+## Unknown questions and failures
 
-## Page-adaptation decision policy
+When evidence is insufficient, state what is known, mark the unresolved point `open`, optionally prepare a minimized English Issue draft, and obtain explicit confirmation before any GitHub write. WebMCP is never the GitHub Issue gateway.
 
-Always answer the user in chat. Before deciding whether to change the page, assess both whether the grounded answer and the representation the user requested already exist correctly in the current Personalized UI. The authored page alone is not enough when a personalized result is currently visible.
-
-Use this matrix when Site Tools are available:
-
-- If the answer and requested representation are fully present and correct, an ordinary question is chat-only: do not call `apply_explanation` and do not duplicate the result.
-- If they are fully present and the user asks to show, reveal, or walk through them, call `apply_explanation` in the same turn with a focus-only operation.
-- If the answer or requested representation is missing, call `apply_explanation` in the same turn with `add`. A requested diagram that is absent counts as missing representation even when prose is correct.
-- If it is partial, `update` the existing same-topic local block when possible; otherwise add a clearly supplementary local block.
-- If it is inconsistent, `replace` the affected authored target or `update` the affected local block. Batch every affected semantic target in one transaction so Personalized view does not show a mixed result.
-- An explicit instruction not to change the page overrides this matrix: answer in chat only.
-- For an explicit restore, use `remove` to return to the Originator's version.
-
-Where this matrix selects a page operation, `apply_explanation` in the same turn is mandatory. Use chat only for a simple, correct answer whose answer and requested representation are already fully present and that is not a show or walkthrough request.
-
-### Terminology consistency precedes fully-present
-
-Before treating an answer or representation as fully present, check whether the user has noticed, compared, or asked to correct equivalent visible labels. An equivalence note does not make mixed labels consistent: if `User` and `Consumer` name the same participant but both remain visible in the requested representation, that representation is inconsistent for this narrow terminology request.
-
-- An explicit no-page-change instruction still wins: answer in chat and do not apply a local change.
-- Do not normalize labels that denote distinct roles. This rule is only for labels grounded as equivalent in the current explanation.
-- Default to `User` for user-facing local material. A direct request to use `Consumer` overrides that default for the same local result.
-- For the exact visible `User`/`Consumer` question, answer in chat and, in the same turn, use `replace` on `workflow-diagram` in Personalized view with `User` terminology.
-- For the direct same-topic follow-up to use `Consumer`, use `update` on the same returned local block ID. For a request to return to the author view, use `remove` for that local replacement.
-
-Keep canonical authored material unchanged. This is a targeted correction rule, not a reason to mutate the page for every answer.
-
-Reuse a topic and its returned local block ID instead of creating duplicate context. Use `update` for a same-topic refinement when the existing local block is partial or needs a refined grounded result. A focus-only operation is not a substitute for a missing, partial, inconsistent, or explicitly requested edit. Do not embed every conversational answer: the page should remain selective and useful. Then read and follow `skills/explain-him-presentation/SKILL.md`.
-
-## External Presentation Capabilities
-
-An external capability such as Archify may help the personal agent decide how to structure already-grounded technical meaning. It is not a source of truth and must not independently inspect the repository as a second reasoning path.
-
-If an external renderer produces HTML, JavaScript, or another executable surface, do not inject it into Explain Him. Translate the grounded semantic result into one of the safe typed block forms supported by the presentation skill.
-
-## Question to the Originator
-
-When available evidence is insufficient:
-
-1. state the supported part;
-2. mark the unresolved point `open`;
-3. search existing Issues through the personal agent's GitHub integration when appropriate;
-4. prepare a minimized English Issue draft using `question-template.md` if the gap remains;
-5. remove irrelevant personal context;
-6. obtain explicit user confirmation before any GitHub write.
-
-WebMCP is never the GitHub Issue gateway.
-
-## Failure behavior
-
-- If GitHub retrieval is unavailable and the page is insufficient, say the deeper answer cannot be grounded and identify the retrieval failure without inventing the missing detail.
-- If `groundingSourceIndex` is missing, does not cover the material topic, points outside the pinned repository commit, or fails its digest check, do not treat its metadata or a plausible visible-page inference as evidence.
-- If `apply_explanation` fails, keep the conversational answer and plainly say that the requested local page change was not applied. Do not acknowledge the edit, correction, refinement, or restore as complete.
-- In Chrome sidebar, treat missing WebMCP as a chat-only fallback: answer normally and never claim the page changed. Explain that the full Site Tools flow requires a supported ChatGPT Desktop built-in browser surface.
-- If WebMCP is unavailable for another reason, answer normally and use accessible page controls or an agent-side presentation fallback if helpful.
-- Never present local personalization or external presentation output as Originator-authored knowledge.
+If context, repository retrieval, or `explain_tool` fails, keep the conversational answer where supportable and plainly disclose the failed step. Never claim that a block was created, updated, restored, focused, or displayed without the successful tool result.

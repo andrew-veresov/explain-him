@@ -1,70 +1,82 @@
 ---
 name: explain-him-presentation
-description: Convert an already-grounded Explain Him answer into safe typed browser-local blocks and embed them through the minimal WebMCP apply_explanation tool.
+description: Convert an already-grounded Explain Him answer into safe typed browser-local blocks and display or focus it through the Protocol v4 explain_tool.
 ---
 
 # Explain Him – presentation skill
 
 ## Purpose
 
-Take meaning that has already been grounded by the personal agent and represent it inside the live Explain Him page as a small number of safe, typed, browser-local blocks.
+Represent meaning already grounded by the personal agent inside the live Explain Him page as a small number of safe, typed, browser-local blocks. This skill never retrieves facts, resolves claims, or changes Originator-authored content.
 
-This skill never retrieves facts, resolves claims, or changes Originator-authored content. It only chooses a representation for meaning that is already known.
-
-## Mandatory activation bootstrap
+## Prerequisites
 
 Before using this skill:
 
-1. follow `skills/explain-him/SKILL.md`;
-2. complete its mandatory activation bootstrap before grounding, focus, or mutation;
-3. reuse the initial `get_explain_him_answer` result for this activation; request another answer bootstrap only for a confirmed stale-workspace or session-conflict refresh, or for an explicitly new page session;
-4. ground the answer from the authored page and, when needed, GitHub;
-5. preserve repository provenance and status;
-6. retain the contract workspace revision, authored target IDs, and local block IDs until the transaction completes.
-
-When the contract reports `native-inline`, accept it only with the exact page-issued registration identity, composite digest, source commit, and ordered source hashes. When it reports `pinned-remote-fallback`, verify both immutable raw skills before applying. A bare delivery-mode claim is never proof. Native registration proves API handoff but does not prove semantic reading by a model.
-
-## Protocol v3 and release binding
-
-Select the protocol only from the returned `schemaVersion`; this skill must not relabel, downgrade, or translate a returned contract.
-
-- A returned `explain-him-webmcp-contract.v3` requires its full activation handshake, including the activation ID, nonce, base revision, exact ordered `skillProof`, and exact `skillDeliveryProof`. Verify the active delivery proof before applying a typed result, then send the complete v3 handshake unchanged with `apply_explanation`.
-- Never downgrade or translate a returned v3 contract to v2. A7 accepts only a Protocol v3 activation returned by `get_explain_him_answer`; an older bootstrap identity or delivery proof cannot authorize `apply_explanation`.
-- An actual older page must use the skill release and protocol contract pinned by that page. Do not apply this A7 skill by guessing compatibility or translating its bootstrap identity.
-- If the contract is absent or has an unknown version, this skill cannot mutate or focus the page.
-
-The contract tells you:
-
-- valid authored `targetId` insertion anchors;
-- current browser-local block IDs;
-- the canonical typed-block schema path;
-- the repository/skill location.
+1. Follow `skills/explain-him/SKILL.md`.
+2. Call `get_explain_him_context` and require Protocol v4.
+3. Inspect the current authored targets, local blocks, target capabilities, view mode, activation, and workspace revision.
+4. Ground the answer from the visible page and, when needed, the linked pinned GitHub repository.
+5. Preserve repository provenance and status.
+6. Always answer in chat.
+7. Unless the user explicitly forbids page changes, call `explain_tool` to focus or display the explanation.
 
 ## WebMCP boundary
 
-The only write capability is `apply_explanation`.
+`explain_tool` accepts an ordered list containing:
 
-It accepts an ordered list of operations:
+- `add` – add a typed local block beside a mutable target;
+- `replace` – locally substitute a mutable authored target;
+- `update` – refine an existing same-topic local block while preserving its ID;
+- `remove` – restore the authored target by removing a local result;
+- `focus` – reveal and focus an existing authored or local explanation.
 
-- `add` – add one typed block next to an authored target;
-- `replace` – locally substitute a whole registered semantic target with a safe typed block;
-- `update` – change an earlier local block while preserving its ID;
-- `remove` – remove one earlier browser-local block or replacement;
-- `focus` – reveal and focus an authored target or visible local result.
+One mutation call is one atomic browser-local transaction and one undo step. Authored HTML remains intact.
 
-One call is one atomic browser-local transaction and one undo step. `replace` never changes canonical HTML: the authored subtree remains intact and returns with Original view or removal of the replacement.
+For mutation decisions, do not append a `focus` operation. `explain_tool` automatically focuses the block selected by `primaryOperationIndex`, or the last mutation by default. Restore automatically focuses the authored target. The `existing` decision is the only decision that carries a focus-only operation.
 
-Do not use WebMCP for retrieval, reasoning, diagnostics, tool discovery, or GitHub operations.
+Do not use WebMCP for retrieval, reasoning, diagnostics, tool discovery, GitHub operations, or arbitrary DOM mutation.
+
+## Target capabilities
+
+Use only targets returned by `get_explain_him_context`:
+
+- every target with `focus` may be highlighted and scrolled into view;
+- `add` requires `hasInsertionSlot: true` and `add` in `allowedOperations`;
+- `replace` requires `hasInsertionSlot: true` and `replace` in `allowedOperations`;
+- focus-only workflow steps must never receive a local block.
+
+A successful response must identify the focused visible block. Do not report success from persistence or revision alone.
+
+## Decision rules
+
+| Decision | Valid operation behavior |
+| --- | --- |
+| `existing` | Exactly one `focus`; revision remains unchanged |
+| `missing` | One or more `add` operations; duplicate same-topic content is rejected |
+| `partial` | `update` the same-topic local block; `add` only when none exists |
+| `inconsistent` | Atomic `replace` and/or `update` operations |
+| `restore` | `remove` one or more same-topic local blocks, then focus the authored target |
+
+Every call includes `requestId`, `activationId`, `expectedWorkspaceRevision`, `topicId`, `decision`, and `operations`. Supply `primaryOperationIndex` only when a mutation batch needs a focus target other than its default.
+
+Reuse the returned local block ID for every same-topic continuation. Never claim a page update before `ok: true` and the expected `workspaceRevision`, `applied`, and `focused` values are returned.
 
 ## Supported typed blocks
 
-Canonical machine-readable schema: `schemas/explanation-block.v1.schema.json`.
+Canonical schema: `schemas/explanation-block.v1.schema.json`.
 
-Choose the smallest block that materially improves understanding.
+Choose the smallest representation that materially improves understanding:
 
-### `callout`
+1. `callout` for one compact explanation, analogy, warning, or insight.
+2. `comparison` for two to four alternatives or concepts.
+3. `workflow` when order or causality is central.
+4. `timeline` for chronology or lifecycle stages.
+5. `diagram` when relationships or topology add value.
 
-Use for one compact explanation, analogy, example, warning, or insight.
+Do not create a diagram merely because diagrams are available.
+
+### Callout
 
 ```json
 {
@@ -76,62 +88,50 @@ Use for one compact explanation, analogy, example, warning, or insight.
 }
 ```
 
-`tone` is one of `neutral`, `example`, `warning`, `insight`.
-
-### `comparison`
-
-Use when the main value is seeing 2–4 alternatives or concepts side by side.
+### Comparison
 
 ```json
 {
   "type": "comparison",
-  "title": "Authored vs personal layer",
+  "title": "Authored and personal layers",
   "columns": [
-    { "title": "Authored", "items": ["Canonical", "Originator-owned"] },
-    { "title": "Personal", "items": ["Browser-local", "Agent-added"] }
+    {"title": "Authored", "items": ["Canonical", "Originator-owned"]},
+    {"title": "Personal", "items": ["Browser-local", "Agent-added"]}
   ],
   "sources": []
 }
 ```
 
-### `workflow`
-
-Use for an ordered process or causal/action chain.
+### Workflow
 
 ```json
 {
   "type": "workflow",
   "title": "How the agent explains",
   "steps": [
-    { "title": "Read page", "body": "Start from authored meaning." },
-    { "title": "Retrieve deeper evidence", "body": "Use GitHub only when needed." },
-    { "title": "Ground and present", "body": "Answer, then embed a typed block." }
+    {"title": "Read the page", "body": "Start from authored meaning."},
+    {"title": "Retrieve deeper evidence", "body": "Use the linked repository only when needed."},
+    {"title": "Ground and present", "body": "Answer, then display or focus the explanation."}
   ],
   "sources": []
 }
 ```
 
-### `timeline`
-
-Use for chronology, lifecycle stages, or evolution over time where labels matter.
+### Timeline
 
 ```json
 {
   "type": "timeline",
   "title": "Evolution",
   "items": [
-    { "label": "Stage 1", "body": "First state." },
-    { "label": "Stage 2", "body": "Next state." }
+    {"label": "Stage 1", "body": "First state."},
+    {"label": "Stage 2", "body": "Next state."}
   ],
   "sources": []
 }
 ```
 
-### `diagram`
-
-Use for relationships among concepts/components where nodes and edges add value.
-
-Variants: `concept`, `architecture`, `sequence`, `flow`.
+### Diagram
 
 ```json
 {
@@ -139,94 +139,44 @@ Variants: `concept`, `architecture`, `sequence`, `flow`.
   "title": "Explanation loop",
   "variant": "flow",
   "nodes": [
-    { "id": "page", "label": "Authored page" },
-    { "id": "agent", "label": "Personal agent" },
-    { "id": "local", "label": "Typed local block" }
+    {"id": "page", "label": "Authored page"},
+    {"id": "agent", "label": "Personal agent"},
+    {"id": "local", "label": "Typed local block"}
   ],
   "edges": [
-    { "from": "page", "to": "agent", "label": "ground" },
-    { "from": "agent", "to": "local", "label": "apply_explanation" }
+    {"from": "page", "to": "agent", "label": "ground"},
+    {"from": "agent", "to": "local", "label": "explain_tool"}
   ],
   "sources": []
 }
 ```
 
-Node IDs must be unique. Every edge must reference existing node IDs.
+Node IDs must be unique. Every edge must reference existing nodes.
 
-## Block-selection heuristic
+## Example calls
 
-Use this order:
-
-1. If one paragraph is enough → `callout`.
-2. If the user is contrasting things → `comparison`.
-3. If order/causality is central → `workflow`.
-4. If dates/stages over time are central → `timeline`.
-5. If relationships/topology are central → `diagram`.
-
-Do not create a diagram just because diagrams are possible.
-
-## Same-turn decision and topic reuse
-
-The conversational answer is always required. Before selecting an operation, assess whether both the grounded answer and the representation the user requested already exist correctly in the current Personalized UI. Do not infer that a requested diagram exists merely because equivalent prose exists.
-
-Fully present, correct, and consistent content stays chat-only for an ordinary question, with focus-only reserved for an explicit show or walkthrough. Missing, partial, or inconsistent visible UI requires a same-turn `apply_explanation` after repository grounding, unless the user explicitly requested no page change.
-
-- Fully present and correct for an ordinary question: do not apply and do not duplicate the result.
-- Fully present and correct for an explicit show or walkthrough: call `apply_explanation` in the same turn with focus only.
-- Missing answer or representation: use `add`; an absent requested diagram is missing representation.
-- Partial result: use `update` on the existing same-topic local block, or add a supplementary block when no such block exists.
-- Inconsistent result: use `replace` for an authored target or `update` for a local block, batching every affected target in one transaction.
-- An explicit no-page-change instruction means chat only, even if a page adaptation would otherwise be appropriate.
-- Explicit restore: use `remove` to return to the Originator's version.
-
-When this matrix selects an operation, `apply_explanation` in the same turn is mandatory. Use chat only for a simple, correct answer whose answer and requested representation are already fully present and that is not a show or walkthrough request.
-
-Treat a topic as the stable semantic subject plus its authored target and, once created, its returned `local-*` block ID. For every continuation on that topic, reuse the same returned local block ID rather than adding a duplicate block. Use `update` for a same-topic refinement when that existing local block is partial or needs a refined grounded result. Do not tell the user that a page result changed until the selected same-turn transaction succeeds.
-
-### Terminology consistency precedes fully-present
-
-Run this narrow terminology check before the fully-present branch. An equivalence note does not make mixed labels consistent: when a question notices or compares equivalent visible `User` and `Consumer` labels, the requested representation remains inconsistent until one term is used throughout. Do not normalize labels that denote distinct roles.
-
-- An explicit no-page-change instruction still wins and leaves the result chat-only.
-- Default to `User` in user-facing local material, unless the user directly asks for `Consumer`.
-- For the exact visible `User`/`Consumer` question, answer in chat and make the same-turn `apply_explanation` call with `replace` for `workflow-diagram`; use topic `terminology:user-consumer` when the protocol provides a topic field.
-- For the direct same-topic Consumer follow-up, call `update` with the same returned local block ID. For a return to the author version, call `remove` for that ID.
-
-Batch any other affected equivalent-label targets in the same transaction so Personalized view does not present mixed terminology. The authored source remains immutable. This narrow correction does not justify mutation for every otherwise-correct answer.
-
-## Provenance
-
-Every repository-grounded block should carry `sources` from the grounding skill.
-
-Example:
+Focus an explanation that already exists:
 
 ```json
 {
-  "repository": "andrew-veresov/explain-him",
-  "path": "resolutions/2026-08-30-webmcp-challenge-surface.md",
-  "ref": "main",
-  "section": "Decision",
-  "status": "current"
+  "requestId": "focus-grounding-1",
+  "activationId": "from-context",
+  "expectedWorkspaceRevision": 0,
+  "topicId": "grounding:overview",
+  "decision": "existing",
+  "operations": [{"op": "focus", "targetId": "grounding-contract"}]
 }
 ```
 
-Use `index.html` when the authored page itself is the source. Do not invent missing metadata.
-
-## Adding blocks
-
-1. Choose the authored `targetId` from `get_explain_him_answer`.
-2. Choose the typed block with the heuristic above.
-3. Keep it concise; the conversational answer remains primary.
-4. Include provenance.
-5. Call `apply_explanation` once, batching related additions when useful.
-6. Check that the returned result is `ok`, has the expected workspace revision, and includes the expected `applied` entries and local block IDs.
-
-## Guided walkthrough
-
-After adding a grounded block, include `focus` in the same `apply_explanation` transaction when the user asked to be shown or guided through the result. When no content change is needed, a walkthrough still requires a same-turn `apply_explanation` call with a focus-only operation. Keep the chat answer active: state what is focused, explain why it matters, and let the user's next question determine the next focus target.
+Add and automatically focus a missing explanation:
 
 ```json
 {
+  "requestId": "originator-workflow-1",
+  "activationId": "from-context",
+  "expectedWorkspaceRevision": 0,
+  "topicId": "originator:workflow",
+  "decision": "missing",
   "operations": [
     {
       "op": "add",
@@ -235,84 +185,25 @@ After adding a grounded block, include `focus` in the same `apply_explanation` t
         "type": "workflow",
         "title": "From idea to explanation",
         "steps": [
-          { "title": "Prepare the repository" },
-          { "title": "Publish the authored page and skills" },
-          { "title": "Let the personal agent ground and present" }
+          {"title": "Prepare the repository"},
+          {"title": "Publish the authored page and skills"},
+          {"title": "Let the personal agent ground and present"}
         ],
-        "sources": []
-      }
-    },
-    { "op": "focus", "targetId": "browser-workspace" }
-  ]
-}
-```
-
-Do not force a fixed walkthrough. Focus follows the user's question and can be applied again on later turns.
-
-Example input:
-
-```json
-{
-  "operations": [
-    {
-      "op": "add",
-      "targetId": "flow-model",
-      "block": {
-        "type": "callout",
-        "title": "A useful analogy",
-        "body": "The authored page is the score; the agent creates a local arrangement without rewriting the score.",
-        "tone": "example",
-        "sources": [
-          { "path": "index.html", "section": "Mechanism", "status": "current" }
-        ]
+        "sources": [{"path": "knowledge/01-originator-flow.md", "status": "current"}]
       }
     }
   ]
 }
 ```
 
-## Replacing, updating, or removing blocks
+## Provenance and safety
 
-Use only block IDs returned by `get_explain_him_answer` or a successful `apply_explanation` response.
+Every repository-grounded block should carry known `repository`, `path`, `ref`, `section`, and `status` values. Use `index.html` when the authored page itself is the source. Never invent metadata.
 
-Remove:
+Never emit arbitrary HTML, JavaScript, CSS, iframe content, executable URLs, selectors, or SVG markup. Never remove Originator-authored content. Browser-local blocks and external presentation output are not evidence.
 
-```json
-{
-  "operations": [
-    { "op": "remove", "blockId": "local-presentation-..." }
-  ]
-}
-```
-
-Use `replace` when a visible authored target needs a user-local correction or simplification. Use `update` for a later refinement of that same local result so its ID stays stable. Use `remove` when the user asks to restore the author version. Use the latest returned workspace revision as `expectedWorkspaceRevision` and only IDs returned by the contract or a successful prior result.
-
-```json
-{
-  "operations": [
-    { "op": "replace", "targetId": "workflow-diagram", "block": { "type": "diagram", "title": "Personal terminology", "variant": "flow", "nodes": [{ "id": "user", "label": "User" }, { "id": "agent", "label": "Agent" }], "edges": [{ "from": "user", "to": "agent" }] } }
-  ]
-}
-```
-
-## External presentation capabilities
-
-If the personal agent uses Archify or another external presenter to help design a representation:
-
-- give it only already-grounded semantic material;
-- do not let it become a second repository-retrieval path;
-- do not inject its HTML/JavaScript into the Explain Him page;
-- translate the useful result into one of the supported typed blocks above.
-
-## Safety
-
-- Never emit arbitrary HTML, JavaScript, CSS, iframe content, or executable URLs through `apply_explanation`.
-- Never remove Originator-authored content.
-- For terminology normalization, replace every affected visible semantic target. Do not leave a mixed User/Consumer presentation in Personalized view.
-- Browser-local blocks are personalization, not evidence.
-- A visualization must not add claims that were not grounded first.
-- Prefer fewer, clearer blocks over many decorative blocks.
+If an external presenter helps structure already-grounded meaning, translate its semantic result into a supported typed block. Do not inject its executable output or allow it to become a second repository-retrieval path.
 
 ## Failure behavior
 
-If `apply_explanation` fails, keep the conversational answer and plainly say that the requested local page change was not applied. The agent must explicitly say that the Personalized UI did not change. Do not re-ground or invent different facts to make the renderer succeed, and do not claim that an edit, correction, refinement, or restore completed.
+If `explain_tool` fails, keep the conversational answer and state that the Personalized UI did not change or focus. Do not change the facts merely to make rendering succeed, and do not retry with a legacy protocol or tool identity.
