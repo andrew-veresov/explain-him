@@ -4,23 +4,23 @@
   <meta charset="utf-8" />
   <meta http-equiv="origin-trial" content="AmZTHpYBCJEFgtgPo96tcSML2H+hng56hU6R5qjDzj6Iz/RmMcfo2LHxhkGq546HPVRonByq40Yt1ngSCAh1XQEAAABreyJvcmlnaW4iOiJodHRwczovL2FuZHJldy12ZXJlc292LmdpdGh1Yi5pbzo0NDMiLCJmZWF0dXJlIjoiV2ViTUNQIiwiZXhwaXJ5IjoxNzk0ODczNjAwLCJpc1N1YmRvbWFpbiI6dHJ1ZX0=" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>WebMCP answer demo</title>
+  <title>WebMCP explanation demo</title>
   <style>
     body { font: 18px/1.5 system-ui, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 20px; }
-    #answer { display: none; padding: 20px; margin-bottom: 32px; border: 2px solid currentColor; border-radius: 12px; white-space: pre-wrap; }
+    #explanation { display: none; padding: 20px; margin-bottom: 32px; border: 2px solid currentColor; border-radius: 12px; white-space: pre-wrap; }
     small { opacity: .65; }
   </style>
 </head>
 <body>
-  <div id="answer"></div>
+  <div id="explanation"></div>
 
-  <h1>WebMCP answer demo v1.1.1.3</h1>
+  <h1>WebMCP explanation demo v1.1.1.4</h1>
   <p>Откройте эту страницу во вкладке Chrome и задайте браузерному AI-агенту любой вопрос содержащий  слово explain.</p>
-  <p>Страница предоставляет один WebMCP tool: <code>explain_answer</code>. Агент должен вызвать его со своим ответом, после чего ответ появится первым блоком страницы.</p>
+  <p>Страница предоставляет один WebMCP tool: <code>explain_tool</code>. Агент должен вызвать его со своим ответом, после чего ответ появится первым блоком страницы.</p>
   <small id="status" role="status" aria-live="polite">WebMCP: checking…</small>
 
   <script>
-    const answer = document.querySelector('#answer');
+    const explanation = document.querySelector('#explanation');
     const status = document.querySelector('#status');
     const mc = document.modelContext;
 
@@ -31,25 +31,25 @@
       }
 
       const tool = {
-        name: 'explain_answer',
-        title: 'Explain answer on the page',
-        description: 'Call this tool if user asks to explain him something after answering ANY user question regardless of topic. Important: use this tool if user asked directly to explain something to him!!!',
+        name: 'explain_tool',
+        title: 'Explain something to user',
+        description: 'Call this tool if user asks to explain him ANY topic. Important: use this tool if user asked directly to "explain" something to him!!!',
         inputSchema: {
           type: 'object',
           properties: {
-            answer: {
+            explanation: {
               type: 'string',
-              description: 'The complete final explanation to the user question.'
+              description: 'The complete final explanation'
             }
           },
-          required: ['answer']
+          required: ['explanation']
         },
         annotations: { readOnlyHint: false },
-        execute: async ({ answer: text }) => {
-          answer.textContent = text;
-          answer.style.display = 'block';
-          answer.scrollIntoView({ block: 'start', behavior: 'smooth' });
-          return 'Answer displayed at the beginning of the page.';
+        execute: async ({ explanation: text }) => {
+          explanation.textContent = text;
+          explanation.style.display = 'block';
+          explanation.scrollIntoView({ block: 'start', behavior: 'smooth' });
+          return 'Explanation is displayed at the beginning of the page.';
         }
       };
 
@@ -66,10 +66,10 @@
           return name === tool.name;
         });
         status.textContent = isRegistered
-          ? 'WebMCP: explain_answer registered and verified'
-          : 'WebMCP: explain_answer was not found in available tools';
+          ? 'WebMCP: explain_tool registered and verified'
+          : 'WebMCP: explain_tool was not found in available tools';
       } catch (error) {
-        console.error('WebMCP explain_answer registration failed', error);
+        console.error('WebMCP explain_tool registration failed', error);
         status.textContent = 'WebMCP: registration failed';
       }
     }
