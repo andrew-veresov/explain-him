@@ -227,23 +227,23 @@ webmcp:
   immutable_skill_publication:
     repository: andrew-veresov/explain-him
     release: A9
-    commit: 59167103ebfb7d4fd0c276de7f2b81862c536b4f
+    commit: 353008c867aa42cce4767a89fed934b1718e2307
     load_order: [explain-him, explain-him-presentation]
     skills:
       - id: explain-him
-        sha256: 3e7b6208e00b7bb1370a3958f9ea625b17afe554f9e577bc18fa4ca8c128ec5b
-        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/59167103ebfb7d4fd0c276de7f2b81862c536b4f/skills/explain-him/SKILL.md
+        sha256: 8f6025dfd66e97f00a4b35eb6285c5928378a4a131e778bead641ea086a2fbfd
+        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/353008c867aa42cce4767a89fed934b1718e2307/skills/explain-him/SKILL.md
       - id: explain-him-presentation
-        sha256: a85ced352e77b435da9783e4819337d75b4fe3239f7dc0a6d33b072ae982362c
-        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/59167103ebfb7d4fd0c276de7f2b81862c536b4f/skills/explain-him-presentation/SKILL.md
+        sha256: 34016ae662b9f88b45613fb7dc9eefdbf7a6b3656c230f20a60b3fdb566dc2c7
+        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/353008c867aa42cce4767a89fed934b1718e2307/skills/explain-him-presentation/SKILL.md
   native_skill:
     name: explain_him
     proposal_issue: 161
     proposal_status: experimental-open-backlog
     normative: false
     api: document.modelContext.registerSkill
-    source_commit: 59167103ebfb7d4fd0c276de7f2b81862c536b4f
-    composite_sha256: fc0b3bf222ad485d82bc6a0e05a5bb6130d8cdba06b2550d4475daa265271d36
+    source_commit: 353008c867aa42cce4767a89fed934b1718e2307
+    composite_sha256: ba4276347eb79dbde1566d71c1a68027094716a33d69b51d6d26951ac9cadb9c
     tools: [explain_tool]
     delivery_modes: [native-inline, pinned-remote-fallback]
     fallback_tool: explain_tool
@@ -253,32 +253,32 @@ webmcp:
       path: knowledge/01-originator-flow.md
       section: Basic flow
       status: current
-      rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/59167103ebfb7d4fd0c276de7f2b81862c536b4f/knowledge/01-originator-flow.md
-      commit: 59167103ebfb7d4fd0c276de7f2b81862c536b4f
+      rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/353008c867aa42cce4767a89fed934b1718e2307/knowledge/01-originator-flow.md
+      commit: 353008c867aa42cce4767a89fed934b1718e2307
       sha256: cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659
     - topic: originator-publishing
       path: PRODUCT-CONTRACT.md
       section: Authoring and publishing reality
       status: current
-      rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/59167103ebfb7d4fd0c276de7f2b81862c536b4f/PRODUCT-CONTRACT.md
-      commit: 59167103ebfb7d4fd0c276de7f2b81862c536b4f
-      sha256: 24acbad739ead8781ad2918a227e5670ca9bdbf464088e5de530a29ae63a1c3c
+      rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/353008c867aa42cce4767a89fed934b1718e2307/PRODUCT-CONTRACT.md
+      commit: 353008c867aa42cce4767a89fed934b1718e2307
+      sha256: ae24fe78b681c406180a78d017ba34a07e5ec587a8c6447a72e07f577dc3a263
   tools:
     - explain_tool
-  contract_returns:
+  published_metadata:
     - repository-location
     - grounding-skill-location
     - presentation-skill-location
     - typed-block-schema-location
-    - authored-insertion-targets
-    - browser-local-block-ids
     - absolute-repository-and-skill-urls
-    - workspace-revision
-    - protocol-v4-activation-id
     - repository-guidance-string
     - pinned-grounding-source-index
-    - topic-aware-local-block-ids
     - replaceable-semantic-targets
+  tool_result_returns:
+    - protocol-version
+    - workspace-revision-before-and-after
+    - applied-local-block-ids
+    - focused-visible-block
   explain_operations:
     - add
     - replace

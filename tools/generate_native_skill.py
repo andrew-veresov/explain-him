@@ -9,19 +9,19 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "runtime" / "generated" / "explain-him-native-skill.mjs"
-SOURCE_COMMIT = "59167103ebfb7d4fd0c276de7f2b81862c536b4f"
+SOURCE_COMMIT = "353008c867aa42cce4767a89fed934b1718e2307"
 REPOSITORY = "andrew-veresov/explain-him"
 TOOLS = ["explain_tool"]
 SOURCES = [
     {
         "id": "explain-him",
         "path": "skills/explain-him/SKILL.md",
-        "sha256": "3e7b6208e00b7bb1370a3958f9ea625b17afe554f9e577bc18fa4ca8c128ec5b",
+        "sha256": "8f6025dfd66e97f00a4b35eb6285c5928378a4a131e778bead641ea086a2fbfd",
     },
     {
         "id": "explain-him-presentation",
         "path": "skills/explain-him-presentation/SKILL.md",
-        "sha256": "a85ced352e77b435da9783e4819337d75b4fe3239f7dc0a6d33b072ae982362c",
+        "sha256": "34016ae662b9f88b45613fb7dc9eefdbf7a6b3656c230f20a60b3fdb566dc2c7",
     },
 ]
 PRIVATE_EVALUATION_PATH = "`demo/" + "evaluation/`"

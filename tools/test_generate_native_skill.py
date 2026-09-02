@@ -20,9 +20,9 @@ class GeneratedNativeSkillTest(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertTrue(GENERATOR.is_current())
         payload, digest = GENERATOR.build_payload()
-        self.assertEqual(digest, "fc0b3bf222ad485d82bc6a0e05a5bb6130d8cdba06b2550d4475daa265271d36")
-        self.assertEqual(payload["tools"], ["get_explain_him_context", "explain_tool"])
-        self.assertEqual(payload["context"]["protocolVersion"], 4)
+        self.assertEqual(digest, "ba4276347eb79dbde1566d71c1a68027094716a33d69b51d6d26951ac9cadb9c")
+        self.assertEqual(payload["tools"], ["explain_tool"])
+        self.assertEqual(payload["context"]["protocolVersion"], 5)
         self.assertIn("GitHub repository linked to this page", payload["context"]["answerPolicy"]["additionalInformation"])
         self.assertEqual(payload["context"]["provenance"]["compositeSha256"], digest)
 

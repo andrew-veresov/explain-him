@@ -13,20 +13,20 @@ export const EXPLANATION_BLOCK_TYPES = Object.freeze(['callout', 'comparison', '
 export const WEBMCP_PROTOCOL_VERSION = 5;
 export const EXPLAIN_HIM_REPOSITORY = 'andrew-veresov/explain-him';
 export const EXPLAIN_HIM_REPOSITORY_URL = `https://github.com/${EXPLAIN_HIM_REPOSITORY}`;
-export const EXPLAIN_HIM_SKILL_COMMIT = '59167103ebfb7d4fd0c276de7f2b81862c536b4f';
+export const EXPLAIN_HIM_SKILL_COMMIT = '353008c867aa42cce4767a89fed934b1718e2307';
 export const ADDITIONAL_INFORMATION = 'For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources published by this page.';
 
 export const IMMUTABLE_SKILL_PROOF = Object.freeze([
   {
     id: 'explain-him', commit: EXPLAIN_HIM_SKILL_COMMIT,
-    sha256: '3e7b6208e00b7bb1370a3958f9ea625b17afe554f9e577bc18fa4ca8c128ec5b',
+    sha256: '8f6025dfd66e97f00a4b35eb6285c5928378a4a131e778bead641ea086a2fbfd',
     path: 'skills/explain-him/SKILL.md',
     url: `https://raw.githubusercontent.com/${EXPLAIN_HIM_REPOSITORY}/${EXPLAIN_HIM_SKILL_COMMIT}/skills/explain-him/SKILL.md`,
     responsibility: 'grounding-and-repository-retrieval'
   },
   {
     id: 'explain-him-presentation', commit: EXPLAIN_HIM_SKILL_COMMIT,
-    sha256: 'a85ced352e77b435da9783e4819337d75b4fe3239f7dc0a6d33b072ae982362c',
+    sha256: '34016ae662b9f88b45613fb7dc9eefdbf7a6b3656c230f20a60b3fdb566dc2c7',
     path: 'skills/explain-him-presentation/SKILL.md',
     url: `https://raw.githubusercontent.com/${EXPLAIN_HIM_REPOSITORY}/${EXPLAIN_HIM_SKILL_COMMIT}/skills/explain-him-presentation/SKILL.md`,
     responsibility: 'typed-page-presentation-and-guided-focus'
@@ -44,7 +44,7 @@ export const GROUNDING_SOURCE_INDEX = Object.freeze([
     topic: 'originator-publishing', path: 'PRODUCT-CONTRACT.md', section: 'Authoring and publishing reality', status: 'current',
     rawUrl: `https://raw.githubusercontent.com/${EXPLAIN_HIM_REPOSITORY}/${EXPLAIN_HIM_SKILL_COMMIT}/PRODUCT-CONTRACT.md`,
     commit: EXPLAIN_HIM_SKILL_COMMIT,
-    sha256: '24acbad739ead8781ad2918a227e5670ca9bdbf464088e5de530a29ae63a1c3c'
+    sha256: 'ae24fe78b681c406180a78d017ba34a07e5ec587a8c6447a72e07f577dc3a263'
   })
 ]);
 

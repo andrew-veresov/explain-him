@@ -10,7 +10,7 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PIN = "59167103ebfb7d4fd0c276de7f2b81862c536b4f"
+PIN = "353008c867aa42cce4767a89fed934b1718e2307"
 TOOLS = ["explain_tool"]
 ADDITIONAL_INFORMATION = "For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources published by this page."
 SKILLS = ["skills/explain-him/SKILL.md", "skills/explain-him-presentation/SKILL.md"]
