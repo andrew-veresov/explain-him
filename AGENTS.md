@@ -30,6 +30,8 @@ The grounding skill is authoritative for meaning. The presentation skill is auth
 
 ## Browser / WebMCP bootstrap
 
+Use only the current WebMCP host: `document.modelContext`. `navigator.modelContext` is a legacy API and is not supported in this project. Do not add compatibility fallbacks, polyfills, or tests for it.
+
 When the page is open in a WebMCP-capable browser:
 
 1. call `get_explain_him_answer` to establish a Protocol v3 activation;
