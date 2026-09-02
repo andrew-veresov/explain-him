@@ -14,7 +14,7 @@
 <body>
   <div id="explanation"></div>
 
-  <h1>WebMCP explanation demo v1.1.1.4</h1>
+  <h1>WebMCP explanation demo v1.1.1.5</h1>
   <p>Откройте эту страницу во вкладке Chrome и задайте браузерному AI-агенту любой вопрос содержащий  слово explain.</p>
   <p>Страница предоставляет один WebMCP tool: <code>explain_tool</code>. Агент должен вызвать его со своим ответом, после чего ответ появится первым блоком страницы.</p>
   <small id="status" role="status" aria-live="polite">WebMCP: checking…</small>
@@ -61,6 +61,7 @@
         }
 
         const availableTools = await mc.getTools();
+        mc.fetchTools = mc.getTools;
         const isRegistered = Array.isArray(availableTools) && availableTools.some((item) => {
           const name = typeof item === 'string' ? item : item?.name;
           return name === tool.name;
