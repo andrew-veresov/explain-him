@@ -21,25 +21,23 @@ The top-level page uses only the current imperative host:
 ```text
 document.modelContext
         |
-        +-- await registerTool(get_explain_him_context)
         +-- await registerTool(explain_tool)
         +-- await getTools()
 ```
 
 There is no `navigator.modelContext` fallback, compatibility alias, old tool identity, or Protocol v3 handshake. `getTools()` proves only page registration. Tool selection remains a host/model decision.
 
-The sole exception is the isolated experimental `document.modelContext.registerSkill` method proposed in WebMCP issue 161. It runs only after both tools register, adds one generated `explain_him` composite skill rather than a third tool, and falls back to pinned remote skills when unavailable or rejected.
+The sole exception is the isolated experimental `document.modelContext.registerSkill` method proposed in WebMCP issue 161. It runs only after the standard tool registers, adds one generated `explain_him` composite skill without adding another tool, and falls back to pinned remote skills when unavailable or rejected.
 
-## Protocol v4 surface
+## Protocol v5 surface
 
 | Tool | Read/write | Required behavior |
 |---|---|---|
-| `get_explain_him_context` | read | Return activation, revision, Original/Personalized content summaries, target capabilities, local blocks, pinned repository sources, skill state, and the stable repository navigation instruction |
-| `explain_tool` | write/focus | Focus a fully present explanation or atomically add, update, replace, or restore a typed browser-local explanation and automatically focus the visible result |
+| `explain_tool` | write/focus | Inspect current targets and local state during the action, then focus a fully present explanation or atomically add, update, replace, or restore a typed browser-local explanation and focus the visible result |
 
 The context always includes:
 
-> For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources returned in this context.
+> For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources published by this page.
 
 This is navigation guidance, not product evidence. The personal agent reads the minimum pinned repository source only when the visible authored and Personalized UI are insufficient, partial, inconsistent, or ambiguous.
 
@@ -63,25 +61,25 @@ All 12 authored blocks may be focus anchors. Only the six targets with a real `d
 
 > Show me where grounding is explained.
 
-Expected sequence: `get_explain_him_context` → chat answer → `explain_tool(existing)` focused on `grounding-contract`. Workspace revision remains unchanged.
+Expected sequence: chat answer plus a direct `explain_tool(existing)` call focused on `grounding-contract`. Workspace revision remains unchanged.
 
 ### Missing explanation with repository grounding
 
 > What should I do as the author of an idea to get my own explanation? Show the sequence on the page.
 
-Expected sequence: context → minimum pinned repository source → chat answer → `explain_tool(missing)` with a typed workflow. The page enters Personalized mode and focuses the new block.
+Expected sequence: minimum pinned repository source → chat answer plus direct `explain_tool(missing)` with a typed workflow. The page enters Personalized mode and focuses the new block.
 
 ### Inconsistent explanation
 
 > Compare User and Consumer and fix the inconsistency on the page.
 
-Expected sequence: context → authoritative source check → chat answer → `explain_tool(inconsistent)` with a local replacement or update, followed by automatic focus.
+Expected sequence: authoritative source check → chat answer plus direct `explain_tool(inconsistent)` with a local replacement or update, followed by automatic focus.
 
 ### Explicit opt-out
 
 > Explain it in chat, but do not change or scroll the page.
 
-Expected sequence: context → chat answer. `explain_tool` is not called.
+Expected sequence: chat answer only. `explain_tool` is not called.
 
 ## Verification and evidence
 

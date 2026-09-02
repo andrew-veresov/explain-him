@@ -11,14 +11,14 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 PIN = "59167103ebfb7d4fd0c276de7f2b81862c536b4f"
-TOOLS = ["get_explain_him_context", "explain_tool"]
-ADDITIONAL_INFORMATION = "For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources returned in this context."
+TOOLS = ["explain_tool"]
+ADDITIONAL_INFORMATION = "For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources published by this page."
 SKILLS = ["skills/explain-him/SKILL.md", "skills/explain-him-presentation/SKILL.md"]
 REQUIRED = [
     "index.html", "assets/app.mjs", "runtime/webmcp.mjs", "runtime/workspace.mjs",
     "runtime/generated/explain-him-native-skill.mjs", "explain-him.yaml", "PRODUCT-CONTRACT.md", "AGENTS.md",
-    "schemas/explanation-block.v1.schema.json", "schemas/webmcp-context.v4.schema.json", "schemas/webmcp-explain.v4.schema.json",
-    "resolutions/2026-09-02-webmcp-protocol-v4-explanation-display.md", *SKILLS,
+    "schemas/explanation-block.v1.schema.json", "schemas/webmcp-explain.v5.schema.json",
+    "resolutions/2026-09-02-webmcp-protocol-v5-single-explain-tool.md", *SKILLS,
 ]
 ACTIVE_TEXT = [
     "index.html", "assets/app.mjs", "runtime/webmcp.mjs", "README.md", "ROADMAP.md", "WEBMCP_CHALLENGE.md",
@@ -66,8 +66,8 @@ def main() -> int:
         errors.append(f"index.html bootstrap: {error}")
         data = {}
 
-    if data.get("schemaVersion") != "explain-him-agent-bootstrap.v2" or data.get("protocolVersion") != 4:
-        errors.append("index.html: bootstrap must be Protocol v4 / schema v2")
+    if data.get("schemaVersion") != "explain-him-agent-bootstrap.v2" or data.get("protocolVersion") != 5:
+        errors.append("index.html: bootstrap must be Protocol v5 / schema v2")
     if data.get("tools") != TOOLS:
         errors.append(f"index.html: expected exactly {TOOLS}")
     if data.get("additionalInformation") != ADDITIONAL_INFORMATION:
@@ -75,8 +75,8 @@ def main() -> int:
     if data.get("repository", {}).get("skillsCommit") != PIN:
         errors.append("index.html: repository pin does not match the published source commit")
 
-    if "export const WEBMCP_PROTOCOL_VERSION = 4" not in runtime:
-        errors.append("runtime/webmcp.mjs: Protocol v4 constant is missing")
+    if "export const WEBMCP_PROTOCOL_VERSION = 5" not in runtime:
+        errors.append("runtime/webmcp.mjs: Protocol v5 constant is missing")
     if f"EXPLAIN_HIM_SKILL_COMMIT = '{PIN}'" not in runtime:
         errors.append("runtime/webmcp.mjs: source commit pin is stale")
     for required in [*TOOLS, "await resolved.modelContext.registerTool(tool)", "await resolved.modelContext.getTools()", "executionOptions.signal", ADDITIONAL_INFORMATION]:
@@ -85,7 +85,7 @@ def main() -> int:
     if "environment?.document?.modelContext" not in runtime or "registerSkill(EXPLAIN_HIM_NATIVE_SKILL)" not in runtime:
         errors.append("runtime/webmcp.mjs: current document host or issue-161 registration is missing")
 
-    forbidden = ["get_explain_him_answer", "apply_explanation", "webmcp-contract.v3", "webmcp-apply.v3", "skillDeliveryProof", "EXPLAIN_HIM_UI_TOOLS"]
+    forbidden = ["get_explain_him_answer", "get_explain_him_context", "apply_explanation", "webmcp-contract.v3", "webmcp-apply.v3", "webmcp-context.v4", "webmcp-explain.v4", "skillDeliveryProof", "EXPLAIN_HIM_UI_TOOLS"]
     for path in ACTIVE_TEXT:
         content = read(path)
         for value in forbidden:
@@ -97,7 +97,7 @@ def main() -> int:
 
     if (ROOT / "schemas/webmcp-contract.v3.schema.json").exists() or (ROOT / "schemas/webmcp-apply.v3.schema.json").exists():
         errors.append("legacy Protocol v3 schemas must not remain")
-    for schema in ["schemas/webmcp-context.v4.schema.json", "schemas/webmcp-explain.v4.schema.json"]:
+    for schema in ["schemas/webmcp-explain.v5.schema.json"]:
         try:
             json.loads(read(schema))
         except json.JSONDecodeError as error:
@@ -141,8 +141,8 @@ def main() -> int:
         payload, digest = module.build_payload()
         if not module.is_current():
             errors.append("generated native skill is stale")
-        if payload.get("tools") != TOOLS or payload.get("context", {}).get("protocolVersion") != 4:
-            errors.append("generated native skill does not describe Protocol v4 tools")
+        if payload.get("tools") != TOOLS or payload.get("context", {}).get("protocolVersion") != 5:
+            errors.append("generated native skill does not describe Protocol v5 tools")
         if digest not in html or digest not in read("explain-him.yaml"):
             errors.append("generated native skill digest is not synchronized")
 
@@ -154,7 +154,7 @@ def main() -> int:
         print("Public demo check: FAILED", file=sys.stderr)
         print("\n".join(f"- {error}" for error in errors), file=sys.stderr)
         return 1
-    print("Public demo check: OK (Protocol v4, two verified tools, pinned A8 skills)")
+    print("Public demo check: OK (Protocol v5, one verified tool, pinned A9 skills)")
     return 0
 
 

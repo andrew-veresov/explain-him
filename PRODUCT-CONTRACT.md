@@ -62,15 +62,15 @@ The WebMCP Model Context Tool Inspector is a developer debugging aid only. It is
 On a supported production host:
 
 1. The reader opens the published page in the ChatGPT Desktop built-in browser.
-2. The page registers exactly `get_explain_him_context` and `explain_tool` through Protocol v4.
+2. The page registers exactly one `explain_tool` through Protocol v5.
 3. The host discovers the tools. Page JavaScript cannot force discovery or invoke the agent on activation.
-4. For every request to explain, clarify, compare, show, or walk through Explain Him or current page content, the agent calls `get_explain_him_context`. The descriptor is a strong semantic selection instruction, not a page-side guarantee that the host will invoke it.
-5. The agent verifies Protocol v4, activation, workspace revision, current Original/Personalized state, target capabilities, local block identities, repository pins, and skill-delivery mode.
+4. For every request to explain, clarify, compare, show, or walk through Explain Him or current page content, the agent calls `explain_tool` directly unless the user explicitly forbids page changes or scrolling. The descriptor is a strong semantic selection instruction, not a page-side guarantee that the host will invoke it.
+5. The agent inspects the visible Original/Personalized state available through the host and chooses the matching decision and registered target.
 6. When the experimental native skill API registered successfully, the agent uses the generated inline composite delivered by the host. Otherwise it loads the grounding skill and then the presentation skill through the pinned remote fallback.
-7. The agent reads the relevant visible authored and Personalized content. If additional information is needed, it follows the context instruction to inspect the linked pinned GitHub repository and reads the minimum relevant source.
+7. The agent reads the relevant visible authored and Personalized content. If additional information is needed, it follows the page bootstrap or skill instruction to inspect the linked pinned GitHub repository and reads the minimum relevant source.
 8. The agent always answers in chat.
-9. Unless the user explicitly forbids page changes or scrolling, every explanation request also calls `explain_tool`: focus a fully present explanation, add a missing explanation, update a partial same-topic explanation, replace or update an inconsistent explanation, or restore the authored target.
-10. The agent accepts a UI change or focus only after the tool returns success, the expected workspace revision, and the visible focused block identity.
+9. The same `explain_tool` call focuses a fully present explanation, adds a missing explanation, updates a partial same-topic explanation, replaces or updates an inconsistent explanation, or restores the authored target.
+10. The agent accepts a UI change or focus only after the tool returns success, the observed before/after workspace revisions, and the visible focused block identity.
 11. The reader can inspect Original or Personalized view and can remove local results or restore the authored view.
 
 If contract discovery, skill verification, repository retrieval, or apply fails, the agent must state the failure and must not claim that the UI changed.
@@ -105,14 +105,14 @@ Terminology consistency is evaluated before the fully-present branch. Equivalent
 
 Unless a later accepted ADR changes this contract:
 
-- the public WebMCP surface contains exactly two tools;
-- the protocol is Protocol v4 and older protocols are not supported;
-- `get_explain_him_context` is the mandatory read-only page context tool for explanation requests. It returns the activation, revision, repository guidance, current authored and Personalized summaries, target capabilities, local block IDs, and skill-delivery state;
-- `get_explain_him_context.additionalInformation` is exactly `For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources returned in this context.`;
+- the public WebMCP surface contains exactly one tool;
+- the protocol is Protocol v5 and older protocols are not supported;
+- `explain_tool` is called directly for explanation requests and inspects current DOM target capabilities and browser-local state during execution;
+- the page bootstrap and generated skill publish `For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources published by this page.`;
 - `explain_tool` performs bounded typed `add`, `replace`, `update`, `remove`, and `focus` behavior and automatically focuses a successful mutation result;
 - repository search, answer generation, GitHub Issues, diagnostics, and arbitrary DOM mutation are not WebMCP tools.
 
-The page may progressively register one composite inline `explain_him` skill through `document.modelContext.registerSkill` when that experimental method exists. This does not add a WebMCP tool. The composite references the same two tools and is generated deterministically from the grounding and presentation skill sources. Registration state and digest are diagnostic facts, not proof that a model read or followed the skill. When the method is absent or registration fails, the pinned remote workflow remains complete. WebMCP issue 161 is an open backlog proposal, not a current normative API; Explain Him does not polyfill it or use a navigator variant.
+The page may progressively register one composite inline `explain_him` skill through `document.modelContext.registerSkill` when that experimental method exists. This does not add a WebMCP tool. The composite references `explain_tool` and is generated deterministically from the grounding and presentation skill sources. Registration state and digest are diagnostic facts, not proof that a model read or followed the skill. When the method is absent or registration fails, the pinned remote workflow remains complete. WebMCP issue 161 is an open backlog proposal, not a current normative API; Explain Him does not polyfill it or use a navigator variant.
 
 ## Grounding and source navigation
 
@@ -126,7 +126,7 @@ For answer grounding, source precedence remains:
 
 The Product Contract is the required governance source for product purpose, lifecycle, host target, invariants, and non-goals. Any accepted resolution or ADR that changes those facts must update this file in the same publication.
 
-A machine-readable grounding source index is a navigation aid, not a new source of truth. When the visible page is insufficient, the production contract requires the agent to follow `additionalInformation`, resolve the topic through `repository.groundingSources`, and read the minimum pinned source. Protocol v4 exposes this through `get_explain_him_context`; [the public roadmap](ROADMAP.md) records the remaining live-host acceptance gate.
+A machine-readable grounding source index is a navigation aid, not a new source of truth. When the visible page is insufficient, the production contract requires the agent to follow `additionalInformation`, resolve the topic through the page's published grounding sources, and read the minimum pinned source. [The public roadmap](ROADMAP.md) records the remaining live-host acceptance gate.
 
 ## Key acceptance prompts
 
@@ -151,7 +151,7 @@ The agent must retrieve the repository source when the visible page is insuffici
 - Server synchronization of browser-local personalization in the base product.
 - Silent UI mutation or success claims without a successful tool result.
 - Duplicating every chat answer; a fully present answer is focused instead.
-- Treating the open WebMCP skills proposal as a stable browser standard or claiming native skill delivery when only the two tools registered.
+- Treating the open WebMCP skills proposal as a stable browser standard or claiming native skill delivery when only the standard tool registered.
 
 ## Acceptance evidence
 

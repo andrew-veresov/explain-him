@@ -7,33 +7,28 @@ description: Ground an explanation from the Originator-authored page and public 
 
 ## Purpose
 
-Use the user's existing personal agent to explain the idea represented by this repository. The agent owns understanding, retrieval, reasoning, grounding, and the conversational answer. WebMCP is the typed channel used to inspect the live page and display an already-grounded result.
+Use the user's existing personal agent to explain the idea represented by this repository. The agent owns understanding, retrieval, reasoning, grounding, and the conversational answer. WebMCP is the typed channel used to focus or display an already-grounded result on the live page.
 
 This skill is repository-scoped. Do not persist it as global behavior. Repository-authored artifacts are English; the personal agent may answer in the user's preferred language.
 
 For browser-local presentation, also read `../explain-him-presentation/SKILL.md`.
 
-## Mandatory page context
+## Mandatory direct page action
 
 On every request to explain, clarify, compare, show, or walk through Explain Him or content on the current Explain Him page:
 
-1. Call `get_explain_him_context` before reasoning about a page change.
-2. Verify `protocolVersion` is `4`, retain `activationId` and `workspaceRevision`, and inspect both authored `targets` and current `localBlocks`.
-3. Use `contentSummary`, `allowedOperations`, `hasInsertionSlot`, `topicId`, and the current Original/Personalized mode to determine whether the requested explanation is already visible.
-4. Always provide the grounded answer in the user's normal agent conversation.
-5. Unless the user explicitly forbids page changes or scrolling, call `explain_tool` in the same turn for every explanation request: focus an existing explanation or create, update, or replace the missing, partial, or inconsistent explanation.
-6. Confirm the returned `ok`, `workspaceRevision`, `focused`, and local block identity before claiming that the page changed or moved.
+1. Inspect the visible authored page and current Personalized UI available through the host.
+2. Determine whether the requested explanation is fully present, missing, partial, or inconsistent.
+3. Always provide the grounded answer in the user's normal agent conversation.
+4. Unless the user explicitly forbids page changes or scrolling, call `explain_tool` directly in the same turn for every explanation request. Do not wait for a separate context or discovery tool.
+5. Use `existing` to focus an already correct explanation, or use `missing`, `partial`, `inconsistent`, or `restore` to perform the matching action.
+6. Confirm the returned `ok`, `protocolVersion`, `workspaceRevision`, `focused`, and local block identity before claiming that the page changed or moved.
 
 The page cannot force an arbitrary host or model to call a tool. These instructions define required agent behavior when the Site Tools host is available.
 
-`get_explain_him_context` is read-only. It does not search GitHub, form an answer, or mutate the page.
+## Protocol v5
 
-## Protocol v4
-
-The public WebMCP surface contains exactly:
-
-- `get_explain_him_context` – returns the current visible page state, Protocol v4 activation, repository guidance, target capabilities, local block IDs, skill-delivery state, and decision policy;
-- `explain_tool` – applies a bounded typed local operation or focuses an existing explanation.
+The public WebMCP surface contains exactly one tool: `explain_tool`. It validates the current DOM targets and browser-local workspace during the requested action, then applies a bounded typed local operation or focuses an existing explanation.
 
 Use only `document.modelContext`. Do not use or emulate a navigator host, legacy tool identity, compatibility handshake, proof echo, or translation from an older protocol.
 
@@ -41,43 +36,41 @@ Every `explain_tool` call supplies:
 
 ```yaml
 requestId: unique idempotency key
-activationId: current context activation
-expectedWorkspaceRevision: latest context or successful tool revision
 topicId: stable semantic topic
 decision: existing|missing|partial|inconsistent|restore
 operations: bounded typed operations
 primaryOperationIndex: optional mutation to focus
 ```
 
-An unknown version, stale activation, or stale revision cannot authorize a focus or page mutation.
+The runtime reads the current workspace revision itself at execution time. Callers do not echo page-issued activation or revision fields.
 
 ## GitHub repository guidance
 
-The context always returns this navigation instruction:
+The page bootstrap and generated skill publish this navigation instruction:
 
-> For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources returned in this context.
+> For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources published by this page.
 
 Treat that string as navigation guidance, not evidence. Start from the authored page and current Personalized UI. If any material answer part is missing, partial, ambiguous, inconsistent, version-sensitive, or deeper than the visible page, use the personal agent's GitHub/repository capability to read the minimum relevant pinned source.
 
-WebMCP never reads the repository on the agent's behalf. Verify the repository is `andrew-veresov/explain-him`, prefer `repository.groundingSources`, and read the referenced source rather than treating its metadata as a fact.
+WebMCP never reads the repository on the agent's behalf. Verify the repository is `andrew-veresov/explain-him`, prefer the published grounding-source index, and read the referenced source rather than treating its metadata as a fact.
 
 If no indexed source covers the gap, follow source precedence and disclose that the index had no direct route. If retrieval or digest verification fails, do not invent the unsupported part.
 
 ## Progressive issue-161 skill delivery
 
-The page always registers the two tools independently. If and only if `document.modelContext.registerSkill` exists, it may also register one generated composite `explain_him` skill containing the grounding and presentation instructions.
+The page always registers `explain_tool` independently. If and only if `document.modelContext.registerSkill` exists, it may also register one generated composite `explain_him` skill containing the grounding and presentation instructions.
 
 - `native-inline` means the page observed successful experimental registration.
-- `pinned-remote-fallback` means registration was absent, blocked, or rejected; use the pinned skill URLs returned by context.
+- `pinned-remote-fallback` means registration was absent, blocked, or rejected; use the pinned skill URLs published by the page.
 - Registration success proves API handoff, not that the model read or followed the skill.
-- Issue 161 is experimental and adds no third tool.
-- Failure of `registerSkill` must never disable the two standard tools.
+- Issue 161 is experimental and adds no second tool.
+- Failure of `registerSkill` must never disable the standard tool.
 
 ## Responsibility split
 
-The personal agent must understand the question, inspect the current UI, retrieve minimum repository evidence when needed, preserve status and provenance, form the answer, answer in chat, and choose the correct v4 decision.
+The personal agent must understand the question, inspect the current UI, retrieve minimum repository evidence when needed, preserve status and provenance, form the answer, answer in chat, and choose the correct v5 decision.
 
-WebMCP may return page and repository navigation context, add or replace safe typed local presentations, update or remove a prior local presentation, and focus a visible authored or local block.
+WebMCP may add or replace safe typed local presentations, update or remove a prior local presentation, and focus a visible authored or local block.
 
 WebMCP must not search GitHub, resolve claims, generate answers, choose authoritative sources, execute arbitrary markup, or create or search GitHub Issues.
 

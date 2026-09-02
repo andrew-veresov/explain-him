@@ -57,31 +57,23 @@ class BrowserE2E(unittest.TestCase):
         }
 
     @staticmethod
-    def request(context: dict, request_id: str, revision: int, decision: str, operations: list[dict], primary: int | None = None) -> dict:
+    def request(request_id: str, decision: str, operations: list[dict], primary: int | None = None) -> dict:
         result = {
-            "requestId": request_id, "activationId": context["activationId"],
-            "expectedWorkspaceRevision": revision, "topicId": "terminology:user-consumer",
+            "requestId": request_id, "topicId": "terminology:user-consumer",
             "decision": decision, "operations": operations,
         }
         if primary is not None:
             result["primaryOperationIndex"] = primary
         return result
 
-    def test_protocol_v4_focus_mutate_update_restore_and_reload(self) -> None:
+    def test_protocol_v5_direct_focus_mutate_update_restore_and_reload(self) -> None:
         page, errors = self.page(True, debug=True)
         page.wait_for_function("document.documentElement.dataset.webmcpState === 'verified'")
-        self.assertEqual(sorted(page.evaluate("() => Object.keys(window.__tools)")), ["explain_tool", "get_explain_him_context"])
-        self.assertEqual(page.locator("#webmcp-page-status").text_content(), "Page WebMCP API – 2/2 tools registered")
+        self.assertEqual(page.evaluate("() => Object.keys(window.__tools)"), ["explain_tool"])
+        self.assertEqual(page.locator("#webmcp-page-status").text_content(), "Page WebMCP API – 1/1 tools registered")
 
-        context = page.evaluate("() => window.__tools.get_explain_him_context.execute({})")
-        self.assertEqual(context["protocolVersion"], 4)
-        self.assertEqual(context["schemaVersion"], "explain-him-webmcp-context.v4")
-        self.assertIn("GitHub repository linked to this page", context["additionalInformation"])
-        self.assertEqual(len(context["targets"]), 12)
-        self.assertEqual(sum(1 for target in context["targets"] if target["hasInsertionSlot"]), 6)
-        self.assertTrue(all(("add" in target["allowedOperations"]) == target["hasInsertionSlot"] for target in context["targets"]))
-
-        focused = page.evaluate("args => window.__tools.explain_tool.execute(args)", self.request(context, "focus-existing", 0, "existing", [{"op": "focus", "targetId": "flow-model"}]))
+        focused = page.evaluate("args => window.__tools.explain_tool.execute(args)", self.request("focus-existing", "existing", [{"op": "focus", "targetId": "flow-model"}]))
+        self.assertEqual(focused["protocolVersion"], 5)
         self.assertFalse(focused["changed"])
         self.assertEqual(focused["workspaceRevision"], 0)
         self.assertEqual(page.evaluate("() => document.activeElement.dataset.ehBlockId"), "flow-model")
@@ -90,7 +82,7 @@ class BrowserE2E(unittest.TestCase):
 
         authored = page.locator('[data-eh-block-id="workflow-diagram"]')
         authored_before = authored.inner_text()
-        created = page.evaluate("args => window.__tools.explain_tool.execute(args)", self.request(context, "replace-user", 0, "inconsistent", [{"op": "replace", "targetId": "workflow-diagram", "block": self.diagram("User")}]))
+        created = page.evaluate("args => window.__tools.explain_tool.execute(args)", self.request("replace-user", "inconsistent", [{"op": "replace", "targetId": "workflow-diagram", "block": self.diagram("User")}]))
         block_id = created["applied"][0]["blockId"]
         self.assertEqual(created["workspaceRevision"], 1)
         self.assertEqual(created["focused"]["blockId"], block_id)
@@ -104,18 +96,17 @@ class BrowserE2E(unittest.TestCase):
         page.wait_for_function("document.documentElement.dataset.webmcpState === 'verified'")
         local = page.locator(f'[data-eh-local-block-id="{block_id}"]')
         self.assertTrue(local.is_visible())
-        after_reload = page.evaluate("() => window.__tools.get_explain_him_context.execute({})")
-        self.assertEqual(after_reload["workspaceRevision"], 1)
-        updated = page.evaluate("args => window.__tools.explain_tool.execute(args)", self.request(after_reload, "update-consumer", 1, "partial", [{"op": "update", "blockId": block_id, "block": self.diagram("Consumer")}]))
+        updated = page.evaluate("args => window.__tools.explain_tool.execute(args)", self.request("update-consumer", "partial", [{"op": "update", "blockId": block_id, "block": self.diagram("Consumer")}]))
+        self.assertEqual(updated["workspaceRevisionBefore"], 1)
         self.assertEqual(updated["workspaceRevision"], 2)
         self.assertEqual(updated["applied"][0]["blockId"], block_id)
         self.assertIn("Consumer", local.inner_text())
 
         with self.assertRaises(Exception):
-            page.evaluate("args => window.__tools.explain_tool.execute(args)", self.request(after_reload, "stale", 0, "restore", [{"op": "remove", "blockId": block_id}]))
+            page.evaluate("args => window.__tools.explain_tool.execute(args)", {**self.request("removed-handshake", "restore", [{"op": "remove", "blockId": block_id}]), "expectedWorkspaceRevision": 0})
         self.assertTrue(local.is_visible())
 
-        restored = page.evaluate("args => window.__tools.explain_tool.execute(args)", self.request(after_reload, "restore", 2, "restore", [{"op": "remove", "blockId": block_id}]))
+        restored = page.evaluate("args => window.__tools.explain_tool.execute(args)", self.request("restore", "restore", [{"op": "remove", "blockId": block_id}]))
         self.assertEqual(restored["workspaceRevision"], 3)
         self.assertTrue(authored.is_visible())
         self.assertEqual(authored.inner_text(), authored_before)
@@ -125,22 +116,16 @@ class BrowserE2E(unittest.TestCase):
     def test_focus_only_target_is_rejected_without_invisible_persistence(self) -> None:
         page, errors = self.page(True)
         page.wait_for_function("document.documentElement.dataset.webmcpState === 'verified'")
-        context = page.evaluate("() => window.__tools.get_explain_him_context.execute({})")
-        child = next(target for target in context["targets"] if not target["hasInsertionSlot"])
-        before = context["workspaceRevision"]
         with self.assertRaises(Exception):
-            page.evaluate("args => window.__tools.explain_tool.execute(args)", self.request(context, "invisible-add", before, "missing", [{"op": "add", "targetId": child["id"], "block": {"type": "callout", "title": "No slot", "body": "Must not persist"}}]))
-        after = page.evaluate("() => window.__tools.get_explain_him_context.execute({})")
-        self.assertEqual(after["workspaceRevision"], before)
-        self.assertEqual(after["localBlocks"], [])
+            page.evaluate("args => window.__tools.explain_tool.execute(args)", self.request("invisible-add", "missing", [{"op": "add", "targetId": "action-user", "block": {"type": "callout", "title": "No slot", "body": "Must not persist"}}]))
+        self.assertEqual(page.locator('[data-eh-local-block-id]').count(), 0)
         self.assertEqual(errors, [])
 
     def test_reduced_motion_uses_auto_scroll(self) -> None:
         page, errors = self.page(True)
         page.emulate_media(reduced_motion="reduce")
         page.wait_for_function("document.documentElement.dataset.webmcpState === 'verified'")
-        context = page.evaluate("() => window.__tools.get_explain_him_context.execute({})")
-        page.evaluate("args => window.__tools.explain_tool.execute(args)", self.request(context, "reduced-focus", 0, "existing", [{"op": "focus", "targetId": "grounding-contract"}]))
+        page.evaluate("args => window.__tools.explain_tool.execute(args)", self.request("reduced-focus", "existing", [{"op": "focus", "targetId": "grounding-contract"}]))
         self.assertEqual(page.evaluate("() => window.__scrollCalls.at(-1).behavior"), "auto")
         self.assertEqual(errors, [])
 
@@ -157,11 +142,8 @@ class BrowserE2E(unittest.TestCase):
     def test_issue_161_registers_one_skill_without_changing_tool_surface(self) -> None:
         page, errors = self.page(True, native_skill=True, debug=True)
         page.wait_for_function("document.documentElement.dataset.webmcpNativeSkillState === 'registered'")
-        self.assertEqual(sorted(page.evaluate("() => Object.keys(window.__tools)")), ["explain_tool", "get_explain_him_context"])
+        self.assertEqual(page.evaluate("() => Object.keys(window.__tools)"), ["explain_tool"])
         self.assertEqual(page.evaluate("() => Object.keys(window.__skills)"), ["explain_him"])
-        context = page.evaluate("() => window.__tools.get_explain_him_context.execute({})")
-        self.assertEqual(context["skillDelivery"]["mode"], "native-inline")
-        self.assertEqual(context["skillDelivery"]["state"], "registered")
         self.assertEqual(errors, [])
 
 

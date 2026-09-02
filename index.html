@@ -69,14 +69,14 @@
     <script id="explain-him-agent-bootstrap" type="application/json">
       {
         "schemaVersion": "explain-him-agent-bootstrap.v2",
-        "protocolVersion": 4,
+        "protocolVersion": 5,
         "repository": {
           "fullName": "andrew-veresov/explain-him",
           "url": "https://github.com/andrew-veresov/explain-him",
           "skillsCommit": "59167103ebfb7d4fd0c276de7f2b81862c536b4f"
         },
-        "tools": ["get_explain_him_context", "explain_tool"],
-        "additionalInformation": "For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources returned in this context.",
+        "tools": ["explain_tool"],
+        "additionalInformation": "For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources published by this page.",
         "skills": [
           {
             "id": "explain-him",
@@ -625,8 +625,7 @@
                   <article class="contract-card">
                     <h3>WebMCP runtime status</h3>
                     <p>
-                      Protocol v4 exposes exactly two page tools:
-                      <code>get_explain_him_context</code> and
+                      Protocol v5 exposes one direct page tool:
                       <code>explain_tool</code>. A verified page status confirms
                       registration, not an agent connection.
                     </p>

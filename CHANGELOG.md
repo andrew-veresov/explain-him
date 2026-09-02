@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0 – 2026-09-02
+
+- Replaced the two-step Protocol v4 surface with one direct Protocol v5 `explain_tool`.
+- Removed `get_explain_him_context`, activation echo, and caller-supplied workspace revisions so an explanation request cannot stop after a read-only page call.
+- Kept typed atomic mutations, idempotency, visible focus confirmation, repository guidance, and experimental issue-161 skill delivery.
+
 ## 0.6.0 – 2026-09-02
 
 - Replaced the previous public surface with Protocol v4 `get_explain_him_context` and `explain_tool`.

@@ -11,7 +11,7 @@ function workspace() {
   };
 }
 
-test('issue 161 host registers exactly two tools and one generated composite skill', async () => {
+test('issue 161 host registers exactly one tool and one generated composite skill', async () => {
   const tools = new Map(); const skills = [];
   const host = { registerTool: async (tool) => tools.set(tool.name, tool), getTools: async () => [...tools.values()], registerSkill: async (skill) => skills.push(skill) };
   const status = registerWebMcpTools(workspace(), host, { standardHost: true, hostSource: 'document.modelContext' });
@@ -21,19 +21,17 @@ test('issue 161 host registers exactly two tools and one generated composite ski
   assert.equal(skills[0].name, 'explain_him');
   assert.deepEqual(skills[0].tools, EXPLAIN_HIM_WEBMCP_TOOLS);
   assert.equal(skills[0].instructions, EXPLAIN_HIM_NATIVE_SKILL.instructions);
-  assert.match(skills[0].instructions, /Protocol v4/);
+  assert.match(skills[0].instructions, /Protocol v5/);
   assert.match(skills[0].instructions, /Supported typed blocks/);
   assert.equal(skills[0].context.answerPolicy.additionalInformation, ADDITIONAL_INFORMATION);
   assert.equal(skills[0].context.provenance.compositeSha256, EXPLAIN_HIM_NATIVE_SKILL_DIGEST);
   assert.equal(skills[0].context.proposal.issue, 161);
   assert.equal(skills[0].context.proposal.normative, false);
   assert.equal(status.skillRegistrationState, 'registered');
-  const context = await tools.get('get_explain_him_context').execute({});
-  assert.equal(context.skillDelivery.mode, 'native-inline');
-  assert.equal(context.skillDelivery.state, 'registered');
+  assert.deepEqual([...tools.keys()], ['explain_tool']);
 });
 
-test('host without registerSkill keeps both fallback tools operational', async () => {
+test('host without registerSkill keeps the standard fallback tool operational', async () => {
   const tools = new Map();
   const host = { registerTool: async (tool) => tools.set(tool.name, tool), getTools: async () => [...tools.values()] };
   const status = registerWebMcpTools(workspace(), host, { standardHost: true });
@@ -41,8 +39,7 @@ test('host without registerSkill keeps both fallback tools operational', async (
   assert.equal(status.ok, true); assert.equal(status.verified, true);
   assert.equal(status.skillApiAvailable, false);
   assert.equal(status.skillRegistrationState, 'unavailable');
-  const context = await tools.get('get_explain_him_context').execute({});
-  assert.equal(context.skillDelivery.mode, 'pinned-remote-fallback');
+  assert.equal(tools.has('explain_tool'), true);
 });
 
 for (const [label, registerSkill] of [
@@ -57,9 +54,7 @@ for (const [label, registerSkill] of [
     assert.equal(status.ok, true); assert.equal(status.verified, true);
     assert.equal(status.skillRegistrationState, 'error');
     assert.match(status.skillRegistrationError, /failure/);
-    const context = await tools.get('get_explain_him_context').execute({});
-    assert.equal(context.skillDelivery.mode, 'pinned-remote-fallback');
-    assert.equal(context.skillDelivery.state, 'error');
+    assert.equal(tools.has('explain_tool'), true);
   });
 }
 

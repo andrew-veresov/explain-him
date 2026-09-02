@@ -12,7 +12,7 @@ Accepted clarifications take precedence over conflicting explanatory copy.
 - [[2026-08-26-browser-local-workspace|Browser-local workspace]]
 - [[2026-08-28-project-language|English project language]]
 - [[2026-08-29-presentation-capabilities|Presentation Capability boundary]]
-- [[2026-09-02-webmcp-protocol-v4-explanation-display|Protocol v4 explanation context and display]]
+- [[2026-09-02-webmcp-protocol-v5-single-explain-tool|Protocol v5 single explanation tool]]
 - [[2026-08-30-user-consumer-terminology|User and Consumer terminology]]
 
 Superseded decisions remain in this folder for history and link to their replacement.

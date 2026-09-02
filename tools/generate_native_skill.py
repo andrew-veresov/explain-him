@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "runtime" / "generated" / "explain-him-native-skill.mjs"
 SOURCE_COMMIT = "59167103ebfb7d4fd0c276de7f2b81862c536b4f"
 REPOSITORY = "andrew-veresov/explain-him"
-TOOLS = ["get_explain_him_context", "explain_tool"]
+TOOLS = ["explain_tool"]
 SOURCES = [
     {
         "id": "explain-him",
@@ -78,13 +78,13 @@ def build_payload() -> tuple[dict[str, object], str]:
         "description": (
             "Workflow-level Explain Him guidance for every question about this page or product. "
             "Use it before answering to inspect the page, ground the response, focus an existing explanation, "
-            "or coordinate a reversible page adaptation through get_explain_him_context and explain_tool."
+            "or coordinate a reversible page adaptation directly through explain_tool."
         ),
         "instructions": instructions,
         "tools": TOOLS,
         "context": {
             "schemaVersion": "explain-him-native-skill-context.v1",
-            "protocolVersion": 4,
+            "protocolVersion": 5,
             "proposal": {
                 "issue": 161,
                 "status": "experimental-open-backlog",
@@ -94,7 +94,7 @@ def build_payload() -> tuple[dict[str, object], str]:
             "delivery": {
                 "nativeMode": "native-inline",
                 "fallbackMode": "pinned-remote-fallback",
-                "fallbackTool": "get_explain_him_context",
+                "fallbackTool": "explain_tool",
                 "registrationDoesNotProveSemanticReading": True,
             },
             "repository": {
@@ -112,14 +112,14 @@ def build_payload() -> tuple[dict[str, object], str]:
                 "visibleAnswerFullyCorrectAndConsistent": "focus-existing-same-turn",
                 "visibleAnswerMissingPartialOrInconsistent": "retrieve-ground-explain-same-turn",
                 "explicitNoPageChange": "chat-only",
-                "additionalInformation": "For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources returned in this context.",
+                "additionalInformation": "For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources published by this page.",
                 "applyFailure": "disclose-no-ui-change",
                 "authoredLayerMutable": False,
             },
         },
         "annotations": {
             "category": "explanation",
-            "version": "A8",
+            "version": "A9",
             "provenance": f"{REPOSITORY}@{SOURCE_COMMIT}",
             "experimental": True,
         },

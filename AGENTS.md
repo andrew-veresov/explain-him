@@ -34,22 +34,19 @@ Use only the current WebMCP host: `document.modelContext`. `navigator.modelConte
 
 When the page is open in a WebMCP-capable browser:
 
-1. for every request to explain, clarify, compare, show, or walk through current page content, call `get_explain_him_context` and require Protocol v4;
-2. retain the returned activation ID and workspace revision, and inspect both authored targets and Personalized local blocks;
-3. when visible content is insufficient, follow the returned `additionalInformation` string and read the minimum relevant pinned source from the linked GitHub repository;
+1. for every request to explain, clarify, compare, show, or walk through current page content, call `explain_tool` directly and require Protocol v5 unless the user explicitly forbids page changes or scrolling;
+2. inspect the visible authored page and Personalized UI available through the host, then choose the matching decision and registered target;
+3. when visible content is insufficient, follow the published `additionalInformation` string and read the minimum relevant pinned source from the linked GitHub repository;
 4. read the presentation skill before displaying a result;
 5. always provide the grounded answer in chat;
-6. unless the user explicitly forbids page changes or scrolling, call `explain_tool` in the same turn for every explanation request: focus existing content or add, update, replace, or restore a safe typed local presentation;
-7. send only requestId, activationId, expectedWorkspaceRevision, topicId, decision, operations, and optional primaryOperationIndex. If the tool fails, say so honestly rather than claiming a page change or focus.
+6. use that direct `explain_tool` call to focus existing content or add, update, replace, or restore a safe typed local presentation;
+7. send only requestId, topicId, decision, operations, and optional primaryOperationIndex. If the tool fails, say so honestly rather than claiming a page change or focus.
 
 The page also publishes invisible machine-readable repository and skill links in its `<head>`. Use them as bootstrap hints when Site Tool discovery succeeds before repository context is available.
 
 The page may register one experimental composite `explain_him` skill only when the standard document host exposes `registerSkill`. This is progressive enhancement based on open WebMCP issue 161. It adds no tool, is never polyfilled, and falls back to the complete pinned remote workflow when unavailable or rejected. Registration does not prove that the model read or followed the instructions.
 
-The complete public WebMCP surface is intentionally only:
-
-- `get_explain_him_context`;
-- `explain_tool`.
+The complete public WebMCP surface is intentionally only `explain_tool`.
 
 Do not look for separate diagnostics, state, focus, undo/redo, compatibility, retrieval, answer-generation, or skill-registration WebMCP tools. `explain_tool` contains add, replace, update, remove, and focus behavior; undo/redo and Original/Personalized remain human controls.
 
@@ -58,7 +55,7 @@ The page may still expose ordinary accessible controls for humans/browser automa
 ## Source discovery
 
 1. Treat `index.html` as the Originator-authored explanation page and read it when it answers the user's question.
-2. `get_explain_him_context` provides target capabilities, visible summaries, repository guidance, and skill/schema locations; it is not a source of product facts.
+2. The page bootstrap and repository skills provide stable target, repository, and schema guidance; they are not sources of product facts.
 3. If the page is insufficient, ambiguous, or deeper evidence/version/status is required, use the personal agent's own GitHub/repository integration.
 4. Read the minimum relevant sources.
 5. Check accepted files in `resolutions/` before lower-priority explanatory material.

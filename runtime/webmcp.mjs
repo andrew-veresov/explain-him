@@ -8,13 +8,13 @@ import {
   EXPLAIN_HIM_NATIVE_SKILL_DIGEST
 } from './generated/explain-him-native-skill.mjs';
 
-export const EXPLAIN_HIM_WEBMCP_TOOLS = Object.freeze(['get_explain_him_context', 'explain_tool']);
+export const EXPLAIN_HIM_WEBMCP_TOOLS = Object.freeze(['explain_tool']);
 export const EXPLANATION_BLOCK_TYPES = Object.freeze(['callout', 'comparison', 'workflow', 'timeline', 'diagram']);
-export const WEBMCP_PROTOCOL_VERSION = 4;
+export const WEBMCP_PROTOCOL_VERSION = 5;
 export const EXPLAIN_HIM_REPOSITORY = 'andrew-veresov/explain-him';
 export const EXPLAIN_HIM_REPOSITORY_URL = `https://github.com/${EXPLAIN_HIM_REPOSITORY}`;
 export const EXPLAIN_HIM_SKILL_COMMIT = '59167103ebfb7d4fd0c276de7f2b81862c536b4f';
-export const ADDITIONAL_INFORMATION = 'For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources returned in this context.';
+export const ADDITIONAL_INFORMATION = 'For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources published by this page.';
 
 export const IMMUTABLE_SKILL_PROOF = Object.freeze([
   {
@@ -48,20 +48,9 @@ export const GROUNDING_SOURCE_INDEX = Object.freeze([
   })
 ]);
 
-const CONTEXT_TOOL = 'get_explain_him_context';
 const EXPLAIN_TOOL = 'explain_tool';
 const DECISIONS = Object.freeze(['existing', 'missing', 'partial', 'inconsistent', 'restore']);
-const INPUT_FIELDS = Object.freeze(['requestId', 'activationId', 'expectedWorkspaceRevision', 'topicId', 'decision', 'operations', 'primaryOperationIndex']);
-const POLICY = Object.freeze({
-  alwaysProvideChatAnswer: true,
-  explicitNoPageChange: 'chat-only',
-  existing: 'focus-existing',
-  missing: 'add-and-auto-focus',
-  partial: 'update-same-topic-or-add-and-auto-focus',
-  inconsistent: 'replace-authored-or-update-local-and-auto-focus',
-  restore: 'remove-and-focus-authored',
-  sameTopicContinuation: 'reuse-topic-and-local-block-id'
-});
+const INPUT_FIELDS = Object.freeze(['requestId', 'topicId', 'decision', 'operations', 'primaryOperationIndex']);
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const stable = (value) => Array.isArray(value)
@@ -91,13 +80,6 @@ function topic(value) {
   const result = required(value, 'topicId', 120);
   if (!/^[A-Za-z][A-Za-z0-9._:-]*$/.test(result)) throw new TypeError('topicId must use the safe stable topic pattern');
   return result;
-}
-function opaque(prefix) {
-  const crypto = globalThis.crypto;
-  if (!crypto?.getRandomValues) throw new TypeError('Secure activation entropy is unavailable');
-  const bytes = new Uint8Array(18);
-  crypto.getRandomValues(bytes);
-  return `${prefix}-${Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
 }
 function summary(value, max = 280) { return String(value || '').replace(/\s+/g, ' ').trim().slice(0, max); }
 
@@ -136,32 +118,6 @@ function locals(workspace) {
     contentSummary: summary(item.artifact?.fallback?.body), updatedAt: item.updatedAt
   }));
 }
-function fallbackDeliveryState(state = 'unavailable') { return { mode: 'pinned-remote-fallback', state, registrationId: null }; }
-
-function contextFor(workspace, current, deliveryState) {
-  const workspaceContext = workspace.getContext?.() || {};
-  const visible = workspace.getVisibleState?.() || {};
-  return {
-    schemaVersion: 'explain-him-webmcp-context.v4', protocolVersion: WEBMCP_PROTOCOL_VERSION,
-    activationId: current.activationId, workspaceRevision: workspaceContext.workspaceRevision ?? 0,
-    viewMode: visible.viewMode || 'personalized',
-    repository: {
-      fullName: EXPLAIN_HIM_REPOSITORY, url: EXPLAIN_HIM_REPOSITORY_URL,
-      pinnedCommit: EXPLAIN_HIM_SKILL_COMMIT, groundingSources: clone(GROUNDING_SOURCE_INDEX)
-    },
-    additionalInformation: ADDITIONAL_INFORMATION,
-    skills: IMMUTABLE_SKILL_PROOF.map(({ id, path, url, commit, sha256 }) => ({ id, path, rawUrl: url, commit, sha256 })),
-    skillDelivery: {
-      mode: deliveryState.mode, state: deliveryState.state, proposalStatus: 'experimental-open-backlog',
-      registrationId: deliveryState.registrationId, compositeSha256: EXPLAIN_HIM_NATIVE_SKILL_DIGEST
-    },
-    policy: clone(POLICY), targets: targets(workspace), localBlocks: locals(workspace),
-    blockSchema: { path: 'schemas/explanation-block.v1.schema.json', url: '/explain-him/schemas/explanation-block.v1.schema.json', types: [...EXPLANATION_BLOCK_TYPES] },
-    explainSchema: { path: 'schemas/webmcp-explain.v4.schema.json', url: '/explain-him/schemas/webmcp-explain.v4.schema.json' },
-    authoredLayerMutable: false, repositoryAccessViaWebMcp: false
-  };
-}
-
 function block(value) {
   const input = safeObject(value, 'block');
   const type = required(input.type, 'block.type', 40);
@@ -253,17 +209,14 @@ function strictOperation(value) {
   strictObject(input, 'operation', allowed); return input;
 }
 
-function requestData(input, workspace, current) {
+function requestData(input) {
   const request = strictObject(input, 'explain request', INPUT_FIELDS);
-  for (const field of INPUT_FIELDS.slice(0, 6)) if (!Object.hasOwn(request, field)) throw new TypeError(`Missing required Protocol v4 field: ${field}`);
-  if (!current) throw new TypeError(`Call ${CONTEXT_TOOL} before ${EXPLAIN_TOOL} in this page session`);
+  for (const field of INPUT_FIELDS.slice(0, 4)) if (!Object.hasOwn(request, field)) throw new TypeError(`Missing required Protocol v5 field: ${field}`);
   const data = {
-    requestId: required(request.requestId, 'requestId', 160), activationId: required(request.activationId, 'activationId', 160),
-    expectedWorkspaceRevision: integer(request.expectedWorkspaceRevision, 'expectedWorkspaceRevision'), topicId: topic(request.topicId),
+    requestId: required(request.requestId, 'requestId', 160), topicId: topic(request.topicId),
     decision: required(request.decision, 'decision', 40),
     primaryOperationIndex: Object.hasOwn(request, 'primaryOperationIndex') ? integer(request.primaryOperationIndex, 'primaryOperationIndex') : null
   };
-  if (data.activationId !== current.activationId) throw new RangeError('Activation is stale or does not belong to this page session');
   if (!DECISIONS.includes(data.decision)) throw new TypeError(`decision must be one of: ${DECISIONS.join(', ')}`);
   return data;
 }
@@ -337,7 +290,7 @@ function prepare(workspace, input, data) {
 }
 
 function fingerprint(data, input) {
-  return stable({ requestId: data.requestId, activationId: data.activationId, topicId: data.topicId, decision: data.decision, operations: input.operations, primaryOperationIndex: data.primaryOperationIndex });
+  return stable({ requestId: data.requestId, topicId: data.topicId, decision: data.decision, operations: input.operations, primaryOperationIndex: data.primaryOperationIndex });
 }
 async function focusPrepared(workspace, data, prepared) {
   if (data.decision === 'existing') return workspace.focusBlock(prepared.focusRequests[0]);
@@ -350,11 +303,11 @@ async function focusPrepared(workspace, data, prepared) {
 }
 function compactLocals(workspace) { return locals(workspace).map(({ id, topicId, targetId, placement, type, title }) => ({ id, topicId, targetId, placement, type, title })); }
 
-async function executeExplain(workspace, input, current, focusReplays) {
-  const data = requestData(input, workspace, current); const semantic = fingerprint(data, input);
+async function executeExplain(workspace, input, focusReplays) {
+  const data = requestData(input); const semantic = fingerprint(data, input);
   const prior = workspace.getLocalChangeHistory?.().transactions?.find((transaction) => transaction.requestId === data.requestId);
   if (prior) {
-    if (prior.semanticFingerprint !== semantic || prior.topicId !== data.topicId || prior.activationId !== data.activationId || !prior.result) throw new RangeError(`requestId ${data.requestId} was already used with a different semantic request`);
+    if (prior.semanticFingerprint !== semantic || prior.topicId !== data.topicId || !prior.result) throw new RangeError(`requestId ${data.requestId} was already used with a different semantic request`);
     return { ...clone(prior.result), idempotent: true };
   }
   const focusReplay = focusReplays.get(data.requestId);
@@ -363,13 +316,12 @@ async function executeExplain(workspace, input, current, focusReplays) {
     return { ...clone(focusReplay.result), idempotent: true };
   }
   const revision = workspace.getContext?.().workspaceRevision ?? 0;
-  if (data.expectedWorkspaceRevision !== revision) throw new RangeError(`Stale workspace revision: expected ${data.expectedWorkspaceRevision}, current ${revision}`);
   const prepared = prepare(workspace, input, data);
   let transactionId = null;
   if (prepared.mutations.length) {
     await workspace.applyTransaction(prepared.mutations.map((item) => item.operation), {
     requestId: data.requestId, requestFingerprint: semantic, semanticFingerprint: semantic,
-    topicId: data.topicId, activationId: data.activationId, actor: { kind: 'agent', channel: 'webmcp' }
+    topicId: data.topicId, actor: { kind: 'agent', channel: 'webmcp' }
     });
     transactionId = workspace.getLocalChangeHistory?.().transactions?.at(-1)?.id || null;
   }
@@ -384,7 +336,8 @@ async function executeExplain(workspace, input, current, focusReplays) {
   const history = workspace.getLocalChangeHistory?.();
   const output = {
     ok: true, idempotent: false, requestId: data.requestId, decision: data.decision, topicId: data.topicId,
-    changed: prepared.mutations.length > 0, workspaceRevision: workspace.getContext?.().workspaceRevision ?? 0,
+    protocolVersion: WEBMCP_PROTOCOL_VERSION, changed: prepared.mutations.length > 0,
+    workspaceRevisionBefore: revision, workspaceRevision: workspace.getContext?.().workspaceRevision ?? 0,
     transactionId,
     applied: prepared.mutations.map(({ op, blockId, targetId }) => ({ op, blockId, targetId })), focused,
     localBlocks: compactLocals(workspace)
@@ -394,7 +347,7 @@ async function executeExplain(workspace, input, current, focusReplays) {
   return output;
 }
 
-function explainSchemaV4() {
+function explainSchemaV5() {
   const string = (max = 160) => ({ type: 'string', minLength: 1, maxLength: max });
   const localId = { ...string(120), pattern: '^local-[A-Za-z0-9._:-]+$' };
   const source = { type: 'object', additionalProperties: false, required: ['path'], properties: { repository: string(200), path: string(500), ref: string(160), section: string(300), status: string(40) } };
@@ -408,9 +361,9 @@ function explainSchemaV4() {
   const operation = (name, requiredFields, properties) => ({ type: 'object', additionalProperties: false, required: ['op', ...requiredFields], properties: { op: { const: name }, ...properties } });
   return {
     type: 'object', additionalProperties: false,
-    required: ['requestId', 'activationId', 'expectedWorkspaceRevision', 'topicId', 'decision', 'operations'],
+    required: ['requestId', 'topicId', 'decision', 'operations'],
     properties: {
-      requestId: string(), activationId: string(), expectedWorkspaceRevision: { type: 'integer', minimum: 0 },
+      requestId: string(),
       topicId: { type: 'string', minLength: 1, maxLength: 120, pattern: '^[A-Za-z][A-Za-z0-9._:-]*$' },
       decision: { enum: [...DECISIONS] }, primaryOperationIndex: { type: 'integer', minimum: 0, maximum: 7 },
       operations: { type: 'array', minItems: 1, maxItems: 8, items: { oneOf: [
@@ -432,30 +385,18 @@ export function resolveWebMcpHost(environment = globalThis) {
     : { modelContext: null, source: 'none', standard: false };
 }
 
-export function createWebMcpTools(workspaceOrPromise, options = {}) {
-  let current = null; const focusReplays = new Map();
-  const deliveryState = options.deliveryState || fallbackDeliveryState();
+export function createWebMcpTools(workspaceOrPromise) {
+  const focusReplays = new Map();
   const resolveWorkspace = () => Promise.resolve(workspaceOrPromise);
   return [
     {
-      name: CONTEXT_TOOL, title: 'Get Explain Him Context',
-      description: 'Call this first whenever the user asks to explain, clarify, ask why or how, compare, show, or walk through anything about this page. Returns current authored and Personalized UI state, repository guidance, Protocol v4 activation, targets, and local blocks needed to decide whether explain_tool should focus an existing explanation or add, update, or replace one.',
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-      execute: async (_input = {}, executionOptions = {}) => {
-        throwIfAborted(executionOptions.signal); const workspace = await resolveWorkspace(); throwIfAborted(executionOptions.signal);
-        current ||= { activationId: opaque('activation') };
-        return contextFor(workspace, current, deliveryState);
-      }
-    },
-    {
       name: EXPLAIN_TOOL, title: 'Explain on This Page',
-      description: 'Call this after get_explain_him_context for every request to explain, clarify, ask why or how, compare, show, or walk through page-related content unless the user explicitly forbids page changes or scrolling. Focus an existing correct explanation, or add, update, replace, or restore a safe browser-local explanation. Mutations automatically focus the resulting visible block.',
+      description: 'Call this directly for every request to explain, clarify, ask why or how, compare, show, or walk through page-related content unless the user explicitly forbids page changes or scrolling. The tool inspects the current page state during the action: focus an existing correct explanation, or add, update, replace, or restore a safe browser-local explanation. Mutations automatically focus the visible result. Authored focus targets: flow-model, personal-agent, workflow-diagram, action-originator, action-user, action-agent-read, action-agent-answer, action-agent-adapt, action-original-safe, question-loop, grounding-contract, browser-workspace. Mutable targets: flow-model, personal-agent, workflow-diagram, question-loop, grounding-contract, browser-workspace.',
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-      inputSchema: explainSchemaV4(),
+      inputSchema: explainSchemaV5(),
       execute: async (input, executionOptions = {}) => {
         throwIfAborted(executionOptions.signal); const workspace = await resolveWorkspace(); throwIfAborted(executionOptions.signal);
-        return executeExplain(workspace, input, current, focusReplays);
+        return executeExplain(workspace, input, focusReplays);
       }
     }
   ];
@@ -466,7 +407,6 @@ export function registerWebMcpTools(workspaceOrPromise, modelContext = null, opt
     ? { modelContext, source: options.hostSource || 'explicit', standard: options.standardHost ?? false }
     : resolveWebMcpHost(options.environment || globalThis);
   const skillApiAvailable = Boolean(resolved.modelContext && resolved.standard && typeof resolved.modelContext.registerSkill === 'function');
-  const deliveryState = fallbackDeliveryState(skillApiAvailable ? 'pending' : 'unavailable');
   const status = {
     supported: Boolean(resolved.modelContext), ok: false, verified: false, verificationError: null,
     hostSource: resolved.source, standardHost: resolved.standard, expectedTools: [...EXPLAIN_HIM_WEBMCP_TOOLS],
@@ -477,7 +417,7 @@ export function registerWebMcpTools(workspaceOrPromise, modelContext = null, opt
   };
   if (!resolved.modelContext) { status.ready = Promise.resolve(status); return status; }
   status.ready = (async () => {
-    for (const tool of createWebMcpTools(workspaceOrPromise, { deliveryState })) {
+    for (const tool of createWebMcpTools(workspaceOrPromise)) {
       try { await resolved.modelContext.registerTool(tool); status.registered.push(tool.name); }
       catch (error) { status.errors.push({ name: tool.name, message: String(error?.message || error) }); }
     }
@@ -485,15 +425,14 @@ export function registerWebMcpTools(workspaceOrPromise, modelContext = null, opt
     if (skillApiAvailable && status.ok) {
       try {
         await resolved.modelContext.registerSkill(EXPLAIN_HIM_NATIVE_SKILL);
-        deliveryState.mode = 'native-inline'; deliveryState.state = 'registered'; deliveryState.registrationId = opaque('skill-registration');
         status.skillRegistrationState = 'registered';
         status.registeredSkill = { name: EXPLAIN_HIM_NATIVE_SKILL.name, digest: EXPLAIN_HIM_NATIVE_SKILL_DIGEST };
       } catch (error) {
-        deliveryState.state = 'error'; status.skillRegistrationState = 'error';
+        status.skillRegistrationState = 'error';
         status.skillRegistrationError = String(error?.message || 'registration-failed');
       }
     } else if (skillApiAvailable) {
-      deliveryState.state = 'blocked-tools'; status.skillRegistrationState = 'blocked-tools';
+      status.skillRegistrationState = 'blocked-tools';
     }
     if (typeof resolved.modelContext.getTools !== 'function') {
       status.verificationError = 'document.modelContext.getTools is unavailable'; return status;

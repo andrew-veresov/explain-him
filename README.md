@@ -24,11 +24,9 @@ Human asks a question
         v
 Personal AI agent
         |
-        +---- get_explain_him_context ---> visible state + repository guidance
+        +---- read visible page/repository evidence + answer in chat
         |
-        +---- read the minimum page/repository evidence + answer in chat
-        |
-        +---- explain_tool --------------> focus existing or mutate + auto-focus
+        +---- explain_tool --------------> inspect state + focus or mutate
                                                 |
                                                 v
                                   human sees the same explanation
@@ -44,8 +42,7 @@ The public surface is deliberately small and user-oriented:
 
 | Tool | Purpose |
 |---|---|
-| `get_explain_him_context` | Read the current Original/Personalized state, target capabilities, local blocks, pinned repository, grounding sources, and Protocol v4 activation |
-| `explain_tool` | Focus an existing explanation or atomically add, replace, update, or restore a browser-local typed explanation |
+| `explain_tool` | Directly inspect current page capabilities while focusing an existing explanation or atomically adding, replacing, updating, or restoring a browser-local typed explanation |
 
 There are no duplicate compatibility tools, diagnostic tools, or WebMCP tools for repository search/answer generation. The browser contract models user intentions rather than internal implementation details.
 
@@ -148,9 +145,9 @@ Important statuses are `current`, `target`, `hypothesis`, `open`, `demo-only`, a
 | Model Context Tool Inspector extension | Page-tool debugging only; never an Explain Him production or user workflow |
 | Browser without WebMCP | Human controls continue to work over the same local workspace |
 
-Only `document.modelContext` is supported. There is no navigator fallback, compatibility alias, old tool identity, or Protocol v3 handshake. Explain Him separately feature-detects the experimental `document.modelContext.registerSkill` shape proposed in WebMCP issue 161. After both tools register successfully, the page may register one deterministic inline `explain_him` skill. When the method is absent or rejects, the pinned A8 remote fallback remains available. The page does not polyfill the experimental API or treat it as normative WebMCP.
+Only `document.modelContext` is supported. There is no navigator fallback, compatibility alias, old tool identity, or pre-v5 handshake. Explain Him separately feature-detects the experimental `document.modelContext.registerSkill` shape proposed in WebMCP issue 161. After `explain_tool` registers successfully, the page may register one deterministic inline `explain_him` skill. When the method is absent or rejects, the pinned remote fallback remains available. The page does not polyfill the experimental API or treat it as normative WebMCP.
 
-The page cannot force a host or model to choose a tool. Descriptors and skills require `get_explain_him_context` for explanation requests, followed by `explain_tool` unless the user explicitly forbids page changes or scrolling. Fully present content is focused without a revision change; missing, partial, or inconsistent content is mutated and automatically focused. A mutation is reported only after revision, DOM visibility, and focus are confirmed.
+The page cannot force a host or model to choose a tool. Protocol v5 descriptors and skills require a direct `explain_tool` call for explanation requests unless the user explicitly forbids page changes or scrolling. Fully present content is focused without a revision change; missing, partial, or inconsistent content is mutated and automatically focused. A mutation is reported only after revision, DOM visibility, and focus are confirmed.
 
 On September 1, 2026, the installed official ChatGPT Chrome extension version `1.26.827.12125` answered the exact `User`/`Consumer` prompt, while the page observed no contract invocation and remained at revision 0. The page API independently verified 2/2 tools. This is `BLOCKED_EXTERNAL` at the agent-host connection boundary, not a successful end-to-end run and not a page-registration failure.
 

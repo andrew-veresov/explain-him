@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 
-EXPECTED_TOOLS = {"get_explain_him_context", "explain_tool"}
+EXPECTED_TOOLS = {"explain_tool"}
 
 
 def _result(status: str, code: str, phase: str) -> dict[str, str]:
@@ -31,12 +31,6 @@ def classify_preflight(evidence: Mapping[str, Any]) -> dict[str, str]:
         return _result("NOT_TESTED", "AGENT_HOST_NOT_TESTED", "agent-host")
     if connection is not True:
         return _result("BLOCKED_EXTERNAL", "AGENT_HOST_WEBMCP_UNAVAILABLE", "agent-host")
-
-    context_invoked = evidence.get("context_invoked") is True
-    if not context_invoked:
-        if evidence.get("agent_claimed_success") is True:
-            return _result("FAILED", "FALSE_SUCCESS", "agent-response")
-        return _result("FAILED", "CONTEXT_NOT_INVOKED", "agent-tool-choice")
 
     if evidence.get("explain_required") is not True:
         return _result("PASS", "EXPLICIT_PAGE_OPT_OUT_HONORED", "agent-response")

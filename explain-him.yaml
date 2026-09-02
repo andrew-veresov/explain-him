@@ -1,6 +1,6 @@
 schema_version: explain-him-explanation.v4
 id: explain-him-public-demo
-version: 0.5.0
+version: 0.7.0
 title: How Explain Him works
 language: en
 status: public-demo
@@ -120,20 +120,19 @@ presentation:
 
 webmcp:
   status: current-demo
-  protocol_version: 4
+  protocol_version: 5
   bootstrap_metadata:
     schema_version: explain-him-agent-bootstrap.v2
-    context_tool: get_explain_him_context
+    action_tool: explain_tool
     required_for_explanation_requests: true
     location: index.html#explain-him-agent-bootstrap
     machine_readable: true
     immutable_skill_pins_required: true
     repository_guidance_required: true
     repositoryRetrievalRequiredWhenPageInsufficient: true
-    additionalInformation: For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources returned in this context.
+    additionalInformation: For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources published by this page.
     page_activation_effect: discovery-hint-only
-  context_schema: schemas/webmcp-context.v4.schema.json
-  explain_schema: schemas/webmcp-explain.v4.schema.json
+  explain_schema: schemas/webmcp-explain.v5.schema.json
   api: document.modelContext
   registration: imperative-top-level-javascript
   declarative_api_required: false
@@ -198,7 +197,7 @@ webmcp:
     probabilistic_semantic_choice_gate: real-host-model-only
   purpose: typed-result-delivery-to-shared-page
   agent_policy:
-    revision: A8
+    revision: A9
     context: required-for-every-explanation-request
     immutable_skill_publication: required
     repositoryRetrievalRequiredWhenPageInsufficient: true
@@ -227,7 +226,7 @@ webmcp:
     failure: {explainFailure: honest-acknowledgement-no-false-success}
   immutable_skill_publication:
     repository: andrew-veresov/explain-him
-    release: A8
+    release: A9
     commit: 59167103ebfb7d4fd0c276de7f2b81862c536b4f
     load_order: [explain-him, explain-him-presentation]
     skills:
@@ -245,9 +244,9 @@ webmcp:
     api: document.modelContext.registerSkill
     source_commit: 59167103ebfb7d4fd0c276de7f2b81862c536b4f
     composite_sha256: fc0b3bf222ad485d82bc6a0e05a5bb6130d8cdba06b2550d4475daa265271d36
-    tools: [get_explain_him_context, explain_tool]
+    tools: [explain_tool]
     delivery_modes: [native-inline, pinned-remote-fallback]
-    fallback_tool: get_explain_him_context
+    fallback_tool: explain_tool
     registration_success_is_semantic_read_proof: false
   groundingSourceIndex:
     - topic: originator-publishing
@@ -265,7 +264,6 @@ webmcp:
       commit: 59167103ebfb7d4fd0c276de7f2b81862c536b4f
       sha256: 24acbad739ead8781ad2918a227e5670ca9bdbf464088e5de530a29ae63a1c3c
   tools:
-    - get_explain_him_context
     - explain_tool
   contract_returns:
     - repository-location

@@ -1,6 +1,6 @@
 ---
 name: explain-him-presentation
-description: Convert an already-grounded Explain Him answer into safe typed browser-local blocks and display or focus it through the Protocol v4 explain_tool.
+description: Convert an already-grounded Explain Him answer into safe typed browser-local blocks and display or focus it directly through the Protocol v5 explain_tool.
 ---
 
 # Explain Him – presentation skill
@@ -14,12 +14,11 @@ Represent meaning already grounded by the personal agent inside the live Explain
 Before using this skill:
 
 1. Follow `skills/explain-him/SKILL.md`.
-2. Call `get_explain_him_context` and require Protocol v4.
-3. Inspect the current authored targets, local blocks, target capabilities, view mode, activation, and workspace revision.
-4. Ground the answer from the visible page and, when needed, the linked pinned GitHub repository.
-5. Preserve repository provenance and status.
-6. Always answer in chat.
-7. Unless the user explicitly forbids page changes, call `explain_tool` to focus or display the explanation.
+2. Require Protocol v5 and inspect the visible authored page and Personalized UI available through the host.
+3. Ground the answer from the visible page and, when needed, the linked pinned GitHub repository.
+4. Preserve repository provenance and status.
+5. Always answer in chat.
+6. Unless the user explicitly forbids page changes, call `explain_tool` directly to focus or display the explanation. There is no separate context tool.
 
 ## WebMCP boundary
 
@@ -39,7 +38,10 @@ Do not use WebMCP for retrieval, reasoning, diagnostics, tool discovery, GitHub 
 
 ## Target capabilities
 
-Use only targets returned by `get_explain_him_context`:
+Use only these registered page targets:
+
+- mutable targets: `flow-model`, `personal-agent`, `workflow-diagram`, `question-loop`, `grounding-contract`, and `browser-workspace`;
+- focus-only targets: `action-originator`, `action-user`, `action-agent-read`, `action-agent-answer`, `action-agent-adapt`, and `action-original-safe`.
 
 - every target with `focus` may be highlighted and scrolled into view;
 - `add` requires `hasInsertionSlot: true` and `add` in `allowedOperations`;
@@ -58,7 +60,7 @@ A successful response must identify the focused visible block. Do not report suc
 | `inconsistent` | Atomic `replace` and/or `update` operations |
 | `restore` | `remove` one or more same-topic local blocks, then focus the authored target |
 
-Every call includes `requestId`, `activationId`, `expectedWorkspaceRevision`, `topicId`, `decision`, and `operations`. Supply `primaryOperationIndex` only when a mutation batch needs a focus target other than its default.
+Every call includes `requestId`, `topicId`, `decision`, and `operations`. Supply `primaryOperationIndex` only when a mutation batch needs a focus target other than its default. Do not send removed context-handshake fields.
 
 Reuse the returned local block ID for every same-topic continuation. Never claim a page update before `ok: true` and the expected `workspaceRevision`, `applied`, and `focused` values are returned.
 
@@ -160,8 +162,6 @@ Focus an explanation that already exists:
 ```json
 {
   "requestId": "focus-grounding-1",
-  "activationId": "from-context",
-  "expectedWorkspaceRevision": 0,
   "topicId": "grounding:overview",
   "decision": "existing",
   "operations": [{"op": "focus", "targetId": "grounding-contract"}]
@@ -173,8 +173,6 @@ Add and automatically focus a missing explanation:
 ```json
 {
   "requestId": "originator-workflow-1",
-  "activationId": "from-context",
-  "expectedWorkspaceRevision": 0,
   "topicId": "originator:workflow",
   "decision": "missing",
   "operations": [

@@ -1,9 +1,10 @@
 ---
 title: Protocol v4 explanation context and display
-status: accepted
+status: superseded
 date: 2026-09-02
 tags: [explain-him, webmcp, protocol-v4, personalized-ui]
 supersedes: 2026-08-30-skill-driven-webmcp
+superseded-by: 2026-09-02-webmcp-protocol-v5-single-explain-tool
 ---
 
 # Protocol v4 explanation context and display
@@ -50,4 +51,3 @@ Rejected because focus-only workflow steps have no insertion slots. Accepting a 
 - Tool descriptors directly name explanation intents, but host/model tool selection remains probabilistic and requires real-host evaluation.
 - `getTools()` verifies page registration only; it does not prove that an external agent can access or select the tools.
 - Existing browser-local workspace data remains readable, but new WebMCP requests must use Protocol v4.
-

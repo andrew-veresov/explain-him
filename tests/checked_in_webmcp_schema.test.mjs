@@ -39,23 +39,19 @@ function validate(root, schema, value) {
   return true;
 }
 
-test('checked-in Protocol v4 schemas accept runtime values and reject legacy or unknown fields', async () => {
-  const [contextSchema, explainSchema] = await Promise.all([load('webmcp-context.v4.schema.json'), load('webmcp-explain.v4.schema.json')]);
+test('checked-in Protocol v5 schema accepts runtime input and rejects removed or unknown fields', async () => {
+  const explainSchema = await load('webmcp-explain.v5.schema.json');
   const workspace = await createExplanationWorkspace({ document: null, explanationId: 'checked-schema', baseRevision: 'r1', canonicalIds: ['workflow-diagram'], store: new MemoryWorkspaceStore() });
   workspace.focusBlock = async (request) => ({ ...request, visible: true, focused: true });
   const tools = new Map(createWebMcpTools(workspace).map((tool) => [tool.name, tool]));
-  const context = await tools.get('get_explain_him_context').execute({});
   const input = {
-    requestId: 'checked-schema-request', activationId: context.activationId,
-    expectedWorkspaceRevision: context.workspaceRevision, topicId: 'terminology:user-consumer', decision: 'inconsistent',
+    requestId: 'checked-schema-request', topicId: 'terminology:user-consumer', decision: 'inconsistent',
     operations: [{ op: 'replace', targetId: 'workflow-diagram', block: { type: 'diagram', title: 'Terminology', variant: 'flow', nodes: [{ id: 'user', label: 'User' }, { id: 'agent', label: 'Personal agent' }], edges: [{ from: 'user', to: 'agent', label: 'asks' }], sources: [{ path: 'PRODUCT-CONTRACT.md', status: 'current' }] } }]
   };
-  assert.equal(validate(contextSchema, contextSchema, context), true);
   assert.equal(validate(explainSchema, explainSchema, input), true);
   assert.equal((await tools.get('explain_tool').execute(input)).ok, true);
-  assert.equal(validate(contextSchema, contextSchema, { ...context, unknown: true }), false);
-  assert.equal(validate(contextSchema, contextSchema, { ...context, protocolVersion: 3 }), false);
-  assert.equal(validate(contextSchema, contextSchema, { ...context, additionalInformation: '' }), false);
+  assert.equal(validate(explainSchema, explainSchema, { ...input, activationId: 'removed' }), false);
+  assert.equal(validate(explainSchema, explainSchema, { ...input, expectedWorkspaceRevision: 0 }), false);
   assert.equal(validate(explainSchema, explainSchema, { ...input, contractId: 'legacy' }), false);
   assert.equal(validate(explainSchema, explainSchema, { ...input, operations: [{ ...input.operations[0], unknown: true }] }), false);
   assert.equal(validate(explainSchema, explainSchema, { ...input, operations: [{ ...input.operations[0], block: { ...input.operations[0].block, html: '<script />' } }] }), false);

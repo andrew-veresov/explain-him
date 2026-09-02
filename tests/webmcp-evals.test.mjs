@@ -24,27 +24,26 @@ test('prompt eval matrix covers Russian, English, focus, mutation, repository gr
   assert.ok(cases.some(({ expectedSequence }) => expectedSequence.includes('repository')));
 });
 
-test('every explanation eval starts with context and ends with explain_tool unless explicitly opted out', () => {
+test('every explanation eval ends with the direct explain_tool unless explicitly opted out', () => {
   for (const item of cases.filter(({ expectedDecision }) => !['none', 'chat-only'].includes(expectedDecision))) {
-    assert.equal(item.expectedSequence[0], 'get_explain_him_context', item.id);
     assert.equal(item.expectedSequence.at(-1), 'explain_tool', item.id);
   }
-  assert.deepEqual(EXPLAIN_HIM_WEBMCP_TOOLS, ['get_explain_him_context', 'explain_tool']);
+  assert.deepEqual(EXPLAIN_HIM_WEBMCP_TOOLS, ['explain_tool']);
 });
 
 test('tool descriptors enumerate the intended trigger language and explain same-turn display behavior', () => {
   const descriptors = createWebMcpTools({ document: { querySelectorAll: () => [] }, getContext: () => ({ workspaceRevision: 0, authoredTargetIds: [] }), getVisibleState: () => ({ presentations: [], viewMode: 'original' }) });
-  const context = descriptors[0].description;
-  for (const trigger of ['explain', 'clarify', 'why', 'how', 'compare', 'show', 'walk through']) assert.match(context, new RegExp(trigger, 'i'));
-  assert.match(descriptors[1].description, /for every request/i);
-  assert.match(descriptors[1].description, /explicitly forbids page changes/i);
-  assert.match(descriptors[1].description, /automatically focus/i);
+  const descriptor = descriptors[0].description;
+  for (const trigger of ['explain', 'clarify', 'why', 'how', 'compare', 'show', 'walk through']) assert.match(descriptor, new RegExp(trigger, 'i'));
+  assert.match(descriptor, /Call this directly for every request/i);
+  assert.match(descriptor, /explicitly forbids page changes/i);
+  assert.match(descriptor, /automatically focus/i);
 });
 
-test('grounding skill defines Protocol v4, repository navigation, and the full decision matrix', () => {
-  assert.match(groundingSkill, /`get_explain_him_context`/);
+test('grounding skill defines Protocol v5, repository navigation, and the full decision matrix', () => {
+  assert.doesNotMatch(groundingSkill, /`get_explain_him_context`/);
   assert.match(groundingSkill, /`explain_tool`/);
-  assert.match(groundingSkill, /protocolVersion` is `4`/);
+  assert.match(groundingSkill, /Protocol v5/);
   assert.match(groundingSkill, new RegExp(ADDITIONAL_INFORMATION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(groundingSkill, /Fully present and correct[\s\S]*`existing`/i);
   assert.match(groundingSkill, /Missing[\s\S]*`missing`/i);
@@ -56,7 +55,7 @@ test('grounding skill defines Protocol v4, repository navigation, and the full d
 });
 
 test('presentation skill requires target capabilities, auto-focus, topic reuse, and truthful failures', () => {
-  assert.match(presentationSkill, /hasInsertionSlot: true/);
+  assert.match(presentationSkill, /mutable targets/i);
   assert.match(presentationSkill, /automatically focuses/i);
   assert.match(presentationSkill, /Reuse the returned local block ID/i);
   assert.match(presentationSkill, /workspaceRevision/);
@@ -67,7 +66,7 @@ test('presentation skill requires target capabilities, auto-focus, topic reuse, 
 
 test('issue 161 remains isolated, experimental, and non-normative', () => {
   assert.match(groundingSkill, /document\.modelContext\.registerSkill/);
-  assert.match(groundingSkill, /Issue 161 is experimental and adds no third tool/i);
-  assert.match(groundingSkill, /Failure of `registerSkill` must never disable the two standard tools/i);
+  assert.match(groundingSkill, /Issue 161 is experimental and adds no second tool/i);
+  assert.match(groundingSkill, /Failure of `registerSkill` must never disable the standard tool/i);
   assert.match(groundingSkill, /not that the model read or followed the skill/i);
 });
