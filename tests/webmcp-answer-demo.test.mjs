@@ -11,34 +11,36 @@ function flush() {
 }
 
 async function runDemo(modelContext) {
-  const answer = { textContent: '', style: {}, scrollIntoView() {} };
+  const answer = { textContent: '', style: {}, tabIndex: 0, focusOptions: null, scrollOptions: null, focus(options) { this.focusOptions = options; }, scrollIntoView(options) { this.scrollOptions = options; } };
   const status = { textContent: '' };
   const errors = [];
   const document = {
     modelContext,
     querySelector(selector) {
-      if (selector === '#answer') return answer;
+      if (selector === '#explanation') return answer;
       if (selector === '#status') return status;
       return null;
     }
   };
-  vm.runInNewContext(script, { console: { error: (...args) => errors.push(args) }, document });
+  vm.runInNewContext(script, { console: { error: (...args) => errors.push(args) }, document, matchMedia: () => ({ matches: false }) });
   await flush();
   return { answer, status, errors };
 }
 
-test('WebMCP answer demo awaits registration and verifies show_answer through getTools', async () => {
+test('WebMCP answer demo awaits registration and verifies explain_tool through getTools', async () => {
   let registeredTool;
   const result = await runDemo({
     registerTool: async (tool) => { registeredTool = tool; },
     getTools: async () => [registeredTool]
   });
 
-  assert.equal(result.status.textContent, 'WebMCP: show_answer registered and verified');
-  assert.equal(registeredTool.name, 'show_answer');
-  await registeredTool.execute({ answer: 'Visible answer' });
+  assert.equal(result.status.textContent, 'WebMCP: explain_tool registered and verified');
+  assert.equal(registeredTool.name, 'explain_tool');
+  await registeredTool.execute({ explanation: 'Visible answer' });
   assert.equal(result.answer.textContent, 'Visible answer');
   assert.equal(result.answer.style.display, 'block');
+  assert.equal(result.answer.focusOptions.preventScroll, true);
+  assert.equal(result.answer.scrollOptions.behavior, 'smooth');
 });
 
 test('WebMCP answer demo reports a rejected registration without false success', async () => {
@@ -58,6 +60,6 @@ test('WebMCP answer demo does not claim success when the tool cannot be enumerat
   });
   const noEnumerator = await runDemo({ registerTool: async () => {} });
 
-  assert.equal(absent.status.textContent, 'WebMCP: show_answer was not found in available tools');
+  assert.equal(absent.status.textContent, 'WebMCP: explain_tool was not found in available tools');
   assert.equal(noEnumerator.status.textContent, 'WebMCP: tool registration cannot be verified because getTools is unavailable');
 });

@@ -1,195 +1,202 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { EXPLAIN_HIM_REPOSITORY, EXPLAIN_HIM_REPOSITORY_URL, EXPLAIN_HIM_SKILL_COMMIT, EXPLAIN_HIM_WEBMCP_TOOLS, GROUNDING_SOURCE_INDEX, IMMUTABLE_SKILL_PROOF, WEBMCP_PROTOCOL_VERSION, createWebMcpTools, registerWebMcpTools, resolveWebMcpHost } from '../runtime/webmcp.mjs';
+import {
+  ADDITIONAL_INFORMATION, EXPLAIN_HIM_REPOSITORY, EXPLAIN_HIM_REPOSITORY_URL,
+  EXPLAIN_HIM_SKILL_COMMIT, EXPLAIN_HIM_WEBMCP_TOOLS, WEBMCP_PROTOCOL_VERSION,
+  createWebMcpTools, registerWebMcpTools, resolveWebMcpHost
+} from '../runtime/webmcp.mjs';
 import { appendTransaction, createInitialWorkspace, materializeWorkspace } from '../runtime/workspace.mjs';
 
-function workspace() { const nodes = ['workflow-diagram', 'flow-model'].map((id) => ({ dataset: { ehBlockId: id }, querySelector: () => ({ textContent: id }) })); let state = createInitialWorkspace({ explanationId: 'test', baseRevision: 'r1' }); return { document: { querySelectorAll: () => nodes }, getContext: () => ({ explanationId: 'test', baseRevision: 'r1', workspaceRevision: state.revision, authoredTargetIds: nodes.map((node) => node.dataset.ehBlockId) }), getVisibleState: () => materializeWorkspace(state, { canonicalIds: nodes.map((node) => node.dataset.ehBlockId) }), getLocalChangeHistory: () => ({ transactions: state.transactions }), applyTransaction: async (operations, options) => { state = appendTransaction(state, operations, options); }, attachTransactionResult: async (id, result) => { state.transactions.find((item) => item.id === id).result = result; }, focusBlock: ({ targetId, blockId }) => ({ targetId, blockId }) }; }
-const diagram = (title = 'User terminology') => ({ type: 'diagram', title, variant: 'flow', nodes: [{ id: 'user', label: 'User' }, { id: 'agent', label: 'Agent' }], edges: [{ from: 'user', to: 'agent', label: 'asks' }], sources: [{ path: 'resolutions/2026-08-30-user-consumer-terminology.md', status: 'current' }] });
-function tools(subject = workspace()) { return new Map(createWebMcpTools(subject).map((tool) => [tool.name, tool])); }
-function request(contract, { requestId = 'request-1', topicId = 'terminology:user-consumer', expectedWorkspaceRevision = contract.workspaceRevision, operations } = {}) { return { requestId, expectedWorkspaceRevision, explanationId: contract.explanationId, topicId, operations, handshake: { bootstrapTool: contract.bootstrapTool, contractId: contract.contractId, activationId: contract.activation.id, nonce: contract.activation.nonce, baseRevision: contract.baseRevision, skillProof: contract.skillProof, skillDeliveryProof: contract.skillDelivery.proof } }; }
+function workspace({ mutableTargets = ['workflow-diagram'], targets = ['workflow-diagram', 'workflow-step-1', 'flow-model'] } = {}) {
+  let state = createInitialWorkspace({ explanationId: 'test', baseRevision: 'r1' });
+  let viewMode = 'original';
+  const focused = [];
+  const authoredNodes = targets.map((id) => ({ dataset: { ehBlockId: id }, innerText: `${id} visible explanation`, querySelector: () => ({ textContent: `${id} title` }) }));
+  const slotNodes = mutableTargets.map((id) => ({ dataset: { ehLocalSlot: id } }));
+  return {
+    document: { querySelectorAll: (selector) => selector === '[data-eh-local-slot]' ? slotNodes : authoredNodes },
+    getContext: () => ({ explanationId: 'test', baseRevision: 'r1', workspaceRevision: state.revision, authoredTargetIds: targets, insertionTargetIds: mutableTargets }),
+    getVisibleState: () => ({ ...materializeWorkspace(state, { canonicalIds: targets }), viewMode }),
+    getLocalChangeHistory: () => ({ transactions: state.transactions }),
+    applyTransaction: async (operations, options) => { state = appendTransaction(state, operations, options); },
+    rollbackTransaction: async (id) => { if (state.transactions.at(-1)?.id !== id) throw new Error('wrong rollback'); state.transactions.pop(); state.cursor = state.transactions.length; state.revision -= 1; },
+    attachTransactionResult: async (id, result) => { state.transactions.find((item) => item.id === id).result = result; },
+    setViewMode: async (mode) => { viewMode = mode; },
+    focusBlock: async (focusRequest) => { focused.push(focusRequest); return { ...focusRequest, visible: true, focused: true }; },
+    focused
+  };
+}
 
-test('surface remains exactly two tools and answer bootstrap exposes pinned A7 Protocol v3 workflow', async () => {
-  const map = tools();
-  const contract = await map.get('get_explain_him_answer').execute({});
-  const repeated = await map.get('get_explain_him_answer').execute({});
-  const bootstrap = map.get('get_explain_him_answer');
-  const apply = map.get('apply_explanation');
-  assert.deepEqual(EXPLAIN_HIM_WEBMCP_TOOLS, ['get_explain_him_answer', 'apply_explanation']);
-  assert.equal(contract.bootstrapTool, 'get_explain_him_answer');
-  assert.equal(contract.answerWorkflow.schemaVersion, 'explain-him-answer-workflow.v1');
-  assert.equal(contract.answerWorkflow.requiredBeforeAnyExplainHimAnswer, true);
-  assert.deepEqual(contract.answerWorkflow.steps.map(({ order, id }) => ({ order, id })), [
-    { order: 1, id: 'verify-contract-and-revision' },
-    { order: 2, id: 'load-pinned-skills' },
-    { order: 3, id: 'inspect-visible-authored-page' },
-    { order: 4, id: 'retrieve-minimum-grounding-sources' },
-    { order: 5, id: 'form-grounded-chat-answer' },
-    { order: 6, id: 'decide-presentation-operation' },
-    { order: 7, id: 'apply-required-adaptation' },
-    { order: 8, id: 'confirm-workspace-revision' },
-    { order: 9, id: 'disclose-failure' },
-    { order: 10, id: 'restore-on-request' },
-  ]);
-  assert.deepEqual(Object.keys(contract.toolUsage), ['get_explain_him_answer', 'apply_explanation']);
-  assert.equal(contract.schemaVersion, 'explain-him-webmcp-contract.v3');
-  assert.equal(contract.protocolVersion, 3);
-  assert.equal(contract.activation.id, repeated.activation.id);
-  assert.equal(contract.activation.nonce, repeated.activation.nonce);
-  assert.equal(contract.contractId, repeated.contractId);
-  assert.equal(contract.workspaceRevision, repeated.workspaceRevision);
-  assert.equal(contract.skills[0].rawUrl.includes('/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/'), true);
-  assert.deepEqual(contract.skillProof.map((item) => item.sha256), IMMUTABLE_SKILL_PROOF.map((item) => item.sha256));
-  assert.deepEqual(contract.skillProof.map((item) => item.sha256), [
-    'b274b2125d2b3f11ded65a9fef26406c8d973333d3e9df88718dba6f22e1becb',
-    'a51bea92203f037402f3feb3e605072d63c30ddf7e9a88426eb1909d2b26382a',
-  ]);
-  assert.equal(contract.repository.skillsCommit, 'ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625');
-  assert.equal(contract.skillDelivery.mode, 'pinned-remote-fallback');
-  assert.equal(contract.skillDelivery.proposalStatus, 'experimental-open-backlog');
-  assert.equal(contract.skillDelivery.proof.compositeSha256, 'e711414af844c93959bd2632846baf8e910685d72a858e31bdb90e03c050b123');
-  assert.equal(contract.blockSchema.url, '/explain-him/schemas/explanation-block.v1.schema.json');
-  assert.equal(contract.handshakeSchema.url, '/explain-him/schemas/webmcp-apply.v3.schema.json');
-  assert.notEqual(contract.skills[0].rawUrl, contract.handshakeSchema.url);
-  assert.equal(contract.agentPolicy.revision, 'A7');
-  assert.equal(contract.agentPolicy.repositoryRetrievalRequiredWhenPageInsufficient, true);
-  assert.deepEqual(contract.agentPolicy.decisionPrecedence, ['explicitNoPageChange', 'restore', 'terminologyConsistency', 'answerPresence']);
-  assert.deepEqual(contract.agentPolicy.terminologyConsistency, { equivalentLabels: ['User', 'Consumer'], equivalenceNoteDoesNotMakeMixedLabelsConsistent: true, questionTriggersSameTurnNormalization: true, defaultTerm: 'User', distinctRoles: 'never-normalize', firstCorrection: { topicId: 'terminology:user-consumer', targetId: 'workflow-diagram', operation: 'replace' }, sameTopicFollowUp: { operation: 'update', reuseLocalBlockId: true }, restore: { operation: 'remove' } });
-  assert.equal(contract.agentPolicy.presentationDecision.alwaysProvideChatAnswer, true);
-  assert.equal(contract.agentPolicy.presentationDecision.fullyPresent.ordinaryQuestion, 'chat-only');
-  assert.equal(contract.agentPolicy.failure.applyFailure, 'honest-acknowledgement-no-false-success');
-  assert.equal(bootstrap.title, 'Get Explain Him Answer Workflow');
-  assert.match(bootstrap.description, /MUST ALWAYS be called first and before answering ANY question about Explain Him or the current Explain Him page/);
-  assert.match(bootstrap.description, /immutable pinned skills and grounding source index/);
-  assert.equal(bootstrap.annotations.readOnlyHint, true);
-  assert.equal(bootstrap.annotations.untrustedContentHint, true);
-  assert.equal(apply.title, 'Keep Personalized UI Consistent');
-  assert.match(apply.description, /same turn whenever the returned policy identifies missing, partial, or inconsistent visible Personalized UI/);
-  assert.match(apply.description, /bounded add, replace, update, remove, or focus operations/);
-  assert.match(apply.description, /complete A7 Protocol v3 activation and page-issued skill-delivery proof/);
+const callout = (title = 'Explanation') => ({ type: 'callout', title, body: `${title} body`, sources: [{ path: 'PRODUCT-CONTRACT.md', status: 'current' }] });
+const diagram = (title = 'Terminology') => ({ type: 'diagram', title, variant: 'flow', nodes: [{ id: 'user', label: 'User' }, { id: 'agent', label: 'Personal agent' }], edges: [{ from: 'user', to: 'agent', label: 'asks' }], sources: [] });
+const tools = (subject = workspace()) => new Map(createWebMcpTools(subject).map((tool) => [tool.name, tool]));
+const request = (context, overrides = {}) => ({
+  requestId: overrides.requestId || 'request-1', activationId: overrides.activationId || context.activationId,
+  expectedWorkspaceRevision: overrides.expectedWorkspaceRevision ?? context.workspaceRevision,
+  topicId: overrides.topicId || 'topic:explanation', decision: overrides.decision || 'missing',
+  operations: overrides.operations || [{ op: 'add', targetId: 'workflow-diagram', block: callout() }],
+  ...(overrides.primaryOperationIndex === undefined ? {} : { primaryOperationIndex: overrides.primaryOperationIndex })
 });
-test('A7 answer bootstrap pins the minimum repository source for insufficient visible answers', async () => {
-  const map = tools();
-  const contract = await map.get('get_explain_him_answer').execute({});
-  assert.equal(contract.agentPolicy.revision, 'A7');
-  assert.equal(contract.agentPolicy.repositoryRetrievalRequiredWhenPageInsufficient, true);
-  assert.deepEqual(contract.groundingSourceIndex, [{
-    topic: 'originator-publishing',
-    path: 'knowledge/01-originator-flow.md',
-    section: 'Basic flow',
-    status: 'current',
-    rawUrl: 'https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/knowledge/01-originator-flow.md',
-    commit: 'ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625',
-    sha256: 'cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659'
-  }, {
-    topic: 'originator-publishing',
-    path: 'PRODUCT-CONTRACT.md',
-    section: 'Authoring and publishing reality',
-    status: 'current',
-    rawUrl: 'https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/PRODUCT-CONTRACT.md',
-    commit: 'ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625',
-    sha256: 'fc3ae6e6dd4d09183ecde12c9a25506a34c969dd6a7ea4ead181990ab2b3a2dd'
-  }]);
-  assert.match(map.get('get_explain_him_answer').description, /grounding source index/i);
-  assert.match(map.get('get_explain_him_answer').description, /visible UI is insufficient/i);
 
+test('Protocol v4 exposes exactly the context and explanation tools', async () => {
+  const map = tools();
+  assert.deepEqual(EXPLAIN_HIM_WEBMCP_TOOLS, ['get_explain_him_context', 'explain_tool']);
+  assert.deepEqual([...map.keys()], EXPLAIN_HIM_WEBMCP_TOOLS);
+  const context = await map.get('get_explain_him_context').execute({});
+  assert.equal(context.schemaVersion, 'explain-him-webmcp-context.v4');
+  assert.equal(context.protocolVersion, 4);
+  assert.equal(WEBMCP_PROTOCOL_VERSION, 4);
+  assert.equal(context.additionalInformation, ADDITIONAL_INFORMATION);
+  assert.match(context.additionalInformation, /GitHub repository linked to this page/);
+  assert.equal(context.repository.fullName, EXPLAIN_HIM_REPOSITORY);
+  assert.equal(context.repository.url, EXPLAIN_HIM_REPOSITORY_URL);
+  assert.equal(context.repository.pinnedCommit, EXPLAIN_HIM_SKILL_COMMIT);
+  assert.ok(context.repository.groundingSources.length >= 1);
+  assert.equal(context.policy.existing, 'focus-existing');
+  assert.equal(context.targets.find(({ id }) => id === 'workflow-step-1').hasInsertionSlot, false);
+  assert.deepEqual(context.targets.find(({ id }) => id === 'workflow-step-1').allowedOperations, ['focus']);
+});
+
+test('context activation stays stable while revision and local blocks refresh', async () => {
+  const subject = workspace(); const map = tools(subject);
+  const first = await map.get('get_explain_him_context').execute({});
+  const applied = await map.get('explain_tool').execute(request(first));
+  const second = await map.get('get_explain_him_context').execute({});
+  assert.equal(second.activationId, first.activationId);
+  assert.equal(second.workspaceRevision, applied.workspaceRevision);
+  assert.equal(second.localBlocks.length, 1);
+  assert.equal(second.viewMode, 'personalized');
+});
+
+test('existing focuses one authored block without changing revision and replays safely', async () => {
+  const map = tools(); const context = await map.get('get_explain_him_context').execute({});
+  const input = request(context, { decision: 'existing', operations: [{ op: 'focus', targetId: 'flow-model' }] });
+  const first = await map.get('explain_tool').execute(input);
+  const replay = await map.get('explain_tool').execute({ ...input, expectedWorkspaceRevision: 999 });
+  assert.equal(first.changed, false);
+  assert.equal(first.workspaceRevision, context.workspaceRevision);
+  assert.deepEqual(first.focused, { targetId: 'flow-model', visible: true, focused: true });
+  assert.equal(replay.idempotent, true);
+});
+
+test('missing adds, changes revision, enters Personalized mode, and auto-focuses', async () => {
+  const subject = workspace(); const map = tools(subject);
+  const context = await map.get('get_explain_him_context').execute({});
+  const result = await map.get('explain_tool').execute(request(context));
+  assert.equal(result.changed, true);
+  assert.equal(result.workspaceRevision, context.workspaceRevision + 1);
+  assert.equal(result.applied[0].op, 'add');
+  assert.match(result.applied[0].blockId, /^local-/);
+  assert.deepEqual(result.focused, { blockId: result.applied[0].blockId, visible: true, focused: true });
+  assert.equal(subject.getVisibleState().viewMode, 'personalized');
+});
+
+test('partial updates the same block and rejects a duplicate same-topic add', async () => {
+  const subject = workspace(); const map = tools(subject);
+  const context = await map.get('get_explain_him_context').execute({});
+  const first = await map.get('explain_tool').execute(request(context)); const blockId = first.applied[0].blockId;
+  const updated = await map.get('explain_tool').execute(request(context, { requestId: 'request-2', expectedWorkspaceRevision: first.workspaceRevision, decision: 'partial', operations: [{ op: 'update', blockId, block: callout('Expanded') }] }));
+  assert.equal(updated.applied[0].blockId, blockId);
+  assert.deepEqual(updated.focused, { blockId, visible: true, focused: true });
+  await assert.rejects(map.get('explain_tool').execute(request(context, { requestId: 'request-3', expectedWorkspaceRevision: updated.workspaceRevision, decision: 'partial' })), /same-topic local explanation already exists/i);
+});
+
+test('inconsistent applies an atomic batch and primaryOperationIndex selects focus', async () => {
+  const subject = workspace({ mutableTargets: ['workflow-diagram', 'flow-model'] }); const map = tools(subject);
+  const context = await map.get('get_explain_him_context').execute({});
+  const result = await map.get('explain_tool').execute(request(context, { decision: 'inconsistent', primaryOperationIndex: 0, operations: [{ op: 'replace', targetId: 'workflow-diagram', block: diagram('Correct terminology') }, { op: 'replace', targetId: 'flow-model', block: callout('Correct flow') }] }));
+  assert.equal(result.applied.length, 2);
+  assert.deepEqual(result.focused, { blockId: result.applied[0].blockId, visible: true, focused: true });
+});
+
+test('restore removes a local result and focuses its authored target', async () => {
+  const subject = workspace(); const map = tools(subject);
+  const context = await map.get('get_explain_him_context').execute({});
+  const first = await map.get('explain_tool').execute(request(context));
+  const restored = await map.get('explain_tool').execute(request(context, { requestId: 'restore-1', expectedWorkspaceRevision: first.workspaceRevision, decision: 'restore', operations: [{ op: 'remove', blockId: first.applied[0].blockId }] }));
+  assert.equal(restored.localBlocks.length, 0);
+  assert.deepEqual(restored.focused, { targetId: 'workflow-diagram', visible: true, focused: true });
+});
+
+test('focus-only child targets reject invisible mutations atomically', async () => {
+  const subject = workspace(); const map = tools(subject);
+  const context = await map.get('get_explain_him_context').execute({});
+  await assert.rejects(map.get('explain_tool').execute(request(context, { operations: [{ op: 'add', targetId: 'workflow-diagram', block: callout() }, { op: 'add', targetId: 'workflow-step-1', block: callout() }] })), /focus anchor/);
+  assert.equal(subject.getContext().workspaceRevision, 0);
+  assert.equal(subject.getVisibleState().presentations.length, 0);
+});
+
+test('a mutation is rolled back when its rendered result cannot be confirmed visible and focused', async () => {
+  const subject = workspace(); subject.focusBlock = async ({ blockId }) => ({ blockId, unavailable: true, visible: false, focused: false });
+  const map = tools(subject); const context = await map.get('get_explain_him_context').execute({});
+  await assert.rejects(map.get('explain_tool').execute(request(context)), /could not be confirmed visible and focused/);
+  assert.equal(subject.getContext().workspaceRevision, 0);
+  assert.equal(subject.getVisibleState().presentations.length, 0);
+});
+
+test('v4 rejects old fields, stale state, executable content, and manual mutation focus', async () => {
+  const map = tools(); const context = await map.get('get_explain_him_context').execute({});
+  await assert.rejects(map.get('explain_tool').execute({ ...request(context), contractId: 'old' }), /Unknown explain request field/);
+  await assert.rejects(map.get('explain_tool').execute(request(context, { activationId: 'activation-other' })), /Activation is stale/);
+  await assert.rejects(map.get('explain_tool').execute(request(context, { expectedWorkspaceRevision: 9 })), /Stale workspace revision/);
+  await assert.rejects(map.get('explain_tool').execute(request(context, { operations: [{ op: 'add', targetId: 'workflow-diagram', block: { ...callout(), html: '<script>bad()</script>' } }] })), /forbidden/);
+  await assert.rejects(map.get('explain_tool').execute(request(context, { operations: [{ op: 'add', targetId: 'workflow-diagram', block: callout() }, { op: 'focus', targetId: 'workflow-diagram' }] })), /focused automatically/);
+});
+
+test('only document.modelContext is resolved; navigator legacy host is ignored', () => {
+  const standard = { registerTool() {} };
+  assert.equal(resolveWebMcpHost({ document: { modelContext: standard }, navigator: { modelContext: {} } }).modelContext, standard);
+  assert.equal(resolveWebMcpHost({ document: {}, navigator: { modelContext: standard } }).modelContext, null);
+});
+
+test('registration awaits tools then verifies page registrations with getTools', async () => {
+  const order = []; const registered = [];
+  const host = { registerTool: async (tool) => { order.push(`start:${tool.name}`); await Promise.resolve(); registered.push(tool); order.push(`end:${tool.name}`); }, getTools: async () => { order.push('getTools'); return registered; } };
+  const status = registerWebMcpTools(workspace(), host); await status.ready;
+  assert.deepEqual(order, ['start:get_explain_him_context', 'end:get_explain_him_context', 'start:explain_tool', 'end:explain_tool', 'getTools']);
+  assert.equal(status.ok, true); assert.equal(status.verified, true);
+  assert.deepEqual(status.verifiedTools, EXPLAIN_HIM_WEBMCP_TOOLS);
+});
+
+test('a rejected registerTool never reports success', async () => {
+  const host = { registerTool: async (tool) => { if (tool.name === 'explain_tool') throw new Error('denied'); }, getTools: async () => [{ name: 'get_explain_him_context' }] };
+  const status = registerWebMcpTools(workspace(), host); await status.ready;
+  assert.equal(status.ok, false); assert.equal(status.verified, false);
+  assert.deepEqual(status.errors, [{ name: 'explain_tool', message: 'denied' }]);
+});
+
+test('getTools verification rejects an extra or duplicate descriptor', async () => {
+  for (const available of [
+    [{ name: 'get_explain_him_context' }, { name: 'explain_tool' }, { name: 'extra' }],
+    [{ name: 'get_explain_him_context' }, { name: 'get_explain_him_context' }, { name: 'explain_tool' }]
+  ]) {
+    const host = { registerTool: async () => {}, getTools: async () => available };
+    const status = registerWebMcpTools(workspace(), host); await status.ready;
+    assert.equal(status.verified, false);
+  }
+});
+
+test('issue 161 registerSkill failure leaves both tools verified', async () => {
+  const registered = [];
+  const host = { registerTool: async (tool) => registered.push(tool), getTools: async () => registered, registerSkill: async () => { throw new Error('experimental API rejected'); } };
+  const status = registerWebMcpTools(workspace(), host, { standardHost: true, hostSource: 'document.modelContext' }); await status.ready;
+  assert.equal(status.skillRegistrationState, 'error');
+  assert.equal(status.skillRegistrationError, 'experimental API rejected');
+  assert.equal(status.ok, true); assert.equal(status.verified, true);
+});
+
+test('both execute callbacks honor AbortSignal', async () => {
+  const map = tools(); const controller = new AbortController(); controller.abort(new Error('cancelled by host'));
+  await assert.rejects(map.get('get_explain_him_context').execute({}, { signal: controller.signal }), /cancelled by host/);
+  await assert.rejects(map.get('explain_tool').execute({}, { signal: controller.signal }), /cancelled by host/);
+});
+
+test('bootstrap metadata is Protocol v4 and carries the exact repository instruction', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   const bootstrap = JSON.parse(html.match(/<script id="explain-him-agent-bootstrap" type="application\/json">([\s\S]*?)<\/script>/)[1]);
-  assert.equal(bootstrap.repositoryRetrievalRequiredWhenPageInsufficient, true);
-  assert.deepEqual(bootstrap.groundingSourceIndex, contract.groundingSourceIndex);
-});
-
-test('apply schema requires the complete nested v3 handshake', async () => { const registered = new Map(); const host = { registerTool: async (tool) => registered.set(tool.name, tool), getTools: async () => [...registered.values()] }; const status = registerWebMcpTools(workspace(), host); await status.ready; const schema = registered.get('apply_explanation').inputSchema; assert.equal(schema.additionalProperties, false); for (const field of ['requestId', 'expectedWorkspaceRevision', 'explanationId', 'topicId', 'operations', 'handshake']) assert.ok(schema.required.includes(field)); for (const field of ['bootstrapTool', 'contractId', 'activationId', 'nonce', 'baseRevision', 'skillProof', 'skillDeliveryProof']) assert.ok(schema.properties.handshake.required.includes(field)); assert.equal(schema.properties.handshake.properties.bootstrapTool.const, 'get_explain_him_answer'); assert.equal(schema.properties.operations.items.oneOf.length, 5); });
-
-test('same tools instance keeps activation identity while refreshing workspace fields', async () => { const subject = workspace(); const map = tools(subject); const first = await map.get('get_explain_him_answer').execute({}); await map.get('apply_explanation').execute(request(first, { operations: [{ op: 'replace', targetId: 'workflow-diagram', block: diagram() }] })); const refreshed = await map.get('get_explain_him_answer').execute({}); assert.equal(refreshed.contractId, first.contractId); assert.deepEqual(refreshed.activation, first.activation); assert.equal(refreshed.workspaceRevision, 1); assert.equal(refreshed.localBlocks.length, 1); });
-
-test('replace, update, and remove preserve topic-local ID and semantic retries', async () => { const subject = workspace(); const map = tools(subject); const contract = await map.get('get_explain_him_answer').execute({}); const apply = map.get('apply_explanation'); const firstInput = request(contract, { operations: [{ op: 'replace', targetId: 'workflow-diagram', block: diagram() }] }); const first = await apply.execute(firstInput); const id = first.localBlocks[0].id; const retry = await apply.execute({ ...firstInput, expectedWorkspaceRevision: 999 }); assert.equal(retry.idempotent, true); const second = await apply.execute(request(contract, { requestId: 'request-2', expectedWorkspaceRevision: first.workspaceRevision, operations: [{ op: 'update', blockId: id, block: diagram('Consumer terminology') }] })); assert.equal(second.localBlocks[0].id, id); const third = await apply.execute(request(contract, { requestId: 'request-3', expectedWorkspaceRevision: second.workspaceRevision, operations: [{ op: 'remove', blockId: id }] })); assert.equal(third.localBlocks.length, 0); });
-
-test('handshake, delivery proof, topic, duplicate, and executable-content violations fail closed', async () => { const subject = workspace(); const map = tools(subject); const contract = await map.get('get_explain_him_answer').execute({}); const apply = map.get('apply_explanation'); await assert.rejects(apply.execute({ operations: [] }), /Missing required v3 handshake field/); const oldProof = request(contract, { operations: [{ op: 'focus', targetId: 'flow-model' }] }); delete oldProof.handshake.skillDeliveryProof; await assert.rejects(apply.execute(oldProof), /Missing handshake field: skillDeliveryProof/); const forged = request(contract, { operations: [{ op: 'focus', targetId: 'flow-model' }] }); forged.handshake.skillDeliveryProof = { ...forged.handshake.skillDeliveryProof, deliveryId: `delivery-${'0'.repeat(36)}` }; await assert.rejects(apply.execute(forged), /stale, forged/); const badNonce = request(contract, { operations: [{ op: 'add', targetId: 'flow-model', block: diagram() }] }); badNonce.handshake.nonce = 'wrong'; await assert.rejects(apply.execute(badNonce), /stale/); const first = await apply.execute(request(contract, { operations: [{ op: 'add', targetId: 'flow-model', block: diagram() }] })); const id = first.localBlocks[0].id; await assert.rejects(apply.execute(request(contract, { requestId: 'other-topic', expectedWorkspaceRevision: first.workspaceRevision, topicId: 'terminology:other', operations: [{ op: 'update', blockId: id, block: diagram() }] })), /different topic/); await assert.rejects(apply.execute(request(contract, { requestId: 'duplicate', expectedWorkspaceRevision: first.workspaceRevision, operations: [{ op: 'add', targetId: 'flow-model', block: diagram() }] })), /Duplicate/); await assert.rejects(apply.execute(request(contract, { requestId: 'executable', expectedWorkspaceRevision: first.workspaceRevision, operations: [{ op: 'add', targetId: 'workflow-diagram', block: { ...diagram(), html: '<script>bad()</script>' } }] })), /forbidden/); });
-
-test('apply rejects proof obtained from the retired bootstrap tool identity', async () => { const map = tools(); const contract = await map.get('get_explain_him_answer').execute({}); const input = request(contract, { operations: [{ op: 'focus', targetId: 'flow-model' }] }); input.handshake.bootstrapTool = 'get_explanation_contract'; await assert.rejects(map.get('apply_explanation').execute(input), /older bootstrap identities are not accepted/); });
-
-test('v3 rejects unknown nested properties, reordered proof, replay, stale revisions, and an atomic rejected batch', async () => { const subject = workspace(); const map = tools(subject); const contract = await map.get('get_explain_him_answer').execute({}); const apply = map.get('apply_explanation'); const valid = request(contract, { operations: [{ op: 'replace', targetId: 'workflow-diagram', block: diagram() }] }); for (const [value, expected] of [[{ ...valid, extra: true }, /Unknown apply/], [{ ...valid, handshake: { ...valid.handshake, extra: true } }, /Unknown handshake/], [{ ...valid, handshake: { ...valid.handshake, skillProof: [{ ...valid.handshake.skillProof[0], extra: true }, valid.handshake.skillProof[1]] } }, /skillProof/], [{ ...valid, operations: [{ ...valid.operations[0], extra: true }] }, /Unknown operation/], [{ ...valid, operations: [{ ...valid.operations[0], block: { ...valid.operations[0].block, extra: true } }] }, /Unknown block/], [{ ...valid, handshake: { ...valid.handshake, skillProof: [...valid.handshake.skillProof].reverse() } }, /skillProof/]]) await assert.rejects(apply.execute(value), expected); const before = subject.getContext().workspaceRevision; await assert.rejects(apply.execute(request(contract, { operations: [valid.operations[0], { op: 'replace', targetId: 'missing', block: diagram() }] })), /Unknown authored target/); assert.equal(subject.getContext().workspaceRevision, before); const applied = await apply.execute(valid); await assert.rejects(apply.execute(request(contract, { requestId: 'stale', expectedWorkspaceRevision: 0, operations: [{ op: 'focus', targetId: 'flow-model' }] })), /Stale workspace revision/); await assert.rejects(apply.execute({ ...valid, operations: [{ op: 'update', blockId: applied.localBlocks[0].id, block: diagram('Changed') }] }), /different semantic/); const other = tools(subject); const otherContract = await other.get('get_explain_him_answer').execute({}); await assert.rejects(other.get('apply_explanation').execute(request(contract, { requestId: 'cross-activation', expectedWorkspaceRevision: applied.workspaceRevision, operations: [{ op: 'remove', blockId: applied.localBlocks[0].id }] })), /stale/); assert.notEqual(contract.activation.id, otherContract.activation.id); });
-
-test('runtime rejects optional nulls and invalid enum values exactly as the v3 schema does', async () => { const map = tools(); const contract = await map.get('get_explain_him_answer').execute({}); const apply = map.get('apply_explanation'); const callout = { type: 'callout', title: 'Terminology', body: 'User and Consumer name one role.', sources: [] }; const invalid = [[{ ...callout, tone: 'loud' }, /block.tone/], [{ ...callout, tone: null }, /block.tone/], [{ ...diagram(), variant: 'radial' }, /diagram.variant/], [{ ...diagram(), variant: null }, /diagram.variant/], [{ ...diagram(), nodes: [{ id: 'user', label: 'User', body: null }, { id: 'agent', label: 'Agent' }] }, /diagram.nodes.body/], [{ ...diagram(), edges: [{ from: 'user', to: 'agent', label: null }] }, /diagram.edges.label/], [{ ...diagram(), sources: [{ path: 'resolutions/terminology.md', ref: null }] }, /source.ref/]]; for (let index = 0; index < invalid.length; index += 1) await assert.rejects(apply.execute(request(contract, { requestId: `optional-${index}`, operations: [{ op: 'add', targetId: 'flow-model', block: invalid[index][0] }] })), invalid[index][1]); await assert.rejects(apply.execute(request(contract, { requestId: 'focus-both', operations: [{ op: 'focus', targetId: 'flow-model', blockId: 'local-nope' }] })), /exactly one/); await assert.rejects(apply.execute(request(contract, { requestId: 'add-null-id', operations: [{ op: 'add', targetId: 'flow-model', blockId: null, block: callout }] })), /operation.blockId/); });
-
-test('focus-only is replay-safe and does not change workspace revision', async () => { const subject = workspace(); const map = tools(subject); const contract = await map.get('get_explain_him_answer').execute({}); const input = request(contract, { operations: [{ op: 'focus', targetId: 'flow-model' }] }); const first = await map.get('apply_explanation').execute(input); const second = await map.get('apply_explanation').execute(input); assert.equal(first.workspaceRevision, contract.workspaceRevision); assert.equal(second.idempotent, true); });
-
-test('standard document.modelContext is preferred and both tools register', async () => { const registered = new Map(); const host = { registerTool: async (tool) => registered.set(tool.name, tool), getTools: async () => [...registered.values()] }; assert.equal(resolveWebMcpHost({ document: { modelContext: host }, navigator: {} }).source, 'document.modelContext'); const status = registerWebMcpTools(workspace(), host); await status.ready; assert.equal(status.verified, true); assert.deepEqual([...registered.keys()], [...EXPLAIN_HIM_WEBMCP_TOOLS]); });
-
-test('descriptors register before a delayed workspace finishes initialization', async () => {
-  let resolveWorkspace;
-  const delayedWorkspace = new Promise((resolve) => { resolveWorkspace = resolve; });
-  const registered = new Map();
-  const host = { registerTool: async (tool) => registered.set(tool.name, tool), getTools: async () => [...registered.values()] };
-  const status = registerWebMcpTools(delayedWorkspace, host);
-  await status.ready;
-  assert.equal(status.verified, true);
-  assert.deepEqual([...registered.keys()], [...EXPLAIN_HIM_WEBMCP_TOOLS]);
-  resolveWorkspace(workspace());
-  const contract = await registered.get('get_explain_him_answer').execute({});
-  assert.equal(contract.schemaVersion, 'explain-him-webmcp-contract.v3');
-});
-
-test('lifecycle events expose only safe status fields and never report success after failure', async () => {
-  const events = [];
-  const map = new Map(createWebMcpTools(workspace(), { onLifecycle: (event) => events.push(event) }).map((tool) => [tool.name, tool]));
-  const contract = await map.get('get_explain_him_answer').execute({});
-  const applied = await map.get('apply_explanation').execute(request(contract, { operations: [{ op: 'replace', targetId: 'workflow-diagram', block: diagram() }] }));
-  await assert.rejects(map.get('apply_explanation').execute(request(contract, { requestId: 'bad-revision', expectedWorkspaceRevision: 0, operations: [{ op: 'remove', blockId: applied.localBlocks[0].id }] })), /Stale workspace revision/);
-  assert.deepEqual(events.map((event) => event.type), ['answer-bootstrap-invoked', 'apply-started', 'apply-succeeded', 'apply-started', 'apply-failed']);
-  assert.deepEqual(Object.keys(events[0]).sort(), ['type', 'workspaceRevision']);
-  assert.deepEqual(Object.keys(events[2]).sort(), ['localBlockIds', 'operations', 'topicId', 'type', 'workspaceRevision']);
-  assert.deepEqual(Object.keys(events[4]).sort(), ['errorCode', 'topicId', 'type', 'workspaceRevision']);
-  assert.equal(events[4].errorCode, 'conflict');
-  assert.equal(events.some((event) => JSON.stringify(event).includes(contract.activation.nonce)), false);
-  assert.equal(events.filter((event) => event.type === 'apply-succeeded').length, 1);
-});
-
-test('machine-readable bootstrap metadata matches the runtime pins exactly', () => {
-  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  const match = html.match(/<script id="explain-him-agent-bootstrap" type="application\/json">([\s\S]*?)<\/script>/);
-  assert.ok(match, 'bootstrap metadata script must exist');
-  const bootstrap = JSON.parse(match[1]);
-  assert.equal(bootstrap.schemaVersion, 'explain-him-agent-bootstrap.v1');
-  assert.equal(bootstrap.protocolVersion, WEBMCP_PROTOCOL_VERSION);
-  assert.deepEqual(bootstrap.repository, { fullName: EXPLAIN_HIM_REPOSITORY, url: EXPLAIN_HIM_REPOSITORY_URL, skillsCommit: EXPLAIN_HIM_SKILL_COMMIT });
+  assert.equal(bootstrap.schemaVersion, 'explain-him-agent-bootstrap.v2');
+  assert.equal(bootstrap.protocolVersion, 4);
   assert.deepEqual(bootstrap.tools, EXPLAIN_HIM_WEBMCP_TOOLS);
-  assert.equal(bootstrap.repositoryRetrievalRequiredWhenPageInsufficient, true);
-  assert.deepEqual(bootstrap.skillLoadOrder, IMMUTABLE_SKILL_PROOF.map((item) => item.id));
-  assert.deepEqual(bootstrap.skills, IMMUTABLE_SKILL_PROOF.map(({ id, commit, sha256, url }) => ({ id, commit, sha256, rawUrl: url })));
-  assert.deepEqual(bootstrap.groundingSourceIndex, GROUNDING_SOURCE_INDEX);
-});
-
-test('tool descriptors follow the current imperative WebMCP shape and bounded-action guidance', async () => {
-  const descriptors = createWebMcpTools(workspace());
-  assert.equal(descriptors.length, 2);
-  for (const descriptor of descriptors) {
-    assert.match(descriptor.name, /^[A-Za-z0-9_.-]{1,128}$/);
-    assert.equal(typeof descriptor.title, 'string');
-    assert.ok(descriptor.title.length > 0);
-    assert.equal(typeof descriptor.description, 'string');
-    assert.match(descriptor.description, /call this|Call this|be called/);
-    assert.equal(descriptor.inputSchema.type, 'object');
-    assert.equal(descriptor.inputSchema.additionalProperties, false);
-    assert.equal(typeof descriptor.annotations.readOnlyHint, 'boolean');
-    assert.equal(typeof descriptor.execute, 'function');
-    const serialized = JSON.stringify(await descriptor.execute({}, { signal: new AbortController().signal }).catch((error) => ({ error: error.message })));
-    assert.equal(typeof serialized, 'string');
-  }
-  assert.match(descriptors[0].description, /before answering ANY question/);
-  assert.match(descriptors[1].description, /same turn/);
-  assert.notEqual(descriptors[0].annotations.readOnlyHint, descriptors[1].annotations.readOnlyHint);
-});
-
-test('imperative callbacks honor the current WebMCP execution AbortSignal without false success', async () => {
-  const events = [];
-  const controller = new AbortController();
-  controller.abort(new Error('cancelled by host'));
-  const map = new Map(createWebMcpTools(workspace(), { onLifecycle: (event) => events.push(event) }).map((tool) => [tool.name, tool]));
-  await assert.rejects(map.get('get_explain_him_answer').execute({}, { signal: controller.signal }), /cancelled by host/);
-  await assert.rejects(map.get('apply_explanation').execute({}, { signal: controller.signal }), /cancelled by host/);
-  assert.deepEqual(events.map((event) => event.type), ['apply-started', 'apply-failed']);
-  assert.equal(events.some((event) => event.type === 'apply-succeeded'), false);
-  assert.equal(events[1].errorCode, 'execution-error');
+  assert.equal(bootstrap.additionalInformation, ADDITIONAL_INFORMATION);
 });

@@ -16,7 +16,7 @@ typed local operation log
 personalized visible DOM
 ```
 
-The personal agent does not receive arbitrary access to HTML. `get_explain_him_answer` exposes stable authored targets and browser-local block IDs. `apply_explanation` can add, locally replace, update, remove, or focus safe typed results. Undo/redo remain human controls.
+The personal agent does not receive arbitrary access to HTML. `get_explain_him_context` exposes stable authored targets, explicit target capabilities, and browser-local block IDs. `explain_tool` can focus, add, locally replace, update, or remove safe typed results. Undo/redo remain human controls.
 
 ## Persistence
 
@@ -33,7 +33,7 @@ The operation log is stored in IndexedDB within the current origin and browser p
 
 ## WebMCP relationship
 
-`get_explain_him_answer` exposes integration metadata rather than a browser knowledge bundle. `apply_explanation` receives only results already grounded by the personal agent. Accessible controls call the same workspace API when WebMCP is unavailable.
+`get_explain_him_context` exposes current page state and repository navigation metadata rather than a browser knowledge bundle. `explain_tool` receives only results already grounded by the personal agent. Accessible controls call the same workspace API when WebMCP is unavailable.
 
 ## Limitations
 

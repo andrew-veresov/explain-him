@@ -38,7 +38,7 @@
     <meta name="explain-him-skill" content="skills/explain-him/SKILL.md" />
     <meta
       name="explain-him-skill-url"
-      content="https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/skills/explain-him/SKILL.md"
+      content="https://raw.githubusercontent.com/andrew-veresov/explain-him/59167103ebfb7d4fd0c276de7f2b81862c536b4f/skills/explain-him/SKILL.md"
     />
     <meta
       name="explain-him-presentation-skill"
@@ -46,12 +46,12 @@
     />
     <meta
       name="explain-him-presentation-skill-url"
-      content="https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/skills/explain-him-presentation/SKILL.md"
+      content="https://raw.githubusercontent.com/andrew-veresov/explain-him/59167103ebfb7d4fd0c276de7f2b81862c536b4f/skills/explain-him-presentation/SKILL.md"
     />
     <meta name="explain-him-native-skill" content="explain_him" />
     <meta
       name="explain-him-native-skill-digest"
-      content="e711414af844c93959bd2632846baf8e910685d72a858e31bdb90e03c050b123"
+      content="fc0b3bf222ad485d82bc6a0e05a5bb6130d8cdba06b2550d4475daa265271d36"
     />
     <meta name="explain-him-native-skill-status" content="experimental-open-backlog" />
     <link
@@ -68,63 +68,34 @@
     />
     <script id="explain-him-agent-bootstrap" type="application/json">
       {
-        "schemaVersion": "explain-him-agent-bootstrap.v1",
-        "protocolVersion": 3,
-        "bootstrapTool": "get_explain_him_answer",
+        "schemaVersion": "explain-him-agent-bootstrap.v2",
+        "protocolVersion": 4,
         "repository": {
           "fullName": "andrew-veresov/explain-him",
           "url": "https://github.com/andrew-veresov/explain-him",
-          "skillsCommit": "ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625"
+          "skillsCommit": "59167103ebfb7d4fd0c276de7f2b81862c536b4f"
         },
-        "tools": ["get_explain_him_answer", "apply_explanation"],
-        "repositoryRetrievalRequiredWhenPageInsufficient": true,
-        "skillLoadOrder": ["explain-him", "explain-him-presentation"],
+        "tools": ["get_explain_him_context", "explain_tool"],
+        "additionalInformation": "For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources returned in this context.",
         "skills": [
           {
             "id": "explain-him",
-            "commit": "ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625",
-            "sha256": "b274b2125d2b3f11ded65a9fef26406c8d973333d3e9df88718dba6f22e1becb",
-            "rawUrl": "https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/skills/explain-him/SKILL.md"
+            "commit": "59167103ebfb7d4fd0c276de7f2b81862c536b4f",
+            "sha256": "3e7b6208e00b7bb1370a3958f9ea625b17afe554f9e577bc18fa4ca8c128ec5b",
+            "rawUrl": "https://raw.githubusercontent.com/andrew-veresov/explain-him/59167103ebfb7d4fd0c276de7f2b81862c536b4f/skills/explain-him/SKILL.md"
           },
           {
             "id": "explain-him-presentation",
-            "commit": "ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625",
-            "sha256": "a51bea92203f037402f3feb3e605072d63c30ddf7e9a88426eb1909d2b26382a",
-            "rawUrl": "https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/skills/explain-him-presentation/SKILL.md"
-          }
-        ],
-        "groundingSourceIndex": [
-          {
-            "topic": "originator-publishing",
-            "path": "knowledge/01-originator-flow.md",
-            "section": "Basic flow",
-            "status": "current",
-            "rawUrl": "https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/knowledge/01-originator-flow.md",
-            "commit": "ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625",
-            "sha256": "cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659"
-          },
-          {
-            "topic": "originator-publishing",
-            "path": "PRODUCT-CONTRACT.md",
-            "section": "Authoring and publishing reality",
-            "status": "current",
-            "rawUrl": "https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/PRODUCT-CONTRACT.md",
-            "commit": "ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625",
-            "sha256": "fc3ae6e6dd4d09183ecde12c9a25506a34c969dd6a7ea4ead181990ab2b3a2dd"
+            "commit": "59167103ebfb7d4fd0c276de7f2b81862c536b4f",
+            "sha256": "a85ced352e77b435da9783e4819337d75b4fe3239f7dc0a6d33b072ae982362c",
+            "rawUrl": "https://raw.githubusercontent.com/andrew-veresov/explain-him/59167103ebfb7d4fd0c276de7f2b81862c536b4f/skills/explain-him-presentation/SKILL.md"
           }
         ],
         "nativeSkill": {
           "name": "explain_him",
           "api": "document.modelContext.registerSkill",
-          "proposal": {
-            "issue": 161,
-            "status": "experimental-open-backlog",
-            "normative": false
-          },
-          "tools": ["get_explain_him_answer", "apply_explanation"],
-          "sourceCommit": "ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625",
-          "compositeSha256": "e711414af844c93959bd2632846baf8e910685d72a858e31bdb90e03c050b123",
-          "fallbackTool": "get_explain_him_answer"
+          "issue": 161,
+          "status": "experimental-open-backlog"
         }
       }
     </script>
@@ -654,9 +625,9 @@
                   <article class="contract-card">
                     <h3>WebMCP runtime status</h3>
                     <p>
-                      Protocol v3 exposes exactly two page tools:
-                      <code>get_explain_him_answer</code> and
-                      <code>apply_explanation</code>. A 2/2 page status confirms
+                      Protocol v4 exposes exactly two page tools:
+                      <code>get_explain_him_context</code> and
+                      <code>explain_tool</code>. A verified page status confirms
                       registration, not an agent connection.
                     </p>
                     <div
@@ -666,21 +637,7 @@
                       aria-live="polite"
                       aria-atomic="true"
                     >
-                      <span id="webmcp-page-status"
-                        >Page WebMCP API – checking</span
-                      >
-                      <span id="webmcp-native-skill-status"
-                        >Native skill API – checking (experimental)</span
-                      >
-                      <span id="webmcp-agent-status"
-                        >Agent connection – not observed</span
-                      >
-                      <span id="webmcp-contract-status"
-                        >Contract – not activated</span
-                      >
-                      <span id="webmcp-revision-status"
-                        >Workspace revision – 0</span
-                      >
+                      <span id="webmcp-page-status">Page WebMCP API – checking</span>
                     </div>
                   </article>
                   <article class="contract-card">
@@ -753,6 +710,7 @@ The author publishes the meaning, while the personal agent creates a separate lo
           </section>
         </div>
       </section>
+      <p id="workspace-focus-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
     </main>
     <aside
       id="source-drawer"

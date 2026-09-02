@@ -120,19 +120,20 @@ presentation:
 
 webmcp:
   status: current-demo
-  protocol_version: 3
+  protocol_version: 4
   bootstrap_metadata:
-    schema_version: explain-him-agent-bootstrap.v1
-    bootstrap_tool: get_explain_him_answer
-    required_before_any_explain_him_answer: true
+    schema_version: explain-him-agent-bootstrap.v2
+    context_tool: get_explain_him_context
+    required_for_explanation_requests: true
     location: index.html#explain-him-agent-bootstrap
     machine_readable: true
     immutable_skill_pins_required: true
-    grounding_source_index_pinned: true
+    repository_guidance_required: true
     repositoryRetrievalRequiredWhenPageInsufficient: true
+    additionalInformation: For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources returned in this context.
     page_activation_effect: discovery-hint-only
-  contract_schema: schemas/webmcp-contract.v3.schema.json
-  apply_schema: schemas/webmcp-apply.v3.schema.json
+  context_schema: schemas/webmcp-context.v4.schema.json
+  explain_schema: schemas/webmcp-explain.v4.schema.json
   api: document.modelContext
   registration: imperative-top-level-javascript
   declarative_api_required: false
@@ -150,11 +151,8 @@ webmcp:
     native_live_validation: tools/test_native_chrome_webmcp_live.py
     host_guarantee: false
   runtime_status:
-    page_api: data-webmcp-page-state
-    agent_connection: data-webmcp-agent-state
-    contract: data-webmcp-contract-state
-    apply: data-webmcp-apply-state
-    workspace_revision: data-webmcp-workspace-revision
+    page_registration: data-webmcp-state
+    detailed_telemetry: webmcp-debug-query-only
     aria_live: polite
   host_preflight:
     classifier: tools/webmcp_host_preflight.py
@@ -164,7 +162,7 @@ webmcp:
   host_matrix:
     chatgpt_desktop_builtin_browser:
       status: officially-documented-conditional
-      invariant: contract-before-first-grounded-page-answer
+      invariant: context-before-every-explanation-request
     chrome_origin_trial_page_api:
       status: current-demo
       agent_connection_guaranteed: false
@@ -200,11 +198,11 @@ webmcp:
     probabilistic_semantic_choice_gate: real-host-model-only
   purpose: typed-result-delivery-to-shared-page
   agent_policy:
-    revision: A7
-    bootstrap: required-before-retrieval-reasoning-focus-or-apply
+    revision: A8
+    context: required-for-every-explanation-request
     immutable_skill_publication: required
     repositoryRetrievalRequiredWhenPageInsufficient: true
-    activation_handshake: fail-closed
+    activation_and_revision: fail-closed
     topic_identity: topicId-plus-authored-target-plus-local-block-id
     focus_only_changes_workspace_revision: false
     decisionPrecedence: [explicitNoPageChange, restore, terminologyConsistency, answerPresence]
@@ -220,55 +218,55 @@ webmcp:
     presentationDecision:
       alwaysProvideChatAnswer: true
       assessAnswerAndRequestedRepresentationInPersonalizedUi: true
-      fullyPresent: {ordinaryQuestion: chat-only, showOrWalkthrough: focus-only}
+      fullyPresent: {allExplanationRequests: focus-existing}
       missing: {operation: add, requestedDiagramAbsent: missing-representation}
       partial: {sameTopicLocalBlock: update, otherwise: add}
       inconsistent: {authoredTarget: replace, localBlock: update, batchAffectedTargets: true}
       explicitNoPageChange: chat-only
       restore: remove
-    failure: {applyFailure: honest-acknowledgement-no-false-success}
+    failure: {explainFailure: honest-acknowledgement-no-false-success}
   immutable_skill_publication:
     repository: andrew-veresov/explain-him
-    release: A7
-    commit: ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625
+    release: A8
+    commit: 59167103ebfb7d4fd0c276de7f2b81862c536b4f
     load_order: [explain-him, explain-him-presentation]
     skills:
       - id: explain-him
-        sha256: b274b2125d2b3f11ded65a9fef26406c8d973333d3e9df88718dba6f22e1becb
-        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/skills/explain-him/SKILL.md
+        sha256: 3e7b6208e00b7bb1370a3958f9ea625b17afe554f9e577bc18fa4ca8c128ec5b
+        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/59167103ebfb7d4fd0c276de7f2b81862c536b4f/skills/explain-him/SKILL.md
       - id: explain-him-presentation
-        sha256: a51bea92203f037402f3feb3e605072d63c30ddf7e9a88426eb1909d2b26382a
-        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/skills/explain-him-presentation/SKILL.md
+        sha256: a85ced352e77b435da9783e4819337d75b4fe3239f7dc0a6d33b072ae982362c
+        rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/59167103ebfb7d4fd0c276de7f2b81862c536b4f/skills/explain-him-presentation/SKILL.md
   native_skill:
     name: explain_him
     proposal_issue: 161
     proposal_status: experimental-open-backlog
     normative: false
     api: document.modelContext.registerSkill
-    source_commit: ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625
-    composite_sha256: e711414af844c93959bd2632846baf8e910685d72a858e31bdb90e03c050b123
-    tools: [get_explain_him_answer, apply_explanation]
+    source_commit: 59167103ebfb7d4fd0c276de7f2b81862c536b4f
+    composite_sha256: fc0b3bf222ad485d82bc6a0e05a5bb6130d8cdba06b2550d4475daa265271d36
+    tools: [get_explain_him_context, explain_tool]
     delivery_modes: [native-inline, pinned-remote-fallback]
-    fallback_tool: get_explain_him_answer
+    fallback_tool: get_explain_him_context
     registration_success_is_semantic_read_proof: false
   groundingSourceIndex:
     - topic: originator-publishing
       path: knowledge/01-originator-flow.md
       section: Basic flow
       status: current
-      rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/knowledge/01-originator-flow.md
-      commit: ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625
+      rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/59167103ebfb7d4fd0c276de7f2b81862c536b4f/knowledge/01-originator-flow.md
+      commit: 59167103ebfb7d4fd0c276de7f2b81862c536b4f
       sha256: cf7a396231a50a18c37a9c52ddc7c7315c07cf4107b6dea524760eaa630f3659
     - topic: originator-publishing
       path: PRODUCT-CONTRACT.md
       section: Authoring and publishing reality
       status: current
-      rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625/PRODUCT-CONTRACT.md
-      commit: ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625
-      sha256: fc3ae6e6dd4d09183ecde12c9a25506a34c969dd6a7ea4ead181990ab2b3a2dd
+      rawUrl: https://raw.githubusercontent.com/andrew-veresov/explain-him/59167103ebfb7d4fd0c276de7f2b81862c536b4f/PRODUCT-CONTRACT.md
+      commit: 59167103ebfb7d4fd0c276de7f2b81862c536b4f
+      sha256: 24acbad739ead8781ad2918a227e5670ca9bdbf464088e5de530a29ae63a1c3c
   tools:
-    - get_explain_him_answer
-    - apply_explanation
+    - get_explain_him_context
+    - explain_tool
   contract_returns:
     - repository-location
     - grounding-skill-location
@@ -278,12 +276,12 @@ webmcp:
     - browser-local-block-ids
     - absolute-repository-and-skill-urls
     - workspace-revision
-    - protocol-v3-activation-id-and-nonce
-    - immutable-ordered-skill-proof
+    - protocol-v4-activation-id
+    - repository-guidance-string
     - pinned-grounding-source-index
     - topic-aware-local-block-ids
     - replaceable-semantic-targets
-  apply_operations:
+  explain_operations:
     - add
     - replace
     - update

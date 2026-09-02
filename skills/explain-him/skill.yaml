@@ -1,6 +1,6 @@
 schema_version: explain-him-skill.v2
 id: explain-him
-version: 0.4.0
+version: 0.6.0
 entrypoint: SKILL.md
 scope:
   repository: andrew-veresov/explain-him
@@ -34,8 +34,8 @@ presentation:
 webmcp:
   role: typed-result-delivery-only
   related_tools:
-    - get_explain_him_answer
-    - apply_explanation
+    - get_explain_him_context
+    - explain_tool
   companion_skill: ../explain-him-presentation/SKILL.md
   typed_block_schema: ../../schemas/explanation-block.v1.schema.json
 forbidden_webmcp_capabilities:
@@ -45,4 +45,3 @@ forbidden_webmcp_capabilities:
   - presentation-reasoning
   - arbitrary-html-injection
   - github-issues
-

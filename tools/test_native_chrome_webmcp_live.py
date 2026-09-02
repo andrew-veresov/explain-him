@@ -19,9 +19,9 @@ except ModuleNotFoundError:
     sync_playwright = None
 
 
-URL = "https://andrew-veresov.github.io/explain-him/"
+URL = "https://andrew-veresov.github.io/explain-him/?webmcp-debug=1"
 MINIMUM_CHROME_MAJOR = 149
-EXPECTED_TOOLS = ["apply_explanation", "get_explain_him_answer"]
+EXPECTED_TOOLS = ["explain_tool", "get_explain_him_context"]
 
 
 def emit(status: str, reason: str, **evidence: Any) -> int:
@@ -73,7 +73,6 @@ def main() -> int:
                         return emit("FAILED", "WebMCP registration reached an unexpected state", chrome_version=version, registration=registration)
                     host = page.evaluate("""() => ({
                       standard: typeof document.modelContext?.registerTool === 'function',
-                      legacy: typeof navigator.modelContext?.registerTool === 'function',
                       getTools: typeof document.modelContext?.getTools === 'function'
                     })""")
                     if not host["standard"]:
@@ -126,61 +125,61 @@ def main() -> int:
                             if (!descriptor || typeof descriptor !== 'object') throw new TypeError(`${name} descriptor is missing`);
                             return normalizeResult(await document.modelContext.executeTool(descriptor, JSON.stringify(args)), name);
                           };
-                          const contract = await execute('get_explain_him_answer', {});
-                          if (contract.schemaVersion !== 'explain-him-webmcp-contract.v3' || contract.protocolVersion !== 3) throw new TypeError('unexpected contract schema');
-                          const contractRevision = requireRevision(contract.workspaceRevision, 'contract.workspaceRevision');
-                          if (!Array.isArray(contract.skillProof) || contract.skillProof.length !== 2 || !contract.contractId || !contract.activation?.id || !contract.activation?.nonce) throw new TypeError('contract is missing the v3 activation proof');
-                          const targets = requireArray(contract.targets, 'contract.targets');
-                          if (!targets.some((target) => target?.id === 'workflow-diagram')) throw new TypeError('contract does not expose workflow-diagram');
+                          const context = await execute('get_explain_him_context', {});
+                          if (context.schemaVersion !== 'explain-him-webmcp-context.v4' || context.protocolVersion !== 4) throw new TypeError('unexpected context schema');
+                          const contextRevision = requireRevision(context.workspaceRevision, 'context.workspaceRevision');
+                          if (!context.activationId || typeof context.additionalInformation !== 'string') throw new TypeError('context is missing Protocol v4 activation or repository guidance');
+                          const targets = requireArray(context.targets, 'context.targets');
+                          const workflow = targets.find((target) => target?.id === 'workflow-diagram');
+                          if (!workflow?.allowedOperations?.includes('replace')) throw new TypeError('context does not expose mutable workflow-diagram');
                           const block = (term) => ({
                             type: 'diagram', title: `Native ${term}`, variant: 'flow',
                             nodes: [{ id: term.toLowerCase(), label: term }, { id: 'agent', label: 'Personal agent' }],
                             edges: [{ from: term.toLowerCase(), to: 'agent', label: 'asks' }], sources: []
                           });
-                          const request = (requestId, expectedWorkspaceRevision, operations) => ({ requestId, expectedWorkspaceRevision, explanationId: contract.explanationId, topicId: 'terminology:user-consumer', operations, handshake: { bootstrapTool: contract.bootstrapTool, contractId: contract.contractId, activationId: contract.activation.id, nonce: contract.activation.nonce, baseRevision: contract.baseRevision, skillProof: contract.skillProof, skillDeliveryProof: contract.skillDelivery.proof } });
-                          const first = requireOk(await execute('apply_explanation', request('native-chrome-user-consumer', contractRevision, [{ op: 'replace', targetId: 'workflow-diagram', block: block('User') }])), 'replace');
+                          const request = (requestId, expectedWorkspaceRevision, decision, operations) => ({ requestId, activationId: context.activationId, expectedWorkspaceRevision, topicId: 'terminology:user-consumer', decision, operations });
+                          const first = requireOk(await execute('explain_tool', request('native-chrome-user-consumer', contextRevision, 'inconsistent', [{ op: 'replace', targetId: 'workflow-diagram', block: block('User') }])), 'replace');
                           const firstRevision = requireRevision(first.workspaceRevision, 'replace.workspaceRevision');
-                          if (firstRevision <= contractRevision) throw new TypeError('replace did not advance workspace revision');
+                          if (firstRevision <= contextRevision || first.focused?.blockId !== first.applied?.[0]?.blockId) throw new TypeError('replace did not advance revision and focus its visible result');
                           const firstBlocks = requireArray(first.localBlocks, 'replace.localBlocks');
                           const firstApplied = requireArray(first.applied, 'replace.applied');
                           const id = requireId(firstBlocks[0]?.id, 'replace.localBlocks[0].id');
                           if (firstApplied[0]?.op !== 'replace' || firstApplied[0]?.blockId !== id) throw new TypeError('replace result does not preserve the local block ID');
-                          const second = requireOk(await execute('apply_explanation', request('native-chrome-user-consumer-update', firstRevision, [{ op: 'update', blockId: id, block: block('Consumer') }])), 'update');
+                          const second = requireOk(await execute('explain_tool', request('native-chrome-user-consumer-update', firstRevision, 'partial', [{ op: 'update', blockId: id, block: block('Consumer') }])), 'update');
                           const secondRevision = requireRevision(second.workspaceRevision, 'update.workspaceRevision');
                           if (secondRevision <= firstRevision) throw new TypeError('update did not advance workspace revision');
                           const secondBlocks = requireArray(second.localBlocks, 'update.localBlocks');
                           const secondApplied = requireArray(second.applied, 'update.applied');
                           if (requireId(secondBlocks[0]?.id, 'update.localBlocks[0].id') !== id || secondApplied[0]?.op !== 'update' || secondApplied[0]?.blockId !== id) throw new TypeError('update result does not preserve the local block ID');
-                          const third = requireOk(await execute('apply_explanation', request('native-chrome-user-consumer-remove', secondRevision, [{ op: 'remove', blockId: id }])), 'remove');
+                          const third = requireOk(await execute('explain_tool', request('native-chrome-user-consumer-remove', secondRevision, 'restore', [{ op: 'remove', blockId: id }])), 'remove');
                           const thirdRevision = requireRevision(third.workspaceRevision, 'remove.workspaceRevision');
                           if (thirdRevision <= secondRevision) throw new TypeError('remove did not advance workspace revision');
                           const finalBlocks = requireArray(third.localBlocks, 'remove.localBlocks');
                           const thirdApplied = requireArray(third.applied, 'remove.applied');
                           if (thirdApplied[0]?.op !== 'remove' || thirdApplied[0]?.blockId !== id || finalBlocks.length !== 0) throw new TypeError('remove result did not empty the local block list');
                           return {
-                            schema_version: contract.schemaVersion,
+                            schema_version: context.schemaVersion,
                             local_id_preserved: true,
                             local_blocks_after_remove: finalBlocks.length,
-                            skill_delivery_mode: contract.skillDelivery?.mode,
-                            native_skill_state: document.documentElement.dataset.webmcpNativeSkillState,
-                            native_skill_proposal: document.documentElement.dataset.webmcpNativeSkillProposal
+                            skill_delivery_mode: context.skillDelivery?.mode,
+                            native_skill_state: document.documentElement.dataset.webmcpNativeSkillState
                           };
                         }""")
                     except Error:
                         deployed_schema = page.evaluate("""async () => {
                           const tools = await document.modelContext.getTools();
-                          const descriptor = tools.find((tool) => tool?.name === 'get_explain_him_answer');
+                          const descriptor = tools.find((tool) => tool?.name === 'get_explain_him_context');
                           if (!descriptor) return null;
                           const raw = await document.modelContext.executeTool(descriptor, JSON.stringify({}));
                           const value = typeof raw === 'string' ? JSON.parse(raw) : raw;
                           return value && typeof value === 'object' && !Array.isArray(value) ? value.schemaVersion || null : null;
                         }""")
-                        if deployed_schema != "explain-him-webmcp-contract.v3":
-                            return emit("BLOCKED", "live page has not deployed Protocol v3", chrome_version=version, deployed_schema=deployed_schema)
-                        return emit("FAILED", "native host rejected the expected contract sequence", chrome_version=version)
-                    if flow["schema_version"] != "explain-him-webmcp-contract.v3" or not flow["local_id_preserved"] or flow["local_blocks_after_remove"] != 0:
+                        if deployed_schema != "explain-him-webmcp-context.v4":
+                            return emit("BLOCKED", "live page has not deployed Protocol v4", chrome_version=version, deployed_schema=deployed_schema)
+                        return emit("FAILED", "native host rejected the expected Protocol v4 sequence", chrome_version=version)
+                    if flow["schema_version"] != "explain-him-webmcp-context.v4" or not flow["local_id_preserved"] or flow["local_blocks_after_remove"] != 0:
                         return emit("FAILED", "native replace-update-remove flow violated the WebMCP contract", chrome_version=version, flow=flow)
-                    if flow.get("native_skill_state") not in {"registered", "unavailable", "error"} or flow.get("native_skill_proposal") != "experimental-open-backlog":
+                    if flow.get("native_skill_state") not in {"registered", "unavailable", "error"}:
                         return emit("FAILED", "experimental native-skill diagnostic is missing or false", chrome_version=version, flow=flow)
                     expected_mode = "native-inline" if flow.get("native_skill_state") == "registered" else "pinned-remote-fallback"
                     if flow.get("skill_delivery_mode") != expected_mode:

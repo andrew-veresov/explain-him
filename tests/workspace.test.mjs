@@ -76,11 +76,13 @@ test('focusing a hidden section synchronizes its active tab and label', () => {
   const flowTab = { dataset: { section: 'flow' }, textContent: 'Mechanism', classList: tabState(), setAttribute(key, value) { this.values ||= {}; this.values[key] = value; }, removeAttribute(key) { delete this.values?.[key]; } };
   const groundingTab = { dataset: { section: 'grounding' }, textContent: 'Grounding', classList: tabState(), setAttribute(key, value) { this.values ||= {}; this.values[key] = value; }, removeAttribute(key) { delete this.values?.[key]; } };
   const label = { textContent: 'Mechanism' };
-  const document = { querySelector: () => target, querySelectorAll: (selector) => selector === '[data-section-panel]' ? [flow, grounding] : selector === '[data-section]' ? [flowTab, groundingTab] : [], getElementById: () => label };
+  const live = { textContent: '' };
+  const document = { querySelector: () => target, querySelectorAll: (selector) => selector === '[data-section-panel]' ? [flow, grounding] : selector === '[data-section]' ? [flowTab, groundingTab] : [], getElementById: (id) => id === 'current-focus' ? label : id === 'workspace-focus-status' ? live : null };
   focusAuthoredBlock(document, 'grounding-contract');
   assert.equal(grounding.hidden, false);
   assert.equal(flow.hidden, true);
   assert.equal(groundingTab.values['aria-selected'], 'true');
   assert.equal(groundingTab.values['aria-current'], 'page');
   assert.equal(label.textContent, 'Grounding');
+  assert.equal(live.textContent, 'Existing explanation focused: grounding-contract.');
 });

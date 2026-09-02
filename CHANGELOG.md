@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0 – 2026-09-02
+
+- Replaced the previous public surface with Protocol v4 `get_explain_him_context` and `explain_tool`.
+- Made existing explanations focus in the same turn and made typed mutations automatically focus their visible result.
+- Added explicit target capabilities so focus-only child blocks cannot receive invisible local artifacts.
+- Removed the navigator host fallback, proof-echo handshake, prompt card, diagnostic globals, and old schemas.
+- Preserved the isolated experimental issue-161 composite skill with a pinned A8 remote fallback.
+
 ## 0.5.0 – 2026-09-01
 
 - Registered the two Protocol v3 tools before asynchronous workspace initialization.

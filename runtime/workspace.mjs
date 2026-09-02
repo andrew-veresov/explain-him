@@ -38,6 +38,133 @@ function renderArtifactContent(document, article, artifact) { const payload = ar
 function renderPresentation(document, presentation) { const artifact = presentation.artifact; const article = make(document, 'article', `local-explanation local-${artifact.type}`); article.dataset.ehLocalBlockId = presentation.id; article.dataset.ehLocalPresentationId = presentation.id; article.tabIndex = -1; article.setAttribute('aria-live', 'polite'); const header = make(document, 'header', 'local-explanation-header'); const heading = make(document, 'div'); heading.append(make(document, 'span', 'local-label', presentation.placement === 'replace' ? 'Personal version' : 'Personal presentation'), make(document, 'h3', null, artifact.fallback.title)); const remove = make(document, 'button', 'local-remove', 'Remove'); remove.type = 'button'; remove.dataset.ehRemoveLocal = presentation.id; header.append(heading, remove); article.append(header); renderArtifactContent(document, article, artifact); const meta = make(document, 'div', 'local-meta'); meta.append(make(document, 'span', null, artifact.type), make(document, 'span', null, presentation.placement)); article.append(meta); return article; }
 export function renderWorkspace(document, view) { const slots = new Map(); for (const slot of document.querySelectorAll('[data-eh-local-slot]')) { slot.replaceChildren(); slots.set(slot.dataset.ehLocalSlot, slot); } for (const node of document.querySelectorAll('[data-eh-block-id]')) { node.hidden = false; node.removeAttribute('aria-hidden'); } if (view.viewMode === 'personalized') for (const presentation of view.presentations.filter((item) => item.placement === 'replace' && !item.orphaned)) { const target = document.querySelector(`[data-eh-block-id="${presentation.targetId}"]`); const slot = slots.get(presentation.targetId); if (target) { target.hidden = true; target.setAttribute('aria-hidden', 'true'); } if (slot) slot.append(renderPresentation(document, presentation)); } if (view.viewMode === 'personalized') for (const presentation of view.presentations.filter((item) => item.placement !== 'replace' && !item.orphaned)) slots.get(presentation.targetId)?.append(renderPresentation(document, presentation)); const summary = document.getElementById('workspace-summary'); if (summary) summary.textContent = `${view.viewMode === 'original' ? 'Original' : 'Personalized'} · ${view.presentations.length} saved local presentations`; const count = document.getElementById('workspace-count'); if (count) count.textContent = String(view.presentations.length); for (const button of document.querySelectorAll('[data-workspace-view]')) { const active = button.dataset.workspaceView === view.viewMode; button.setAttribute('aria-pressed', String(active)); } const undo = document.getElementById('workspace-undo'); if (undo) undo.disabled = !view.canUndo; const redo = document.getElementById('workspace-redo'); if (redo) redo.disabled = !view.canRedo; }
 function clearFocused(document) { for (const node of document.querySelectorAll?.('.is-focused') || []) node.classList?.remove?.('is-focused'); }
-export function focusAuthoredBlock(document, targetId) { const target = document.querySelector(`[data-eh-block-id="${targetId}"]`); if (!target) throw new RangeError(`Unknown authored target: ${targetId}`); const panel = target.closest?.('[data-section-panel]'); const sectionId = panel?.dataset?.sectionPanel; if (panel?.hidden && sectionId) { for (const section of document.querySelectorAll('[data-section-panel]')) { const active = section.dataset.sectionPanel === sectionId; section.hidden = !active; section.classList?.toggle?.('is-active', active); } for (const tab of document.querySelectorAll('[data-section]')) { const active = tab.dataset.section === sectionId; tab.classList?.toggle?.('is-active', active); tab.setAttribute?.('aria-selected', String(active)); if (active) tab.setAttribute?.('aria-current', 'page'); else tab.removeAttribute?.('aria-current'); } const currentFocus = document.getElementById?.('current-focus'); const activeTab = [...document.querySelectorAll('[data-section]')].find((tab) => tab.dataset.section === sectionId); if (currentFocus && activeTab) currentFocus.textContent = activeTab.textContent.trim(); } clearFocused(document); target.classList.add('is-focused'); target.scrollIntoView?.({ behavior: 'smooth', block: 'center' }); return { targetId }; }
-export class ExplanationWorkspace { constructor({ document, store, explanationId, baseRevision, canonicalIds }) { this.document = document; this.store = store; this.explanationId = explanationId; this.baseRevision = baseRevision; this.canonicalIds = [...canonicalIds]; this.storageKey = `${explanationId}:${globalThis.location?.origin || 'local'}`; this.state = createInitialWorkspace({ explanationId, baseRevision }); } async initialize() { const loaded = await this.store.load(this.storageKey).catch(() => null); const migrated = migrateWorkspaceState(loaded); if (migrated?.explanationId === this.explanationId) { this.state = migrated; if (loaded?.schemaVersion !== WORKSPACE_SCHEMA_VERSION) await this.store.save(this.storageKey, this.state); } this.render(); return this; } view() { return materializeWorkspace(this.state, { canonicalIds: this.canonicalIds, baseRevision: this.baseRevision }); } render() { const view = this.view(); if (this.document) renderWorkspace(this.document, view); return view; } async persist() { await this.store.save(this.storageKey, this.state); return this.render(); } getContext() { return { explanationId: this.explanationId, baseRevision: this.baseRevision, workspaceRevision: this.state.revision, storageMode: this.store.mode, authoredTargetIds: [...this.canonicalIds], authoredLayerMutable: false, presentationSchemaVersion: 'explain-him-presentation.v1', capabilities: ['focus', 'add-local-presentation', 'replace-local-presentation', 'update-local-presentation', 'remove-local-presentation', 'undo', 'redo', 'original-view', 'export'] }; } getVisibleState() { return this.view(); } getLocalChangeHistory() { return { schemaVersion: this.state.schemaVersion, transactions: clone(this.state.transactions), cursor: this.state.cursor, revision: this.state.revision, canUndo: this.state.cursor > 0, canRedo: this.state.cursor < this.state.transactions.length }; } focusBlock({ targetId, blockId }) { const view = this.view(); const replacement = !blockId && view.viewMode === 'personalized' ? view.presentations.find((item) => item.targetId === targetId && item.placement === 'replace' && !item.orphaned) : null; const visibleBlockId = blockId || replacement?.id; if (visibleBlockId) { const node = this.document?.querySelector?.(`[data-eh-local-block-id="${visibleBlockId}"]`); if (node) { clearFocused(this.document); node.classList?.add?.('is-focused'); node.focus?.(); node.scrollIntoView?.({ behavior: 'smooth', block: 'center' }); return { targetId: targetId || replacement?.targetId, blockId: visibleBlockId, localPresentation: true }; } if (blockId) return { blockId, targetId: null, unavailable: true }; } return this.document ? focusAuthoredBlock(this.document, targetId) : { targetId }; } async applyTransaction(operations, options = {}) { this.state = appendTransaction(this.state, operations, options); return this.persist(); } async attachTransactionResult(transactionId, result) { const transaction = this.state.transactions.find((item) => item.id === transactionId); if (!transaction) throw new RangeError(`Unknown local transaction: ${transactionId}`); transaction.result = clone(result); await this.store.save(this.storageKey, this.state); return clone(transaction.result); } async addLocalPresentation(input) { if (!this.canonicalIds.includes(input.targetId)) throw new RangeError(`Unknown authored target: ${input.targetId}`); return this.applyTransaction([createAddPresentationOperation(input)], { actor: input.actor }); } async replaceLocalPresentation(input) { if (!this.canonicalIds.includes(input.targetId)) throw new RangeError(`Unknown authored target: ${input.targetId}`); if (this.view().presentations.some((item) => item.targetId === input.targetId && item.placement === 'replace')) throw new RangeError(`Target already has a local replacement: ${input.targetId}`); return this.applyTransaction([createAddPresentationOperation({ ...input, placement: 'replace' })], { actor: input.actor }); } async updateLocalPresentation({ presentationId, artifact, actor }) { if (!this.view().presentations.some((item) => item.id === presentationId)) throw new RangeError(`Unknown local presentation: ${presentationId}`); return this.applyTransaction([createUpdatePresentationOperation(presentationId, { artifact })], { actor }); } async removeLocalPresentation({ presentationId, actor }) { if (!this.view().presentations.some((item) => item.id === presentationId)) throw new RangeError(`Unknown local presentation: ${presentationId}`); return this.applyTransaction([createRemovePresentationOperation(presentationId)], { actor }); } async addLocalBlock(input) { return this.addLocalPresentation({ ...input, artifact: createAddBlockOperation(input).presentation.artifact }); } async removeLocalBlock({ blockId }) { return this.removeLocalPresentation({ presentationId: blockId }); } async undo() { this.state = undoWorkspace(this.state); return this.persist(); } async redo() { this.state = redoWorkspace(this.state); return this.persist(); } async setViewMode(viewMode) { this.state = setWorkspaceViewMode(this.state, viewMode); return this.persist(); } async reset({ confirmed } = {}) { if (confirmed !== true) throw new TypeError('Confirmed reset is required'); this.state = createInitialWorkspace({ explanationId: this.explanationId, baseRevision: this.baseRevision }); await this.store.clear(this.storageKey); return this.render(); } exportJson() { return JSON.stringify(this.state, null, 2); } }
+function reducedMotion(document) { return document?.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false; }
+function announceFocus(document, text) { const status = document?.getElementById?.('workspace-focus-status'); if (status) status.textContent = text; }
+function focusAndScroll(document, node) {
+  if (!node.hasAttribute?.('tabindex')) node.setAttribute?.('tabindex', '-1');
+  node.focus?.({ preventScroll: true });
+  node.scrollIntoView?.({ behavior: reducedMotion(document) ? 'auto' : 'smooth', block: 'center' });
+}
+function confirmedFocus(document, node) {
+  return {
+    visible: !node.hidden && node.getAttribute?.('aria-hidden') !== 'true' && !node.closest?.('[hidden]'),
+    focused: document?.activeElement === node
+  };
+}
+export function focusAuthoredBlock(document, targetId) {
+  const target = document.querySelector(`[data-eh-block-id="${targetId}"]`);
+  if (!target) throw new RangeError(`Unknown authored target: ${targetId}`);
+  const panel = target.closest?.('[data-section-panel]');
+  const sectionId = panel?.dataset?.sectionPanel;
+  if (panel?.hidden && sectionId) {
+    for (const section of document.querySelectorAll('[data-section-panel]')) {
+      const active = section.dataset.sectionPanel === sectionId;
+      section.hidden = !active;
+      section.classList?.toggle?.('is-active', active);
+    }
+    for (const tab of document.querySelectorAll('[data-section]')) {
+      const active = tab.dataset.section === sectionId;
+      tab.classList?.toggle?.('is-active', active);
+      tab.setAttribute?.('aria-selected', String(active));
+      if (active) tab.setAttribute?.('aria-current', 'page');
+      else tab.removeAttribute?.('aria-current');
+    }
+    const currentFocus = document.getElementById?.('current-focus');
+    const activeTab = [...document.querySelectorAll('[data-section]')].find((tab) => tab.dataset.section === sectionId);
+    if (currentFocus && activeTab) currentFocus.textContent = activeTab.textContent.trim();
+  }
+  clearFocused(document);
+  target.classList.add('is-focused');
+  focusAndScroll(document, target);
+  announceFocus(document, `Existing explanation focused: ${targetId}.`);
+  return { targetId, localPresentation: false, ...confirmedFocus(document, target) };
+}
+
+export class ExplanationWorkspace {
+  constructor({ document, store, explanationId, baseRevision, canonicalIds }) {
+    this.document = document;
+    this.store = store;
+    this.explanationId = explanationId;
+    this.baseRevision = baseRevision;
+    this.canonicalIds = [...canonicalIds];
+    this.storageKey = `${explanationId}:${globalThis.location?.origin || 'local'}`;
+    this.state = createInitialWorkspace({ explanationId, baseRevision });
+  }
+  async initialize() {
+    const loaded = await this.store.load(this.storageKey).catch(() => null);
+    const migrated = migrateWorkspaceState(loaded);
+    if (migrated?.explanationId === this.explanationId) {
+      this.state = migrated;
+      if (loaded?.schemaVersion !== WORKSPACE_SCHEMA_VERSION) await this.store.save(this.storageKey, this.state);
+    }
+    this.render();
+    return this;
+  }
+  view() { return materializeWorkspace(this.state, { canonicalIds: this.canonicalIds, baseRevision: this.baseRevision }); }
+  render() { const view = this.view(); if (this.document) renderWorkspace(this.document, view); return view; }
+  async persist() { await this.store.save(this.storageKey, this.state); return this.render(); }
+  getContext() {
+    const insertionTargetIds = this.document
+      ? [...this.document.querySelectorAll('[data-eh-local-slot]')].map((node) => node.dataset.ehLocalSlot)
+      : [...this.canonicalIds];
+    return {
+      explanationId: this.explanationId,
+      baseRevision: this.baseRevision,
+      workspaceRevision: this.state.revision,
+      storageMode: this.store.mode,
+      authoredTargetIds: [...this.canonicalIds],
+      insertionTargetIds,
+      authoredLayerMutable: false,
+      presentationSchemaVersion: 'explain-him-presentation.v1',
+      capabilities: ['focus', 'add-local-presentation', 'replace-local-presentation', 'update-local-presentation', 'remove-local-presentation', 'undo', 'redo', 'original-view', 'export']
+    };
+  }
+  getVisibleState() { return this.view(); }
+  getLocalChangeHistory() { return { schemaVersion: this.state.schemaVersion, transactions: clone(this.state.transactions), cursor: this.state.cursor, revision: this.state.revision, canUndo: this.state.cursor > 0, canRedo: this.state.cursor < this.state.transactions.length }; }
+  focusBlock({ targetId, blockId }) {
+    let view = this.view();
+    if (blockId && view.viewMode !== 'personalized') {
+      this.state = setWorkspaceViewMode(this.state, 'personalized');
+      view = this.render();
+      void this.store.save(this.storageKey, this.state);
+    }
+    const replacement = !blockId && view.viewMode === 'personalized'
+      ? view.presentations.find((item) => item.targetId === targetId && item.placement === 'replace' && !item.orphaned)
+      : null;
+    const visibleBlockId = blockId || replacement?.id;
+    if (visibleBlockId) {
+      const node = this.document?.querySelector?.(`[data-eh-local-block-id="${visibleBlockId}"]`);
+      if (node) {
+        clearFocused(this.document);
+        node.classList?.add?.('is-focused');
+        focusAndScroll(this.document, node);
+        announceFocus(this.document, `Personalized explanation focused: ${visibleBlockId}.`);
+        return { targetId: targetId || replacement?.targetId || view.presentations.find((item) => item.id === visibleBlockId)?.targetId, blockId: visibleBlockId, localPresentation: true, ...confirmedFocus(this.document, node) };
+      }
+      if (blockId) return { blockId, targetId: null, unavailable: true };
+    }
+    return this.document ? focusAuthoredBlock(this.document, targetId) : { targetId };
+  }
+  async applyTransaction(operations, options = {}) { this.state = appendTransaction(this.state, operations, options); return this.persist(); }
+  async rollbackTransaction(transactionIdToRollback) {
+    const last = this.state.transactions.at(-1);
+    if (!last || last.id !== transactionIdToRollback || this.state.cursor !== this.state.transactions.length) throw new RangeError('Only the latest active transaction can be rolled back');
+    this.state.transactions.pop();
+    this.state.cursor = this.state.transactions.length;
+    this.state.revision = Math.max(0, this.state.revision - 1);
+    return this.persist();
+  }
+  async attachTransactionResult(transactionId, result) { const transaction = this.state.transactions.find((item) => item.id === transactionId); if (!transaction) throw new RangeError(`Unknown local transaction: ${transactionId}`); transaction.result = clone(result); await this.store.save(this.storageKey, this.state); return clone(transaction.result); }
+  async addLocalPresentation(input) { if (!this.canonicalIds.includes(input.targetId)) throw new RangeError(`Unknown authored target: ${input.targetId}`); return this.applyTransaction([createAddPresentationOperation(input)], { actor: input.actor }); }
+  async replaceLocalPresentation(input) { if (!this.canonicalIds.includes(input.targetId)) throw new RangeError(`Unknown authored target: ${input.targetId}`); if (this.view().presentations.some((item) => item.targetId === input.targetId && item.placement === 'replace')) throw new RangeError(`Target already has a local replacement: ${input.targetId}`); return this.applyTransaction([createAddPresentationOperation({ ...input, placement: 'replace' })], { actor: input.actor }); }
+  async updateLocalPresentation({ presentationId, artifact, actor }) { if (!this.view().presentations.some((item) => item.id === presentationId)) throw new RangeError(`Unknown local presentation: ${presentationId}`); return this.applyTransaction([createUpdatePresentationOperation(presentationId, { artifact })], { actor }); }
+  async removeLocalPresentation({ presentationId, actor }) { if (!this.view().presentations.some((item) => item.id === presentationId)) throw new RangeError(`Unknown local presentation: ${presentationId}`); return this.applyTransaction([createRemovePresentationOperation(presentationId)], { actor }); }
+  async addLocalBlock(input) { return this.addLocalPresentation({ ...input, artifact: createAddBlockOperation(input).presentation.artifact }); }
+  async removeLocalBlock({ blockId }) { return this.removeLocalPresentation({ presentationId: blockId }); }
+  async undo() { this.state = undoWorkspace(this.state); return this.persist(); }
+  async redo() { this.state = redoWorkspace(this.state); return this.persist(); }
+  async setViewMode(viewMode) { this.state = setWorkspaceViewMode(this.state, viewMode); return this.persist(); }
+  async reset({ confirmed } = {}) { if (confirmed !== true) throw new TypeError('Confirmed reset is required'); this.state = createInitialWorkspace({ explanationId: this.explanationId, baseRevision: this.baseRevision }); await this.store.clear(this.storageKey); return this.render(); }
+  exportJson() { return JSON.stringify(this.state, null, 2); }
+}
 export async function createExplanationWorkspace({ document, explanationId, baseRevision, canonicalIds, store = createWorkspaceStore() }) { return new ExplanationWorkspace({ document, store, explanationId, baseRevision, canonicalIds }).initialize(); }

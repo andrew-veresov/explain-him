@@ -34,33 +34,31 @@ Use only the current WebMCP host: `document.modelContext`. `navigator.modelConte
 
 When the page is open in a WebMCP-capable browser:
 
-1. call `get_explain_him_answer` to establish a Protocol v3 activation;
-2. verify the returned page-issued skill-delivery proof, immutable source commit, SHA-256 proofs, and load order; use the delivered inline composite only for a verified `native-inline` mode, otherwise fetch and verify every immutable raw skill URL;
-3. follow that skill to answer the question and retrieve deeper GitHub evidence when required;
-4. read the presentation skill before embedding a result into the page;
-5. analyse whether the current UI already fully and correctly contains the answer, then always provide the chat answer; do not duplicate a correct UI result, and use focus only for an explicit show or walkthrough request;
-6. when the UI answer is missing, partial, or inconsistent, use a grounded same-turn `apply_explanation` add, replace, or update; restore uses remove or the Originator view;
-7. use `apply_explanation` only after the meaning is grounded and with top-level requestId, expectedWorkspaceRevision, explanationId, topicId, operations, plus nested `handshake` containing bootstrapTool, contractId, activationId, nonce, baseRevision, ordered three-field skillProof, and the exact page-issued skillDeliveryProof. If apply fails, say so honestly rather than claiming a page change.
-
-The activation nonce is opaque and session-scoped. It may be reused only for an idempotent retry or ordered local-operation chain in the same activation. Never display or persist it in user-facing output.
+1. for every request to explain, clarify, compare, show, or walk through current page content, call `get_explain_him_context` and require Protocol v4;
+2. retain the returned activation ID and workspace revision, and inspect both authored targets and Personalized local blocks;
+3. when visible content is insufficient, follow the returned `additionalInformation` string and read the minimum relevant pinned source from the linked GitHub repository;
+4. read the presentation skill before displaying a result;
+5. always provide the grounded answer in chat;
+6. unless the user explicitly forbids page changes or scrolling, call `explain_tool` in the same turn for every explanation request: focus existing content or add, update, replace, or restore a safe typed local presentation;
+7. send only requestId, activationId, expectedWorkspaceRevision, topicId, decision, operations, and optional primaryOperationIndex. If the tool fails, say so honestly rather than claiming a page change or focus.
 
 The page also publishes invisible machine-readable repository and skill links in its `<head>`. Use them as bootstrap hints when Site Tool discovery succeeds before repository context is available.
 
-The page may register one experimental composite `explain_him` skill only when the standard document host exposes `registerSkill`. This is progressive enhancement based on open WebMCP issue 161. It adds no tool, is never polyfilled, and falls back to the complete pinned A7 remote workflow when unavailable or rejected. Registration does not prove that the model read or followed the instructions.
+The page may register one experimental composite `explain_him` skill only when the standard document host exposes `registerSkill`. This is progressive enhancement based on open WebMCP issue 161. It adds no tool, is never polyfilled, and falls back to the complete pinned remote workflow when unavailable or rejected. Registration does not prove that the model read or followed the instructions.
 
 The complete public WebMCP surface is intentionally only:
 
-- `get_explain_him_answer`;
-- `apply_explanation`.
+- `get_explain_him_context`;
+- `explain_tool`.
 
-Do not look for separate diagnostics, state, focus, undo/redo, compatibility, retrieval, answer-generation, or skill-registration WebMCP tools. `apply_explanation` contains add, replace, update, remove, and focus; undo/redo and Original/Personalized remain human controls.
+Do not look for separate diagnostics, state, focus, undo/redo, compatibility, retrieval, answer-generation, or skill-registration WebMCP tools. `explain_tool` contains add, replace, update, remove, and focus behavior; undo/redo and Original/Personalized remain human controls.
 
 The page may still expose ordinary accessible controls for humans/browser automation. Those controls are not additional WebMCP capabilities.
 
 ## Source discovery
 
 1. Treat `index.html` as the Originator-authored explanation page and read it when it answers the user's question.
-2. `get_explain_him_answer` provides insertion anchors and skill/schema locations; it is not a source of product facts.
+2. `get_explain_him_context` provides target capabilities, visible summaries, repository guidance, and skill/schema locations; it is not a source of product facts.
 3. If the page is insufficient, ambiguous, or deeper evidence/version/status is required, use the personal agent's own GitHub/repository integration.
 4. Read the minimum relevant sources.
 5. Check accepted files in `resolutions/` before lower-priority explanatory material.
@@ -88,12 +86,12 @@ A lower-priority source must not silently override a higher-priority source.
 - Preserve page/repository provenance for material claims that will be embedded.
 - Mark agent inference separately from source-backed statements.
 - Form and ground the answer before any presentation or WebMCP mutation.
-- Answer in the normal personal-agent conversation first; embedding is secondary.
-- Use guided walkthrough focus only when it helps answer the user's question; never force a fixed tour.
+- Answer in the normal personal-agent conversation first.
+- Unless the user explicitly forbids page changes, focus or display every requested explanation through `explain_tool`; never force a fixed tour.
 
 ## Typed page blocks
 
-`apply_explanation` accepts only safe structured blocks defined by `schemas/explanation-block.v1.schema.json`:
+`explain_tool` accepts only safe structured blocks defined by `schemas/explanation-block.v1.schema.json`:
 
 - `callout`;
 - `comparison`;

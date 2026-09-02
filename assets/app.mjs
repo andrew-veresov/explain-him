@@ -55,127 +55,11 @@ function downloadJson(text) {
   URL.revokeObjectURL(url);
 }
 
-function make(tag, text, className = '') {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text !== undefined) node.textContent = text;
-  return node;
-}
-
-function refreshWebMcpCopy() {
-  const status = byId('webmcp-status');
-  const card = status?.closest?.('.contract-card');
-  const heading = card?.querySelector?.('h3');
-  const copy = card?.querySelector?.('p');
-  if (heading) heading.textContent = 'WebMCP runtime status';
-  if (copy) copy.textContent = 'Protocol v3 exposes exactly two page tools: get_explain_him_answer and apply_explanation. A 2/2 page status confirms registration, not an agent connection.';
-}
-
-function installWebMcpDemoCard() {
-  if (byId('webmcp-demo-card')) return;
-  const anchor = byId('developer-demo-anchor')
-    || document.querySelector('[data-eh-local-slot="flow-model"]')
-    || document.querySelector('[data-eh-block-id="flow-model"]');
-  if (!anchor?.parentNode) return;
-
-  const card = make('section', undefined, 'browser-agent-note');
-  card.id = 'webmcp-demo-card';
-  card.dataset.webmcpDemo = 'challenge';
-  const heading = make('strong', 'WebMCP test prompts');
-  const copy = make('p', 'For runtime testing, the agent grounds an answer from the page and repository before WebMCP delivers only the typed visual result.');
-  const prompts = make('ol');
-  for (const prompt of [
-    'Explain this idea, then add a short workflow showing how the explanation is produced.',
-    'Compare the authored layer with the personal layer and add that comparison to the page.',
-    'Replace the last local block with a simple concept diagram.'
-  ]) {
-    prompts.append(make('li', prompt));
-  }
-  const statusLine = make('p');
-  statusLine.append(make('strong', 'Page API: '));
-  const status = make('span', 'Checking WebMCP registration…');
-  status.id = 'webmcp-status-hero';
-  statusLine.append(status);
-  card.append(heading, copy, prompts, statusLine);
-  anchor.parentNode.insertBefore(card, anchor.nextSibling);
-}
-
-function setWebMcpStatusText(text) {
-  if (byId('webmcp-status-hero')) byId('webmcp-status-hero').textContent = text;
-}
-
 function setStatusPart(id, text) {
   if (byId(id)) byId(id).textContent = text;
 }
 
-function setWorkspaceRevision(revision, prefix = null) {
-  const safeRevision = Number.isInteger(revision) && revision >= 0 ? revision : 0;
-  document.documentElement.dataset.webmcpWorkspaceRevision = String(safeRevision);
-  setStatusPart('webmcp-revision-status', prefix ? `${prefix} ${safeRevision}` : `Workspace revision – ${safeRevision}`);
-}
-
-function publishLifecycle(detail) {
-  if (!detail || typeof detail !== 'object') return;
-  if (detail.type === 'answer-bootstrap-invoked') {
-    document.documentElement.dataset.webmcpAgentState = 'observed';
-    document.documentElement.dataset.webmcpContractState = 'activated';
-    setStatusPart('webmcp-agent-status', 'Agent connection – observed');
-    setStatusPart('webmcp-contract-status', 'Contract – activated');
-    setWorkspaceRevision(detail.workspaceRevision);
-  } else if (detail.type === 'apply-started') {
-    document.documentElement.dataset.webmcpAgentState = 'observed';
-    document.documentElement.dataset.webmcpApplyState = 'started';
-    setStatusPart('webmcp-agent-status', 'Agent connection – observed');
-  } else if (detail.type === 'apply-succeeded') {
-    document.documentElement.dataset.webmcpApplyState = 'succeeded';
-    setWorkspaceRevision(detail.workspaceRevision, 'Personalized UI updated – workspace revision');
-  } else if (detail.type === 'apply-failed') {
-    document.documentElement.dataset.webmcpApplyState = 'failed';
-    setWorkspaceRevision(detail.workspaceRevision, 'Personalized UI update failed – workspace revision');
-  }
-  if (typeof globalThis.CustomEvent === 'function' && typeof globalThis.dispatchEvent === 'function') {
-    globalThis.dispatchEvent(new CustomEvent('explain-him:webmcp-lifecycle', { detail }));
-  }
-}
-
-function publishWebMcpStatus(registration) {
-  globalThis.explainHimWebMcp = registration;
-  document.documentElement.dataset.webmcpState = registration.supported ? 'detected' : 'unavailable';
-  document.documentElement.dataset.webmcpPageState = registration.supported ? 'detected' : 'unavailable';
-  document.documentElement.dataset.webmcpAgentState = 'not-observed';
-  document.documentElement.dataset.webmcpContractState = 'not-activated';
-  document.documentElement.dataset.webmcpApplyState = 'not-started';
-  document.documentElement.dataset.webmcpWorkspaceRevision = '0';
-  document.documentElement.dataset.webmcpHost = registration.hostSource || 'none';
-  document.documentElement.dataset.webmcpApi = 'document.modelContext';
-  document.documentElement.dataset.webmcpProtocol = '3';
-  document.documentElement.dataset.webmcpTools = registration.expectedTools.join(',');
-  document.documentElement.dataset.webmcpNativeSkillState = registration.skillRegistrationState || 'unavailable';
-  document.documentElement.dataset.webmcpNativeSkillProposal = registration.nativeSkillProposalStatus || 'experimental-open-backlog';
-  document.documentElement.dataset.webmcpNativeSkillDigest = registration.nativeSkillDigest || '';
-}
-
-function dispatchWebMcpReady(registration) {
-  if (typeof globalThis.CustomEvent !== 'function' || typeof globalThis.dispatchEvent !== 'function') return;
-  globalThis.dispatchEvent(new CustomEvent('explain-him:webmcp-ready', {
-    detail: {
-      supported: registration.supported,
-      ok: registration.ok,
-      verified: registration.verified,
-      hostSource: registration.hostSource,
-      registeredTools: [...registration.registered],
-      verifiedTools: [...registration.verifiedTools],
-      nativeSkillState: registration.skillRegistrationState,
-      nativeSkillDigest: registration.nativeSkillDigest,
-      nativeSkillProposalStatus: registration.nativeSkillProposalStatus
-    }
-  }));
-}
-
 async function main() {
-  refreshWebMcpCopy();
-  installWebMcpDemoCard();
-
   installContinuousNavigation();
 
   const sourceToggle = byId('source-toggle');
@@ -212,21 +96,15 @@ async function main() {
     baseRevision: document.querySelector('meta[name="explain-him-revision"]')?.content || 'public-v1',
     canonicalIds
   });
-  const registration = registerWebMcpTools(workspacePromise, null, { environment: globalThis, onLifecycle: publishLifecycle });
-  publishWebMcpStatus(registration);
+  const registration = registerWebMcpTools(workspacePromise, null, { environment: globalThis });
+  document.documentElement.dataset.webmcpState = registration.supported ? 'registering' : 'unavailable';
   if (registration.supported) {
     setStatusPart('webmcp-page-status', `Page WebMCP API – registering ${registration.expectedTools.length} tools`);
-    setWebMcpStatusText(`registering ${registration.expectedTools.length} tools`);
-    setStatusPart('webmcp-native-skill-status', registration.skillApiAvailable ? 'Native skill API – registering (experimental)' : 'Native skill API – unavailable (experimental); pinned fallback active');
   } else {
     setStatusPart('webmcp-page-status', 'Page WebMCP API – unavailable');
-    setWebMcpStatusText('unavailable; accessible browser controls remain available');
-    setStatusPart('webmcp-native-skill-status', 'Native skill API – unavailable (experimental); pinned fallback active');
   }
 
   const workspace = await workspacePromise;
-  globalThis.explainHimWorkspace = workspace;
-  setWorkspaceRevision(workspace.getContext?.().workspaceRevision ?? 0);
 
   if (!byId('agent-placement')) {
     const kindLabel = byId('agent-kind')?.closest('label');
@@ -256,7 +134,6 @@ async function main() {
         actor: { kind: 'agent', channel: 'browser-control' },
         provenance: { sourceBlockIds: [targetId], repositoryRefs: [] }
       });
-      setWorkspaceRevision(workspace.getContext?.().workspaceRevision ?? 0);
       feedback.textContent = byId('agent-placement')?.value === 'replace' ? 'Test block replaced the target in the personalized view.' : 'Test block applied to the browser-local workspace.';
     } catch (error) {
       feedback.textContent = String(error?.message || error);
@@ -265,13 +142,13 @@ async function main() {
 
   document.addEventListener('click', async (event) => {
     const remove = event.target.closest?.('[data-eh-remove-local]');
-    if (remove) { await workspace.removeLocalBlock({ blockId: remove.dataset.ehRemoveLocal }); setWorkspaceRevision(workspace.getContext?.().workspaceRevision ?? 0); }
+    if (remove) await workspace.removeLocalBlock({ blockId: remove.dataset.ehRemoveLocal });
     const focus = event.target.closest?.('[data-focus]');
     if (focus) workspace.focusBlock({ targetId: focus.dataset.focus });
   });
 
-  byId('workspace-undo')?.addEventListener('click', async () => { await workspace.undo(); setWorkspaceRevision(workspace.getContext?.().workspaceRevision ?? 0); });
-  byId('workspace-redo')?.addEventListener('click', async () => { await workspace.redo(); setWorkspaceRevision(workspace.getContext?.().workspaceRevision ?? 0); });
+  byId('workspace-undo')?.addEventListener('click', () => workspace.undo());
+  byId('workspace-redo')?.addEventListener('click', () => workspace.redo());
   for (const button of document.querySelectorAll('[data-workspace-view]')) {
     button.addEventListener('click', () => workspace.setViewMode(button.dataset.workspaceView));
   }
@@ -279,7 +156,6 @@ async function main() {
   byId('workspace-reset')?.addEventListener('click', async () => {
     if (globalThis.confirm('Remove all browser-local explanations and restore the original page?')) {
       await workspace.reset({ confirmed: true });
-      setWorkspaceRevision(workspace.getContext?.().workspaceRevision ?? 0);
     }
   });
 
@@ -295,48 +171,32 @@ async function main() {
   historyDialog?.addEventListener('close', () => { historyOpener?.focus(); historyOpener = null; });
 
   if (!registration.supported) {
-    dispatchWebMcpReady(registration);
     return;
   }
 
   await registration.ready;
 
-  const state = registration.verified ? 'verified' : registration.ok ? 'ready' : 'partial';
+  const state = registration.verified ? 'verified' : registration.ok ? 'unverified' : 'error';
   document.documentElement.dataset.webmcpState = state;
-  document.documentElement.dataset.webmcpPageState = state;
-  document.documentElement.dataset.webmcpVerified = String(registration.verified);
-  document.documentElement.dataset.webmcpRegistered = registration.registered.join(',');
-  document.documentElement.dataset.webmcpVerifiedTools = registration.verifiedTools.join(',');
-  document.documentElement.dataset.webmcpNativeSkillState = registration.skillRegistrationState;
-
-  if (registration.skillRegistrationState === 'registered') {
-    setStatusPart('webmcp-native-skill-status', 'Native skill API – registered (experimental)');
-  } else if (registration.skillRegistrationState === 'error') {
-    setStatusPart('webmcp-native-skill-status', 'Native skill API – registration error (experimental); pinned fallback active');
-  } else if (registration.skillRegistrationState === 'blocked-tools') {
-    setStatusPart('webmcp-native-skill-status', 'Native skill API – blocked by tool registration (experimental); pinned fallback active');
-  } else {
-    setStatusPart('webmcp-native-skill-status', 'Native skill API – unavailable (experimental); pinned fallback active');
+  if (new URLSearchParams(globalThis.location?.search || '').get('webmcp-debug') === '1') {
+    document.documentElement.dataset.webmcpHost = registration.hostSource;
+    document.documentElement.dataset.webmcpProtocol = '4';
+    document.documentElement.dataset.webmcpRegistered = registration.registered.join(',');
+    document.documentElement.dataset.webmcpVerifiedTools = registration.verifiedTools.join(',');
+    document.documentElement.dataset.webmcpNativeSkillState = registration.skillRegistrationState;
   }
 
   if (registration.verified) {
     setStatusPart('webmcp-page-status', `Page WebMCP API – ${registration.verifiedTools.length}/${registration.expectedTools.length} tools registered`);
-    setWebMcpStatusText(`${registration.verifiedTools.length}/${registration.expectedTools.length} tools registered`);
   } else if (registration.ok) {
-    setStatusPart('webmcp-page-status', `Page WebMCP API – ${registration.registered.length}/${registration.expectedTools.length} tools registered, enumeration unavailable`);
-    setWebMcpStatusText(`${registration.registered.length}/${registration.expectedTools.length} tools registered`);
+    setStatusPart('webmcp-page-status', `Page WebMCP API – registered, verification unavailable`);
   } else {
-    setStatusPart('webmcp-page-status', `Page WebMCP API – partial ${registration.registered.length}/${registration.expectedTools.length}`);
-    setWebMcpStatusText(`partial ${registration.registered.length}/${registration.expectedTools.length} registration`);
+    setStatusPart('webmcp-page-status', 'Page WebMCP API – registration failed');
   }
-  dispatchWebMcpReady(registration);
 }
 
 main().catch((error) => {
   console.error(error);
-  setWebMcpStatusText(`Initialization error: ${error.message}`);
   setStatusPart('webmcp-page-status', 'Page WebMCP API – initialization error');
-  setStatusPart('webmcp-native-skill-status', 'Native skill API – not initialized (experimental); pinned fallback active');
   document.documentElement.dataset.webmcpState = 'error';
-  document.documentElement.dataset.webmcpPageState = 'error';
 });

@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://andrew-veresov.github.io/explain-him/schemas/webmcp-context.v4.schema.json",
+  "title": "Explain Him WebMCP context v4",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "protocolVersion", "activationId", "workspaceRevision", "viewMode", "repository", "additionalInformation", "skills", "skillDelivery", "policy", "targets", "localBlocks", "blockSchema", "explainSchema", "authoredLayerMutable", "repositoryAccessViaWebMcp"],
+  "properties": {
+    "schemaVersion": {"const": "explain-him-webmcp-context.v4"},
+    "protocolVersion": {"const": 4},
+    "activationId": {"type": "string", "pattern": "^activation-[0-9a-f]{36}$"},
+    "workspaceRevision": {"type": "integer", "minimum": 0},
+    "viewMode": {"enum": ["original", "personalized"]},
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fullName", "url", "pinnedCommit", "groundingSources"],
+      "properties": {
+        "fullName": {"const": "andrew-veresov/explain-him"},
+        "url": {"const": "https://github.com/andrew-veresov/explain-him"},
+        "pinnedCommit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "groundingSources": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/groundingSource"}}
+      }
+    },
+    "additionalInformation": {"const": "For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources returned in this context."},
+    "skills": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/skill"}},
+    "skillDelivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "state", "proposalStatus", "registrationId", "compositeSha256"],
+      "properties": {
+        "mode": {"enum": ["native-inline", "pinned-remote-fallback"]},
+        "state": {"enum": ["pending", "unavailable", "registered", "error", "blocked-tools"]},
+        "proposalStatus": {"const": "experimental-open-backlog"},
+        "registrationId": {"type": ["string", "null"]},
+        "compositeSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alwaysProvideChatAnswer", "explicitNoPageChange", "existing", "missing", "partial", "inconsistent", "restore", "sameTopicContinuation"],
+      "properties": {
+        "alwaysProvideChatAnswer": {"const": true},
+        "explicitNoPageChange": {"const": "chat-only"},
+        "existing": {"const": "focus-existing"},
+        "missing": {"const": "add-and-auto-focus"},
+        "partial": {"const": "update-same-topic-or-add-and-auto-focus"},
+        "inconsistent": {"const": "replace-authored-or-update-local-and-auto-focus"},
+        "restore": {"const": "remove-and-focus-authored"},
+        "sameTopicContinuation": {"const": "reuse-topic-and-local-block-id"}
+      }
+    },
+    "targets": {"type": "array", "items": {"$ref": "#/$defs/target"}},
+    "localBlocks": {"type": "array", "items": {"$ref": "#/$defs/localBlock"}},
+    "blockSchema": {"$ref": "#/$defs/schemaLink"},
+    "explainSchema": {"$ref": "#/$defs/simpleSchemaLink"},
+    "authoredLayerMutable": {"const": false},
+    "repositoryAccessViaWebMcp": {"const": false}
+  },
+  "$defs": {
+    "groundingSource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["topic", "path", "section", "status", "rawUrl", "commit", "sha256"],
+      "properties": {
+        "topic": {"type": "string", "minLength": 1}, "path": {"type": "string", "minLength": 1},
+        "section": {"type": "string", "minLength": 1}, "status": {"type": "string", "minLength": 1},
+        "rawUrl": {"type": "string", "minLength": 1}, "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "skill": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "path", "rawUrl", "commit", "sha256"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1}, "path": {"type": "string", "minLength": 1},
+        "rawUrl": {"type": "string", "minLength": 1}, "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "target": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "title", "contentSummary", "hasInsertionSlot", "allowedOperations", "acceptedTypes"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1}, "title": {"type": "string"},
+        "contentSummary": {"type": "string", "maxLength": 280}, "hasInsertionSlot": {"type": "boolean"},
+        "allowedOperations": {"type": "array", "items": {"enum": ["focus", "add", "replace"]}},
+        "acceptedTypes": {"type": "array", "items": {"enum": ["callout", "comparison", "workflow", "timeline", "diagram"]}}
+      }
+    },
+    "localBlock": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "topicId", "targetId", "placement", "type", "title", "contentSummary", "updatedAt"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^local-"}, "topicId": {"type": ["string", "null"]},
+        "targetId": {"type": "string"}, "placement": {"enum": ["after", "replace"]},
+        "type": {"type": "string"}, "title": {"type": "string"}, "contentSummary": {"type": "string", "maxLength": 280},
+        "updatedAt": {"type": "string"}
+      }
+    },
+    "schemaLink": {
+      "type": "object", "additionalProperties": false, "required": ["path", "url", "types"],
+      "properties": {"path": {"type": "string"}, "url": {"type": "string"}, "types": {"type": "array", "items": {"type": "string"}}}
+    },
+    "simpleSchemaLink": {
+      "type": "object", "additionalProperties": false, "required": ["path", "url"],
+      "properties": {"path": {"type": "string"}, "url": {"type": "string"}}
+    }
+  }
+}

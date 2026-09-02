@@ -9,19 +9,19 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "runtime" / "generated" / "explain-him-native-skill.mjs"
-SOURCE_COMMIT = "ea51b6bbc1f6f863e1f87d5584da3feb1c9b8625"
+SOURCE_COMMIT = "59167103ebfb7d4fd0c276de7f2b81862c536b4f"
 REPOSITORY = "andrew-veresov/explain-him"
-TOOLS = ["get_explain_him_answer", "apply_explanation"]
+TOOLS = ["get_explain_him_context", "explain_tool"]
 SOURCES = [
     {
         "id": "explain-him",
         "path": "skills/explain-him/SKILL.md",
-        "sha256": "b274b2125d2b3f11ded65a9fef26406c8d973333d3e9df88718dba6f22e1becb",
+        "sha256": "3e7b6208e00b7bb1370a3958f9ea625b17afe554f9e577bc18fa4ca8c128ec5b",
     },
     {
         "id": "explain-him-presentation",
         "path": "skills/explain-him-presentation/SKILL.md",
-        "sha256": "a51bea92203f037402f3feb3e605072d63c30ddf7e9a88426eb1909d2b26382a",
+        "sha256": "a85ced352e77b435da9783e4819337d75b4fe3239f7dc0a6d33b072ae982362c",
     },
 ]
 PRIVATE_EVALUATION_PATH = "`demo/" + "evaluation/`"
@@ -77,14 +77,14 @@ def build_payload() -> tuple[dict[str, object], str]:
         "name": "explain_him",
         "description": (
             "Workflow-level Explain Him guidance for every question about this page or product. "
-            "Use it before answering to ground the response, choose between chat-only focus and a reversible UI adaptation, "
-            "and coordinate get_explain_him_answer with apply_explanation."
+            "Use it before answering to inspect the page, ground the response, focus an existing explanation, "
+            "or coordinate a reversible page adaptation through get_explain_him_context and explain_tool."
         ),
         "instructions": instructions,
         "tools": TOOLS,
         "context": {
             "schemaVersion": "explain-him-native-skill-context.v1",
-            "protocolVersion": 3,
+            "protocolVersion": 4,
             "proposal": {
                 "issue": 161,
                 "status": "experimental-open-backlog",
@@ -94,7 +94,7 @@ def build_payload() -> tuple[dict[str, object], str]:
             "delivery": {
                 "nativeMode": "native-inline",
                 "fallbackMode": "pinned-remote-fallback",
-                "fallbackTool": "get_explain_him_answer",
+                "fallbackTool": "get_explain_him_context",
                 "registrationDoesNotProveSemanticReading": True,
             },
             "repository": {
@@ -109,15 +109,17 @@ def build_payload() -> tuple[dict[str, object], str]:
             },
             "answerPolicy": {
                 "alwaysAnswerInChat": True,
-                "visibleAnswerFullyCorrectAndConsistent": "chat-only-unless-focus-requested",
-                "visibleAnswerMissingPartialOrInconsistent": "retrieve-ground-apply-same-turn",
+                "visibleAnswerFullyCorrectAndConsistent": "focus-existing-same-turn",
+                "visibleAnswerMissingPartialOrInconsistent": "retrieve-ground-explain-same-turn",
+                "explicitNoPageChange": "chat-only",
+                "additionalInformation": "For additional information, inspect the GitHub repository linked to this page. Prefer the pinned commit and grounding sources returned in this context.",
                 "applyFailure": "disclose-no-ui-change",
                 "authoredLayerMutable": False,
             },
         },
         "annotations": {
             "category": "explanation",
-            "version": "A7",
+            "version": "A8",
             "provenance": f"{REPOSITORY}@{SOURCE_COMMIT}",
             "experimental": True,
         },

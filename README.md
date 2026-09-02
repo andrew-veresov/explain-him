@@ -24,14 +24,14 @@ Human asks a question
         v
 Personal AI agent
         |
-        +---- get_explain_him_answer ---> repository + skills + targets
+        +---- get_explain_him_context ---> visible state + repository guidance
         |
-        +---- read page/repository + answer in normal chat
+        +---- read the minimum page/repository evidence + answer in chat
         |
-        +---- apply_explanation ----------> typed add/replace/update/remove/focus
+        +---- explain_tool --------------> focus existing or mutate + auto-focus
                                                 |
                                                 v
-                                  human sees the same change
+                                  human sees the same explanation
 ```
 
 The authored layer remains immutable. Personalization is local, visible, reversible, and never becomes canonical evidence.
@@ -44,12 +44,12 @@ The public surface is deliberately small and user-oriented:
 
 | Tool | Purpose |
 |---|---|
-| `get_explain_him_answer` | Discover the repository, both skills, typed-block schema, authored targets, and local block IDs |
-| `apply_explanation` | Atomically apply already-grounded typed add/replace/update/remove/focus operations to the browser-local page layer |
+| `get_explain_him_context` | Read the current Original/Personalized state, target capabilities, local blocks, pinned repository, grounding sources, and Protocol v4 activation |
+| `explain_tool` | Focus an existing explanation or atomically add, replace, update, or restore a browser-local typed explanation |
 
 There are no duplicate compatibility tools, diagnostic tools, or WebMCP tools for repository search/answer generation. The browser contract models user intentions rather than internal implementation details.
 
-When the browser also exposes `document.modelContext.getTools()`, the page verifies the two expected descriptors. This proves the page API surface, not that an adjacent agent can access it. The status card therefore reports four independent facts: **Page WebMCP API**, **Agent connection**, **Contract**, and **Workspace revision**.
+After awaited registration, the page calls `document.modelContext.getTools()` once and reports success only when both expected descriptors are present. This proves page registration, not that an external agent can access or select the tools. Production shows one registration status; detailed state is available only with `?webmcp-debug=1`.
 
 ## Try the human–agent flow
 
@@ -59,7 +59,7 @@ Open the live page in the ChatGPT Desktop built-in browser when it exposes `docu
 2. **“Compare the authored and personal layers and add that comparison to the page.”**
 3. **“Show me where grounding is explained.”**
 
-The first prompt exercises automatic contract/skill discovery, repository grounding, chat output, typed workflow insertion, and guided focus. The next two exercise another typed representation and focus-only navigation.
+The first prompt exercises context discovery, repository grounding, chat output, typed workflow insertion, and automatic focus. The next two exercise another typed representation and focus-only navigation.
 
 See [[WEBMCP_CHALLENGE]] for the exact judge flow, expected tool calls, challenge-period commit provenance, and submission checklist.
 
@@ -114,7 +114,7 @@ browser-local typed operations
 personalized visible explanation
 ```
 
-Workspace v3 provides transactional, persisted local state:
+Workspace v4 provides transactional, topic-aware persisted local state:
 
 - typed local Presentation Artifacts with provenance;
 - IndexedDB with a memory fallback;
@@ -148,9 +148,9 @@ Important statuses are `current`, `target`, `hypothesis`, `open`, `demo-only`, a
 | Model Context Tool Inspector extension | Page-tool debugging only; never an Explain Him production or user workflow |
 | Browser without WebMCP | Human controls continue to work over the same local workspace |
 
-`navigator.modelContext` is retained only as a legacy fallback for older experimental tool hosts. Explain Him progressively feature-detects the experimental `document.modelContext.registerSkill` shape proposed in WebMCP issue 161. When present, the page registers one deterministic inline `explain_him` skill linked to the same two tools. When absent or rejected, the complete pinned A7 remote fallback remains operational. The page does not polyfill this API, call `navigator.modelContext.registerSkill`, or claim the open backlog proposal is standardized.
+Only `document.modelContext` is supported. There is no navigator fallback, compatibility alias, old tool identity, or Protocol v3 handshake. Explain Him separately feature-detects the experimental `document.modelContext.registerSkill` shape proposed in WebMCP issue 161. After both tools register successfully, the page may register one deterministic inline `explain_him` skill. When the method is absent or rejects, the pinned A8 remote fallback remains available. The page does not polyfill the experimental API or treat it as normative WebMCP.
 
-The page cannot invoke an agent or a tool on activation. It registers tools immediately and exposes pinned bootstrap metadata; the host must discover them and choose to call `get_explain_him_answer`. The supported-host invariant is contract invocation before the first grounded page answer. A mutation is accepted only after `apply_explanation` succeeds and workspace revision increases.
+The page cannot force a host or model to choose a tool. Descriptors and skills require `get_explain_him_context` for explanation requests, followed by `explain_tool` unless the user explicitly forbids page changes or scrolling. Fully present content is focused without a revision change; missing, partial, or inconsistent content is mutated and automatically focused. A mutation is reported only after revision, DOM visibility, and focus are confirmed.
 
 On September 1, 2026, the installed official ChatGPT Chrome extension version `1.26.827.12125` answered the exact `User`/`Consumer` prompt, while the page observed no contract invocation and remained at revision 0. The page API independently verified 2/2 tools. This is `BLOCKED_EXTERNAL` at the agent-host connection boundary, not a successful end-to-end run and not a page-registration failure.
 

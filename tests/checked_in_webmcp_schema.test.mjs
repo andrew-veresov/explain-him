@@ -18,8 +18,7 @@ function validate(root, schema, value) {
   if (schema.enum && !schema.enum.some((entry) => equal(value, entry))) return false;
   if (schema.type) {
     const types = Array.isArray(schema.type) ? schema.type : [schema.type];
-    const validType = types.some((type) => type === 'null' ? value === null : type === 'object' ? value && typeof value === 'object' && !Array.isArray(value) : type === 'array' ? Array.isArray(value) : type === 'string' ? typeof value === 'string' : type === 'integer' ? Number.isInteger(value) : type === 'boolean' ? typeof value === 'boolean' : false);
-    if (!validType) return false;
+    if (!types.some((type) => type === 'null' ? value === null : type === 'object' ? value && typeof value === 'object' && !Array.isArray(value) : type === 'array' ? Array.isArray(value) : type === 'string' ? typeof value === 'string' : type === 'integer' ? Number.isInteger(value) : type === 'boolean' ? typeof value === 'boolean' : false)) return false;
   }
   if (schema.type === 'object' || (Array.isArray(schema.type) && schema.type.includes('object') && value && typeof value === 'object' && !Array.isArray(value))) {
     if ((schema.required || []).some((key) => !Object.hasOwn(value, key))) return false;
@@ -29,8 +28,6 @@ function validate(root, schema, value) {
   if (Array.isArray(value)) {
     if (schema.minItems !== undefined && value.length < schema.minItems) return false;
     if (schema.maxItems !== undefined && value.length > schema.maxItems) return false;
-    if (Array.isArray(schema.prefixItems) && schema.prefixItems.some((entry, index) => index >= value.length || !validate(root, entry, value[index]))) return false;
-    if (schema.items === false && value.length > (schema.prefixItems || []).length) return false;
     if (schema.items && !value.every((item) => validate(root, schema.items, item))) return false;
   }
   if (typeof value === 'string') {
@@ -42,31 +39,24 @@ function validate(root, schema, value) {
   return true;
 }
 
-test('checked-in strict schemas accept production descriptor values and reject unknown fields', async () => {
-  const [contractSchema, applySchema] = await Promise.all([load('webmcp-contract.v3.schema.json'), load('webmcp-apply.v3.schema.json')]);
+test('checked-in Protocol v4 schemas accept runtime values and reject legacy or unknown fields', async () => {
+  const [contextSchema, explainSchema] = await Promise.all([load('webmcp-context.v4.schema.json'), load('webmcp-explain.v4.schema.json')]);
   const workspace = await createExplanationWorkspace({ document: null, explanationId: 'checked-schema', baseRevision: 'r1', canonicalIds: ['workflow-diagram'], store: new MemoryWorkspaceStore() });
+  workspace.focusBlock = async (request) => ({ ...request, visible: true, focused: true });
   const tools = new Map(createWebMcpTools(workspace).map((tool) => [tool.name, tool]));
-  const contract = await tools.get('get_explain_him_answer').execute({});
-  const input = { requestId: 'checked-schema-request', expectedWorkspaceRevision: contract.workspaceRevision, explanationId: contract.explanationId, topicId: 'terminology:user-consumer', operations: [{ op: 'replace', targetId: 'workflow-diagram', block: { type: 'diagram', title: 'Terminology', variant: 'flow', nodes: [{ id: 'user', label: 'User' }, { id: 'agent', label: 'Personal agent' }], edges: [{ from: 'user', to: 'agent', label: 'asks' }], sources: [{ path: 'resolutions/terminology.md', status: 'current' }] } }], handshake: { bootstrapTool: contract.bootstrapTool, contractId: contract.contractId, activationId: contract.activation.id, nonce: contract.activation.nonce, baseRevision: contract.baseRevision, skillProof: contract.skillProof, skillDeliveryProof: contract.skillDelivery.proof } };
-  assert.equal(validate(contractSchema, contractSchema, contract), true);
-  assert.equal(validate(applySchema, applySchema, input), true);
-  assert.equal((await tools.get('apply_explanation').execute(input)).ok, true);
-  assert.equal(validate(contractSchema, contractSchema, { ...contract, unknown: true }), false);
-  assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, unknown: true } }), false);
-  assert.equal(validate(contractSchema, contractSchema, { ...contract, repository: { ...contract.repository, skillsCommit: '0'.repeat(40) } }), false);
-  assert.equal(validate(contractSchema, contractSchema, { ...contract, skills: [{ ...contract.skills[0], sha256: '0'.repeat(64) }, contract.skills[1]] }), false);
-  assert.equal(validate(contractSchema, contractSchema, { ...contract, skillProof: [contract.skillProof[1], contract.skillProof[0]] }), false);
-  assert.equal(validate(contractSchema, contractSchema, { ...contract, groundingSourceIndex: undefined }), false);
-  assert.equal(validate(contractSchema, contractSchema, { ...contract, groundingSourceIndex: [{ ...contract.groundingSourceIndex[0], sha256: '0'.repeat(64) }] }), false);
-  assert.equal(validate(contractSchema, contractSchema, { ...contract, groundingSourceIndex: [...contract.groundingSourceIndex].reverse() }), false);
-  assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, revision: 'A2' } }), false);
-  assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, repositoryRetrievalRequiredWhenPageInsufficient: false } }), false);
-  assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, decisionPrecedence: [...contract.agentPolicy.decisionPrecedence].reverse() } }), false);
-  assert.equal(validate(contractSchema, contractSchema, { ...contract, agentPolicy: { ...contract.agentPolicy, terminologyConsistency: { ...contract.agentPolicy.terminologyConsistency, distinctRoles: 'normalize' } } }), false);
-  assert.equal(validate(applySchema, applySchema, { ...input, unknown: true }), false);
-  assert.equal(validate(applySchema, applySchema, { ...input, handshake: { ...input.handshake, bootstrapTool: 'get_explanation_contract' } }), false);
-  assert.equal(validate(applySchema, applySchema, { ...input, operations: [{ ...input.operations[0], unknown: true }] }), false);
-  assert.equal(validate(applySchema, applySchema, { ...input, operations: [{ ...input.operations[0], block: { ...input.operations[0].block, unknown: true } }] }), false);
-  assert.equal(validate(applySchema, applySchema, { ...input, operations: [{ ...input.operations[0], block: { ...input.operations[0].block, variant: null } }] }), false);
-  assert.equal(validate(applySchema, applySchema, { ...input, operations: [{ ...input.operations[0], block: { ...input.operations[0].block, edges: [{ from: 'user', to: 'agent', label: null }] } }] }), false);
+  const context = await tools.get('get_explain_him_context').execute({});
+  const input = {
+    requestId: 'checked-schema-request', activationId: context.activationId,
+    expectedWorkspaceRevision: context.workspaceRevision, topicId: 'terminology:user-consumer', decision: 'inconsistent',
+    operations: [{ op: 'replace', targetId: 'workflow-diagram', block: { type: 'diagram', title: 'Terminology', variant: 'flow', nodes: [{ id: 'user', label: 'User' }, { id: 'agent', label: 'Personal agent' }], edges: [{ from: 'user', to: 'agent', label: 'asks' }], sources: [{ path: 'PRODUCT-CONTRACT.md', status: 'current' }] } }]
+  };
+  assert.equal(validate(contextSchema, contextSchema, context), true);
+  assert.equal(validate(explainSchema, explainSchema, input), true);
+  assert.equal((await tools.get('explain_tool').execute(input)).ok, true);
+  assert.equal(validate(contextSchema, contextSchema, { ...context, unknown: true }), false);
+  assert.equal(validate(contextSchema, contextSchema, { ...context, protocolVersion: 3 }), false);
+  assert.equal(validate(contextSchema, contextSchema, { ...context, additionalInformation: '' }), false);
+  assert.equal(validate(explainSchema, explainSchema, { ...input, contractId: 'legacy' }), false);
+  assert.equal(validate(explainSchema, explainSchema, { ...input, operations: [{ ...input.operations[0], unknown: true }] }), false);
+  assert.equal(validate(explainSchema, explainSchema, { ...input, operations: [{ ...input.operations[0], block: { ...input.operations[0].block, html: '<script />' } }] }), false);
 });

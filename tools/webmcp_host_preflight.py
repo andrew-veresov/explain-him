@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 
-EXPECTED_TOOLS = {"get_explain_him_answer", "apply_explanation"}
+EXPECTED_TOOLS = {"get_explain_him_context", "explain_tool"}
 
 
 def _result(status: str, code: str, phase: str) -> dict[str, str]:
@@ -32,24 +32,34 @@ def classify_preflight(evidence: Mapping[str, Any]) -> dict[str, str]:
     if connection is not True:
         return _result("BLOCKED_EXTERNAL", "AGENT_HOST_WEBMCP_UNAVAILABLE", "agent-host")
 
-    contract_invoked = evidence.get("contract_invoked") is True
-    if not contract_invoked:
+    context_invoked = evidence.get("context_invoked") is True
+    if not context_invoked:
         if evidence.get("agent_claimed_success") is True:
             return _result("FAILED", "FALSE_SUCCESS", "agent-response")
-        return _result("FAILED", "CONTRACT_NOT_INVOKED", "agent-tool-choice")
+        return _result("FAILED", "CONTEXT_NOT_INVOKED", "agent-tool-choice")
 
-    if evidence.get("mutation_required") is not True:
-        return _result("PASS", "CONTRACT_BEFORE_GROUNDED_ANSWER", "agent-contract")
+    if evidence.get("explain_required") is not True:
+        return _result("PASS", "EXPLICIT_PAGE_OPT_OUT_HONORED", "agent-response")
 
-    apply_succeeded = evidence.get("apply_succeeded") is True
-    if evidence.get("apply_failed") is True:
+    explain_succeeded = evidence.get("explain_succeeded") is True
+    if evidence.get("explain_failed") is True:
         if evidence.get("agent_claimed_success") is True:
             return _result("FAILED", "FALSE_SUCCESS", "agent-response")
-        return _result("FAILED", "APPLY_REJECTED", "page-apply")
-    if not apply_succeeded:
+        return _result("FAILED", "EXPLAIN_REJECTED", "page-explain")
+    if not explain_succeeded:
         if evidence.get("agent_claimed_success") is True:
             return _result("FAILED", "FALSE_SUCCESS", "agent-response")
-        return _result("FAILED", "REQUIRED_APPLY_NOT_INVOKED", "agent-tool-choice")
+        return _result("FAILED", "REQUIRED_EXPLAIN_NOT_INVOKED", "agent-tool-choice")
+
+    if evidence.get("focused_visible") is not True:
+        return _result("FAILED", "FOCUS_CONFIRMATION_MISMATCH", "page-confirmation")
+
+    if evidence.get("changed_expected") is not True:
+        before = evidence.get("workspace_revision_before")
+        after = evidence.get("workspace_revision_after")
+        if not isinstance(before, int) or isinstance(before, bool) or after != before:
+            return _result("FAILED", "EXISTING_REVISION_MISMATCH", "page-confirmation")
+        return _result("PASS", "EXISTING_EXPLANATION_FOCUSED", "page-confirmation")
 
     before = evidence.get("workspace_revision_before")
     after = evidence.get("workspace_revision_after")

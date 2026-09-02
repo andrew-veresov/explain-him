@@ -20,8 +20,10 @@ class GeneratedNativeSkillTest(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertTrue(GENERATOR.is_current())
         payload, digest = GENERATOR.build_payload()
-        self.assertEqual(digest, "e711414af844c93959bd2632846baf8e910685d72a858e31bdb90e03c050b123")
-        self.assertEqual(payload["tools"], ["get_explain_him_answer", "apply_explanation"])
+        self.assertEqual(digest, "fc0b3bf222ad485d82bc6a0e05a5bb6130d8cdba06b2550d4475daa265271d36")
+        self.assertEqual(payload["tools"], ["get_explain_him_context", "explain_tool"])
+        self.assertEqual(payload["context"]["protocolVersion"], 4)
+        self.assertIn("GitHub repository linked to this page", payload["context"]["answerPolicy"]["additionalInformation"])
         self.assertEqual(payload["context"]["provenance"]["compositeSha256"], digest)
 
     def test_drift_fails_closed(self) -> None:
